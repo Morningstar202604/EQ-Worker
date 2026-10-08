@@ -544,10 +544,10 @@ let chartInstances = [];
 /* 自定义确认弹层（替代原生 confirm，保持日记本文风） */
 function confirmModal(message, onConfirm, danger) {
   $('#modal-root').innerHTML = `
-    <div class="mask center">
+    <div class="mask center" role="dialog" aria-modal="true">
       <div class="sheet center" style="max-width:340px">
         <div class="sbody" style="padding:22px 16px 16px;text-align:center">
-          <div style="font-size:15px;line-height:1.7;color:var(--text);margin-bottom:18px">${message}</div>
+          <div style="font-size:15px;line-height:1.7;color:var(--text);margin-bottom:18px">${esc(message)}</div>
           <div style="display:flex;gap:10px">
             <button class="btn" style="flex:1" data-act="confirmCancel">取消</button>
             <button class="btn ${danger ? 'danger' : 'primary'}" style="flex:1" data-act="confirmOk">确定</button>
@@ -567,16 +567,16 @@ function toast(msg, ms) {
   const t = $('#toast-root');
   if (!t) return;
   clearTimeout(toastTimer);
-  t.innerHTML = `${msg} <span style="margin-left:8px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
+  t.innerHTML = `${esc(String(msg))} <span style="margin-left:8px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
   t.classList.add('show');
   toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2600);
 }
-/* 带撤销的 toast */
+/* 带撤销的 toast（msg 可能包含已转义 HTML 来自 highlightKw，用 esc 安全化） */
 function toastUndo(msg, undoFn) {
   const t = $('#toast-root');
   if (!t) return;
   clearTimeout(toastTimer);
-  t.innerHTML = `${msg} <span style="color:#c9a86a;font-weight:700;margin-left:8px;cursor:pointer" data-act="toastUndo">撤销</span> <span style="margin-left:6px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
+  t.innerHTML = `${esc(String(msg))} <span style="color:#c9a86a;font-weight:700;margin-left:8px;cursor:pointer" data-act="toastUndo">撤销</span> <span style="margin-left:6px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
   t.classList.add('show');
   window.__undoFn = undoFn;
   toastTimer = setTimeout(() => { t.classList.remove('show'); window.__undoFn = null; }, 5000);
