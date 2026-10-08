@@ -113,6 +113,7 @@ function upcomingFestival() {
 
 /* ---------------- 2. 存储层（本机 localStorage，零依赖） ---------------- */
 const DB_KEY = 'rqsg_radar_v2';
+const SCHEMA_VERSION = 3;
 const store = {
   load() {
     try {
@@ -120,8 +121,8 @@ const store = {
       if (!raw) return false;
       const d = JSON.parse(raw);
       if (!d || !Array.isArray(d.persons)) return false;
-      state.persons = d.persons || [];
-      state.events = d.events || [];
+      state.persons = (d.persons || []).filter(p => p && typeof p.name === 'string' && p.name.trim());
+      state.events = (d.events || []).filter(e => e && typeof e.type === 'string' && (e.time > 0));
       state.reminders = d.reminders || [];
       state.progress = d.progress || {};
       state.streak = d.streak || { n: 0, last: '' };
@@ -131,6 +132,7 @@ const store = {
   save() {
     try {
       localStorage.setItem(DB_KEY, JSON.stringify({
+        schema: SCHEMA_VERSION,
         persons: state.persons, events: state.events,
         reminders: state.reminders, progress: state.progress,
         streak: state.streak
@@ -153,7 +155,7 @@ const store = {
   exportCsv() { // 人脉清单 CSV，Excel/WPS 可直接打开
     const rows = [['姓名', '身份', '标签', '生日', '备注', '热度', '往来笔数', '最后往来']];
     for (const p of state.persons) {
-      const m = computePerson(p);
+      const m = computedFor(p.id);
       const last = state.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0);
       rows.push([p.name, p.identity || '', (p.tags || []).join('；'), p.birthday || '', p.note || '',
         Math.round(m.heat), m.eventCount, last ? fmtDate(last) : '']);
@@ -172,22 +174,41 @@ const store = {
       try {
         const d = JSON.parse(reader.result);
         if (!d || !Array.isArray(d.persons)) throw new Error('bad');
-        if (state.persons.length && !confirm('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？')) { toast('已取消导入，数据未变'); return; }
-        state.persons = d.persons || [];
-        state.events = d.events || [];
-        state.reminders = d.reminders || [];
-        state.progress = d.progress || {};
-        state.streak = d.streak || { n: 0, last: '' };
-        state.lastEventId = null; state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部';
-        store.save(); render();
-        toast('导入成功，共 ' + state.persons.length + ' 位人脉');
+        if (state.persons.length) {
+          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(d), true);
+        } else {
+          store.applyImport(d);
+        }
       } catch (e) { toast('导入失败：文件格式不对'); }
     };
     reader.readAsText(file);
+  },
+  applyImport(d) {
+    state.persons = d.persons || [];
+    state.events = d.events || [];
+    state.reminders = d.reminders || [];
+    state.progress = d.progress || {};
+    state.streak = d.streak || { n: 0, last: '' };
+    state.lastEventId = null; state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部';
+    invalidateCache(); store.save(); render();
+    toast('导入成功，共 ' + state.persons.length + ' 位人脉');
   }
 };
 
-/* ---------------- 3. 人情计算引擎 ---------------- */
+/* ---------------- 3. 人情计算引擎（带缓存） ---------------- */
+/* 计算缓存：computePerson 结果按 personId 缓存，事件变更时失效 */
+let _computeCache = {}; // personId → {result, eventVersion}
+let _eventVersion = 0;   // 事件全局版本号，增删事件时 +1
+function invalidateCache() { _computeCache = {}; _eventVersion++; }
+function computedFor(personId) {
+  const c = _computeCache[personId];
+  if (c && c.__v === _eventVersion) return c.result;
+  const p = state.persons.find(x => x.id === personId);
+  const r = p ? computePerson(p) : null;
+  _computeCache[personId] = { result: r, __v: _eventVersion };
+  return r;
+}
+
 /* 事件类型：每个事件影响 热度/信任/亲密/人情债 四个维度，随时间按半衰期衰减（90 天减半） */
 const EVENT_TYPES = {
   help_them: { label: '对方帮了我', dHeat: 6, dTrust: 6, dIntimacy: 4, dDebt: 8 },
@@ -214,7 +235,7 @@ const PLACEHOLDERS = {
   other: '周末一起逛了趟街'
 };
 
-/* 计算一个人的五项雷达指标 */
+/* 计算一个人的五项雷达指标（纯函数，不直接调用——外部统一走 computedFor ） */
 function computePerson(p) {
   const evs = state.events.filter(e => e.personId === p.id);
   const now = Date.now();
@@ -247,7 +268,7 @@ function overallMetrics() {
   const now = Date.now();
   const n = state.persons.length;
   if (!n) return null;
-  const pms = state.persons.map(p => computePerson(p));
+  const pms = state.persons.map(p => computedFor(p.id));
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map(p => p.heat));
   const n30 = state.events.filter(e => now - e.time < 30 * DAY).length;
@@ -290,11 +311,10 @@ function getLevel(w) {
 /* 智能提醒：节日 / 欠人情 / 久未往来 / 生日 / 待办 */
 function buildAlerts() {
   const out = [];
-  const now = Date.now();
   const fst = upcomingFestival();
   if (fst) out.push({ ic: 'fest', cls: 'blue', personId: '', text: `${fst.days === 0 ? '今天是' : fst.days + ' 天后是'}${fst.n}，记得给重要的人送个祝福、走动一下` });
   for (const p of state.persons) {
-    const m = computePerson(p);
+    const m = computedFor(p.id);
     if (m.debt >= 20) out.push({ ic: 'debt', cls: 'amber', personId: p.id, text: `<b>${esc(p.name)}</b>：你欠着人情债（${Math.round(m.debt)}），建议近期请顿饭或回个礼` });
     if (m.lastDays !== null && m.lastDays >= 60) out.push({ ic: 'stale', cls: 'red', personId: p.id, text: `<b>${esc(p.name)}</b>：已 ${m.lastDays} 天没往来，逢年过节走动一下` });
     if (p.birthday) {
@@ -314,7 +334,7 @@ function buildAlerts() {
 
 /* 走动建议（规则生成，不依赖外部 AI） */
 function getSuggestion(p) {
-  const m = computePerson(p);
+  const m = computedFor(p.id);
   if (m.debt >= 20) return '人情要趁热还：找个由头约顿饭，开场提一句「上次那事多亏你」，顺手带点小特产，把债了了。';
   if (m.lastDays !== null && m.lastDays >= 60) return '别硬找话题：以问候破冰最自然——「最近忙啥呢，好久没聚了」，顺势约个饭或喝杯茶。';
   if (m.intimacy >= 70) return '关系正热，值得深化：约个球局或下午茶，聊点工作之外的事，让交情从「有事才联系」变成「没事也联系」。';
@@ -324,7 +344,7 @@ function getSuggestion(p) {
 
 /* 关系解读：把雷达数据翻译成一句话（规则生成） */
 function relationRead(p) {
-  const m = computePerson(p);
+  const m = computedFor(p.id);
   const seg = [];
   if (m.lastDays === null) seg.push('刚记进来，还没怎么走动');
   else if (m.lastDays >= 60) seg.push('有段时间没走动了');
@@ -521,26 +541,83 @@ const state = {
 const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '其他'];
 let chartInstances = [];
 
+/* 自定义确认弹层（替代原生 confirm，保持日记本文风） */
+function confirmModal(message, onConfirm, danger) {
+  $('#modal-root').innerHTML = `
+    <div class="mask center">
+      <div class="sheet center" style="max-width:340px">
+        <div class="sbody" style="padding:22px 16px 16px;text-align:center">
+          <div style="font-size:15px;line-height:1.7;color:var(--text);margin-bottom:18px">${message}</div>
+          <div style="display:flex;gap:10px">
+            <button class="btn" style="flex:1" data-act="confirmCancel">取消</button>
+            <button class="btn ${danger ? 'danger' : 'primary'}" style="flex:1" data-act="confirmOk">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.style.overflow = 'hidden';
+  window.__confirmCb = onConfirm;
+}
+function confirmOk() { const cb = window.__confirmCb; window.__confirmCb = null; closeModal(); if (cb) cb(); }
+function confirmCancel() { window.__confirmCb = null; closeModal(); }
+
 /* 轻提示 */
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms) {
   const t = $('#toast-root');
   if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  t.innerHTML = `${msg} <span style="margin-left:8px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
+  t.classList.add('show');
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2600);
+}
+/* 带撤销的 toast */
+function toastUndo(msg, undoFn) {
+  const t = $('#toast-root');
+  if (!t) return;
+  clearTimeout(toastTimer);
+  t.innerHTML = `${msg} <span style="color:#c9a86a;font-weight:700;margin-left:8px;cursor:pointer" data-act="toastUndo">撤销</span> <span style="margin-left:6px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
+  t.classList.add('show');
+  window.__undoFn = undoFn;
+  toastTimer = setTimeout(() => { t.classList.remove('show'); window.__undoFn = null; }, 5000);
+}
+function closeToast() { clearTimeout(toastTimer); const t = $('#toast-root'); if (t) t.classList.remove('show'); }
+/* 搜索高亮：在文本中标记匹配关键词 */
+function highlightKw(text, kw) {
+  if (!kw) return esc(text);
+  const safe = esc(text);
+  const lower = safe.toLowerCase(), k = kw.toLowerCase();
+  const idx = lower.indexOf(k);
+  if (idx < 0) return safe;
+  return safe.slice(0, idx) + '<mark style="background:rgba(201,168,106,.35);color:inherit;border-radius:2px;padding:0 1px">' + safe.slice(idx, idx + esc(kw).length) + '</mark>' + safe.slice(idx + esc(kw).length);
 }
 
 /* ---------------- 6. 图表（ECharts 雷达图） ---------------- */
 function disposeCharts() { chartInstances.forEach(c => c.dispose()); chartInstances = []; }
 function makeChart(id, option, onClick) {
   const el = document.getElementById(id);
-  if (!el || typeof echarts === 'undefined') return;
+  if (!el) return;
+  if (typeof echarts === 'undefined') {
+    // ECharts 加载失败：降级为纯文本展示
+    const radars = (option && option.radar && option.radar.indicator) || [];
+    const vals = (option && option.series && option.series[0] && option.series[0].data && option.series[0].data[0] && option.series[0].data[0].value) || [];
+    el.innerHTML = `<div style="padding:12px 6px;font-size:12px;color:var(--dim);line-height:2">
+      ${radars.map((r, i) => `<div style="display:flex;justify-content:space-between;gap:8px">
+        <span>${r.name}</span><span style="color:var(--amber);font-weight:600">${Math.round(vals[i] || 0)} / 100</span></div>`).join('')}
+      <div style="margin-top:8px;font-size:11px;opacity:.6">图表库离线，如需完整雷达图请联网后刷新</div>
+    </div>`;
+    el.style.display = 'block';
+    return;
+  }
+  disposeChart(id);
   const c = echarts.init(el);
   c.setOption(option);
   if (onClick) c.on('click', onClick);
   chartInstances.push(c);
+}
+function disposeChart(id) {
+  const idx = chartInstances.findIndex(c => c.getDom() && c.getDom().id === id);
+  if (idx >= 0) { chartInstances[idx].dispose(); chartInstances.splice(idx, 1); }
 }
 function radarOption(ind, vals) {
   return {
@@ -670,9 +747,9 @@ function openDimInsight(dim) {
   const m = overallMetrics();
   const lastTsOf = (id) => state.events.filter(e => e.personId === id).reduce((mx, e) => Math.max(mx, e.time), 0);
   const chips = (arr) => arr.slice(0, 3).map(p => `<span class="chip">${esc(p.name)}</span>`).join(' ') || '<span class="chip">暂无</span>';
-  const byHeat = state.persons.slice().sort((a, b) => computePerson(b).heat - computePerson(a).heat);
+  const byHeat = state.persons.slice().sort((a, b) => computedFor(b.id).heat - computedFor(a.id).heat);
   const byLast = state.persons.slice().sort((a, b) => lastTsOf(b.id) - lastTsOf(a.id));
-  const byDebt = state.persons.slice().sort((a, b) => computePerson(b).debt - computePerson(a).debt).filter(p => computePerson(p).debt > 0);
+  const byDebt = state.persons.slice().sort((a, b) => computedFor(b.id).debt - computedFor(a.id).debt).filter(p => computedFor(p.id).debt > 0);
   const INS = {
     '人脉规模': { v: m.scale, d: '你的人脉池有多大：记进来的人数越多、覆盖的身份越广，规模分越高。', t: '保持「每月认识一两个新朋友」的节奏，多参加聚会和介绍局；老关系也别丢，质量比数量重要。', p: '热度最高的人脉', lst: byHeat },
     '人情热度': { v: Math.round(m.heatAvg), d: '整体关系的平均温度：来自每一笔往来的加权热度，90 天不走动会慢慢降温。', t: '热度是「动」出来的：问候、饭局、帮个小忙，都比节日群发一句有效。', p: '热度最高的人脉', lst: byHeat },
@@ -787,9 +864,9 @@ function viewPersons() {
       return lb - la;
     });
   } else if (state.sortBy === 'debt') {
-    list.sort((a, b) => computePerson(b).debt - computePerson(a).debt);
+    list.sort((a, b) => computedFor(b.id).debt - computedFor(a.id).debt);
   } else {
-    list.sort((a, b) => computePerson(b).heat - computePerson(a).heat);
+    list.sort((a, b) => computedFor(b.id).heat - computedFor(a.id).heat);
   }
   if (state.identity !== 'all') list = list.filter(p => p.identity === state.identity);
   if (kw) list = list.filter(p => (p.name + ' ' + (p.identity || '') + ' ' + (p.tags || []).join(' ') + ' ' + (p.note || '')).toLowerCase().includes(kw));
@@ -797,16 +874,17 @@ function viewPersons() {
     `<button class="fchip ${state.identity === id ? 'on' : ''}" data-act="filterId" data-arg="${id}">${id}</button>`).join('');
   const sortChips = [['heat', '热度'], ['last', '最近往来'], ['debt', '人情债']].map(([k, lab]) =>
     `<button class="fchip ${state.sortBy === k ? 'on' : ''}" data-act="sortBy" data-arg="${k}">${lab}</button>`).join('');
+  const totalBefore = state.persons.filter(p => state.identity === 'all' || p.identity === state.identity).length;
   const cards = list.map(p => {
-    const m = computePerson(p);
-    const tags = (p.tags || []).slice(0, 2).map(t => `<span class="chip">${esc(t)}</span>`).join('');
+    const m = computedFor(p.id);
+    const tags = (p.tags || []).slice(0, 2).map(t => `<span class="chip">${highlightKw(t, kw)}</span>`).join('');
     const flags = [];
     if (m.debt >= 10) flags.push(`<span class="chip amber">欠人情 ${Math.round(m.debt)}</span>`);
     if (m.lastDays !== null && m.lastDays >= 60) flags.push(`<span class="chip red">${m.lastDays}天没往来</span>`);
     return `<div class="personcard" data-act="openPerson" data-arg="${p.id}">
       <div class="avatar">${esc(initials(p.name))}</div>
       <div class="pc-main">
-        <div class="pc-name">${esc(p.name)} <span class="chip teal">${esc(p.identity || '朋友')}</span></div>
+        <div class="pc-name">${highlightKw(p.name, kw)} <span class="chip teal">${highlightKw(p.identity || '朋友', kw)}</span></div>
         <div class="pc-meta">${tags}${flags}</div>
         <div class="heatbar"><span style="font-size:11px;color:var(--dim)">热度</span>
           <div class="track"><div class="fill" style="width:${m.heat}%"></div></div>
@@ -815,10 +893,12 @@ function viewPersons() {
       <div class="pc-right">${m.lastDays === null ? '尚无往来' : timeAgo(state.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0))}<br>${m.eventCount} 笔记录</div>
     </div>`;
   }).join('');
+  const matchInfo = kw ? `<div style="padding:0 14px 6px;font-size:12px;color:var(--dim)">匹配 ${list.length} / ${totalBefore} 人</div>` : '';
   return `
     <div class="sec-t"><h2>人脉</h2>
       <button class="btn primary sm" data-act="personForm">＋ 添加</button></div>
     <div style="padding:0 14px 10px"><input class="inp" id="fSearch" placeholder="搜索姓名 / 标签 / 备注…" value="${esc(state.filter)}" data-change="search"></div>
+    ${matchInfo}
     <div class="fchips">${chips}</div>
     <div class="fchips" style="padding-top:0"><span style="font-size:12px;color:var(--dim);padding:6px 4px">排序</span>${sortChips}</div>
     ${cards || (state.persons.length
@@ -947,7 +1027,7 @@ function monthInsights() {
   const top = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, n]) => { const p = state.persons.find(x => x.id === id); return p ? `${esc(p.name)} ${n} 笔` : ''; })
     .filter(Boolean).join('、') || '暂无';
-  const debts = state.persons.map(p => ({ p, m: computePerson(p) }))
+  const debts = state.persons.map(p => ({ p, m: computedFor(p.id) }))
     .filter(x => x.m.debt > 0).sort((a, b) => b.m.debt - a.m.debt).slice(0, 3)
     .map(x => `${esc(x.p.name)} ${Math.round(x.m.debt)}`).join('、') || '暂无欠债';
   const np = state.persons.filter(p => fmtDate(p.createdAt || 0).startsWith(ym)).length;
@@ -970,7 +1050,7 @@ function openAnnualReport() {
   const topP = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, n]) => { const p = state.persons.find(x => x.id === id); return p ? `<span class="chip">${esc(p.name)} ${n} 笔</span>` : ''; })
     .filter(Boolean).join('') || '<span class="chip">暂无</span>';
-  const debts = state.persons.map(p => ({ p, m: computePerson(p) }))
+  const debts = state.persons.map(p => ({ p, m: computedFor(p.id) }))
     .filter(x => x.m.debt > 0).sort((a, b) => b.m.debt - a.m.debt).slice(0, 3)
     .map(x => `${esc(x.p.name)} ${Math.round(x.m.debt)}`).join('、') || '暂无欠债';
   const w = getWisdom(), lv = getLevel(w);
@@ -1081,7 +1161,7 @@ function viewMe() {
     ['人情信用', Math.round(m.credit)], ['处世智慧', m.wisdom]
   ] : [];
   /* 最值得经营的人：热度 Top3 */
-  const top3 = state.persons.map(p => ({ p, h: computePerson(p) }))
+  const top3 = state.persons.map(p => ({ p, h: computedFor(p.id) }))
     .sort((a, b) => b.h.heat - a.h.heat).slice(0, 3);
   const top3Html = top3.map(x => {
     const mh = x.h;
@@ -1211,7 +1291,7 @@ function openPerson(id) {
   const p = state.persons.find(x => x.id === id);
   if (!p) return;
   window.__curPerson = id;
-  const m = computePerson(p);
+  const m = computedFor(p.id);
   const t = (p.tags || []).map(x => `<span class="chip teal">${esc(x)}</span>`).join(' ');
   const dims = [
     ['热度', m.heat, '近期往来与事件加权的综合温度', true],
@@ -1419,7 +1499,7 @@ function loadDemo() {
     { id: uid(), personId: p.zhang.id, content: '请老张吃顿饭，还上次借车的人情', date: fmtDate(now + 3 * DAY), status: 'pending' },
     { id: uid(), personId: p.wang.id, content: '王总生日，发条祝福', date: fmtDate(now + 6 * DAY), status: 'pending' }
   ];
-  store.save(); render();
+  invalidateCache(); store.save(); render();
   toast('已载入 6 位人脉演示数据，可在「我的」里清空重建');
 }
 
@@ -1452,7 +1532,7 @@ function onClick(e) {
         state.persons.push(Object.assign({ id: uid(), adjust: 0, createdAt: Date.now() }, data));
         toast('已添加 ' + name);
       }
-      store.save();
+      invalidateCache(); store.save();
       const pid = window.__curPerson;
       closeModal(); render();
       if (pid) openPerson(pid);
@@ -1460,11 +1540,17 @@ function onClick(e) {
     }
 
     case 'delPerson': {
-      if (!confirm('删除后该人脉的所有往来记录与提醒都会一并删除，确定吗？')) break;
-      state.persons = state.persons.filter(x => x.id !== arg);
-      state.events = state.events.filter(x => x.personId !== arg);
-      state.reminders = state.reminders.filter(x => x.personId !== arg);
-      store.save(); closeModal(); render(); toast('已删除');
+      confirmModal('删除后该人脉的所有往来记录与提醒都会一并删除，确定吗？', () => {
+        const backup = state.persons.find(x => x.id === arg);
+        state.persons = state.persons.filter(x => x.id !== arg);
+        state.events = state.events.filter(x => x.personId !== arg);
+        state.reminders = state.reminders.filter(x => x.personId !== arg);
+        invalidateCache(); store.save(); closeModal(); render();
+        toastUndo('已删除「' + (backup ? backup.name : '') + '」', () => {
+          if (backup) state.persons.push(backup);
+          invalidateCache(); store.save(); render();
+        });
+      }, true);
       break;
     }
 
@@ -1472,7 +1558,7 @@ function onClick(e) {
       const p = state.persons.find(x => x.id === window.__curPerson);
       if (!p) break;
       p.adjust = clamp((p.adjust || 0) + parseInt(arg, 10), -30, 30);
-      store.save(); render(); openPerson(p.id); toast('热度已手动调整');
+      invalidateCache(); store.save(); render(); openPerson(p.id); toast('热度已手动调整');
       break;
     }
 
@@ -1495,7 +1581,7 @@ function onClick(e) {
       const t = Math.min(dtv ? new Date(dtv + 'T00:00:00').getTime() : Date.now(), Date.now()); // 日期留空按今天
       const ev = { id: uid(), personId: pid, type: state.evType, title, time: t, weight: parseInt($('#fWeight').textContent, 10), note: $('#fNote').value.trim() };
       state.events.push(ev); state.lastEventId = ev.id; state.evPersonId = pid;
-      store.save(); $('#fTitle').value = ''; $('#fNote').value = '';
+      invalidateCache(); store.save(); $('#fTitle').value = ''; $('#fNote').value = '';
       toast('已记录一笔「' + EVENT_TYPES[state.evType].label + '」');
       render();
       break;
@@ -1503,7 +1589,7 @@ function onClick(e) {
     case 'undoLast': {
       if (!state.lastEventId) break;
       state.events = state.events.filter(x => x.id !== state.lastEventId);
-      state.lastEventId = null; store.save(); render(); toast('已撤销上一条');
+      state.lastEventId = null; invalidateCache(); store.save(); render(); toast('已撤销上一条');
       break;
     }
 
@@ -1530,7 +1616,7 @@ function onClick(e) {
       const t = Math.min(dtv ? new Date(dtv + 'T00:00:00').getTime() : Date.now(), Date.now()); // 日期留空按今天
       const ev = { id: uid(), personId: pid, type: window.__modalType, title, time: t, weight: window.__modalWeight || 6, note: $('#efNote').value.trim() };
       state.events.push(ev); state.lastEventId = ev.id; state.evPersonId = pid;
-      store.save();
+      invalidateCache(); store.save();
       const fromDetail = window.__curPerson;
       closeModal(); render();
       if (fromDetail) openPerson(fromDetail);
@@ -1572,9 +1658,12 @@ function onClick(e) {
       break;
     }
     case 'delReminder': {
-      if (!confirm('删除这条提醒？')) break;
-      state.reminders = state.reminders.filter(x => x.id !== arg);
-      store.save(); render(); toast('提醒已删除');
+      confirmModal('删除这条提醒？', () => {
+        const backup = state.reminders.find(x => x.id === arg);
+        state.reminders = state.reminders.filter(x => x.id !== arg);
+        store.save(); render();
+        toastUndo('提醒已删除', () => { if (backup) state.reminders.push(backup); store.save(); render(); });
+      }, true);
       break;
     }
     case 'installApp': {
@@ -1631,43 +1720,66 @@ function onClick(e) {
       try {
         const d = JSON.parse(raw);
         if (!d || !Array.isArray(d.persons)) throw new Error('bad');
-        if (state.persons.length && !confirm('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？')) { toast('已取消导入，数据未变'); break; }
-        state.persons = d.persons || [];
-        state.events = d.events || [];
-        state.reminders = d.reminders || [];
-        state.progress = d.progress || {};
-        state.streak = d.streak || { n: 0, last: '' };
-        state.lastEventId = null; state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部';
-        store.save(); closeModal(); render();
-        toast('导入成功，共 ' + state.persons.length + ' 位人脉');
+        if (state.persons.length) {
+          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => { store.applyImport(d); closeModal(); }, true);
+        } else {
+          store.applyImport(d); closeModal();
+        }
       } catch (e) { toast('导入失败：内容格式不对'); }
       break;
     }
     case 'import': { const f = $('#importFile'); if (f) f.click(); break; }
     case 'reset': {
-      if (!confirm('确定清空所有数据？此操作不可恢复，建议先导出备份。')) break;
-      state.persons = []; state.events = []; state.reminders = []; state.progress = {};
-      state.streak = { n: 0, last: '' }; state.lastEventId = null;
-      state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部'; state.tab = 'radar';
-      try { localStorage.setItem('rqsg_tab', 'radar'); } catch (e) {}
-      store.save(); closeModal(); render(); toast('数据已清空');
+      confirmModal('确定清空所有数据？此操作不可恢复，建议先导出备份。', () => {
+        const backupPersons = state.persons.slice();
+        const backupEvents = state.events.slice();
+        const backupReminders = state.reminders.slice();
+        const backupProgress = Object.assign({}, state.progress);
+        const backupStreak = Object.assign({}, state.streak);
+        state.persons = []; state.events = []; state.reminders = []; state.progress = {};
+        state.streak = { n: 0, last: '' }; state.lastEventId = null;
+        state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部'; state.tab = 'radar';
+        try { localStorage.setItem('rqsg_tab', 'radar'); } catch (e) {}
+        invalidateCache(); store.save(); closeModal(); render();
+        toastUndo('数据已清空', () => {
+          state.persons = backupPersons; state.events = backupEvents; state.reminders = backupReminders;
+          state.progress = backupProgress; state.streak = backupStreak;
+          invalidateCache(); store.save(); render();
+        });
+      }, true);
       break;
     }
     case 'delEvent': {
-      if (!confirm('删除这条往来记录？删除后相关热度会重新计算。')) break;
-      state.events = state.events.filter(x => x.id !== arg);
-      if (state.lastEventId === arg) state.lastEventId = null;
-      store.save();
-      const pid = window.__curPerson;
-      closeModal();
-      if (pid) openPerson(pid); else render();
-      toast('已删除这条记录');
+      confirmModal('删除这条往来记录？删除后相关热度会重新计算。', () => {
+        const backup = state.events.find(x => x.id === arg);
+        state.events = state.events.filter(x => x.id !== arg);
+        if (state.lastEventId === arg) state.lastEventId = null;
+        invalidateCache(); store.save();
+        const pid = window.__curPerson;
+        closeModal();
+        if (pid) openPerson(pid); else render();
+        toastUndo('已删除这条记录', () => {
+          if (backup) state.events.push(backup);
+          invalidateCache(); store.save();
+          const pid2 = window.__curPerson; if (pid2) openPerson(pid2); else render();
+        });
+      }, true);
       break;
     }
     case 'demo': loadDemo(); break;
     case 'welcomeDemo': { try { localStorage.setItem('rqsg_welcomed', '1'); } catch (e) {} closeModal(); loadDemo(); break; }
     case 'welcomeGo': { try { localStorage.setItem('rqsg_welcomed', '1'); } catch (e) {} closeModal(); state.tab = 'persons'; render(); break; }
     case 'closeModal': closeModal(); break;
+    case 'confirmOk': confirmOk(); break;
+    case 'confirmCancel': confirmCancel(); break;
+    case 'toastUndo': {
+      const fn = window.__undoFn; window.__undoFn = null;
+      clearTimeout(toastTimer);
+      const t = $('#toast-root'); if (t) t.classList.remove('show');
+      if (fn) fn();
+      break;
+    }
+    case 'closeToast': closeToast(); break;
   }
 }
 function onChange(e) {
