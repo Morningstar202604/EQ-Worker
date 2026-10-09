@@ -571,7 +571,7 @@ function toast(msg, ms) {
   t.classList.add('show');
   toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2600);
 }
-/* 带撤销的 toast（msg 可能包含已转义 HTML 来自 highlightKw，用 esc 安全化） */
+/* 带撤销的 toast（msg 为纯文本，内部自动 esc 转义） */
 function toastUndo(msg, undoFn) {
   const t = $('#toast-root');
   if (!t) return;
@@ -586,10 +586,19 @@ function closeToast() { clearTimeout(toastTimer); const t = $('#toast-root'); if
 function highlightKw(text, kw) {
   if (!kw) return esc(text);
   const safe = esc(text);
-  const lower = safe.toLowerCase(), k = kw.toLowerCase();
-  const idx = lower.indexOf(k);
-  if (idx < 0) return safe;
-  return safe.slice(0, idx) + '<mark style="background:rgba(201,168,106,.35);color:inherit;border-radius:2px;padding:0 1px">' + safe.slice(idx, idx + esc(kw).length) + '</mark>' + safe.slice(idx + esc(kw).length);
+  const lower = safe.toLowerCase(), k = esc(kw).toLowerCase();
+  if (!k) return safe;
+  const mark = '<mark style="background:rgba(201,168,106,.35);color:inherit;border-radius:2px;padding:0 1px">';
+  /* split+join 支持多次匹配高亮 */
+  const parts = lower.split(k);
+  if (parts.length <= 1) return safe;
+  let result = '', pos = 0;
+  for (let i = 0; i < parts.length; i++) {
+    result += safe.slice(pos, pos + parts[i].length);
+    pos += parts[i].length;
+    if (i < parts.length - 1) { result += mark + safe.slice(pos, pos + k.length) + '</mark>'; pos += k.length; }
+  }
+  return result;
 }
 
 /* ---------------- 6. 图表（ECharts 雷达图） ---------------- */
@@ -1065,7 +1074,7 @@ function openAnnualReport() {
   }
   if (w >= 60) kw.push('修炼有成，已迈入人情大师');
   else if (w >= 15) kw.push('修炼起步，已略懂世故');
-  if (debts !== '暂无欠债') kw.push('人情债榜首是「' + debts.split('、')[0].split(' ')[0] + '」，记得还');
+  if (debts !== '暂无欠债') kw.push('人情债榜首是「' + debts.split('、')[0] + '」，记得还');
   const monthBars = months.map(x => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
     <div style="height:${Math.max(4, Math.round(x.c / peak * 64))}px;width:60%;background:linear-gradient(180deg,#7da08f,#5f8575);border-radius:4px 4px 0 0;opacity:${x.c ? 1 : .25}"></div>
     <span style="font-size:9px;color:var(--dim)">${x.label}</span>
@@ -1270,20 +1279,23 @@ function openSheet(title, body, center) {
     </div>`;
   document.body.style.overflow = 'hidden';
   disposeCharts();
-  if (typeof afterModalChart === 'function') afterModalChart();
 }
 function refreshHomeChart() {
   if (state.tab !== 'radar') return;
   const m = overallMetrics();
   if (m) makeChart('homeChart', radarOption(['人脉规模', '人情热度', '往来频率', '人情信用', '处世智慧'],
-    [m.scale, Math.round(m.heatAvg), m.freq, Math.round(m.credit), m.wisdom]));
+    [m.scale, Math.round(m.heatAvg), m.freq, Math.round(m.credit), m.wisdom]), onHomeChartClick);
 }
 function closeModal() {
   $('#modal-root').innerHTML = '';
   window.__curPerson = null;
+  window.__confirmCb = null;
   document.body.style.overflow = '';
+  /* 关闭弹层后重建当前页图表（非 radar 页由 render 处理） */
   disposeCharts();
-  refreshHomeChart();
+  /* 仅在 radar 页立即恢复图表；其他页在 render 时由 afterRender 重建 */
+  if (state.tab === 'radar') refreshHomeChart();
+  render();
 }
 
 /* ---------- 人物详情 ---------- */
@@ -1507,7 +1519,6 @@ function loadDemo() {
 function onClick(e) {
   const el = e.target.closest('[data-act]');
   if (!el) return;
-  if (el.dataset.stop) return;
   const act = el.dataset.act, arg = el.dataset.arg;
   switch (act) {
     case 'go': {
@@ -1588,8 +1599,10 @@ function onClick(e) {
     }
     case 'undoLast': {
       if (!state.lastEventId) break;
+      const backup = state.events.find(x => x.id === state.lastEventId);
       state.events = state.events.filter(x => x.id !== state.lastEventId);
-      state.lastEventId = null; invalidateCache(); store.save(); render(); toast('已撤销上一条');
+      state.lastEventId = null; invalidateCache(); store.save(); render();
+      toastUndo('已撤销上一条', () => { if (backup) state.events.push(backup); invalidateCache(); store.save(); render(); });
       break;
     }
 
@@ -1721,9 +1734,9 @@ function onClick(e) {
         const d = JSON.parse(raw);
         if (!d || !Array.isArray(d.persons)) throw new Error('bad');
         if (state.persons.length) {
-          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => { store.applyImport(d); closeModal(); }, true);
+          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(d), true);
         } else {
-          store.applyImport(d); closeModal();
+          store.applyImport(d);
         }
       } catch (e) { toast('导入失败：内容格式不对'); }
       break;

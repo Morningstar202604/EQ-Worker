@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/平台-网页%20PWA%20%2B%20微信小程序-green" alt="Platform" />
   <img src="https://img.shields.io/badge/玩法-人脉经营-lightblue" alt="Playstyle" />
   <img src="https://img.shields.io/badge/存储-本地优先-blue" alt="Storage" />
-  <img src="https://img.shields.io/badge/版本-v2.8-orange" alt="Version" />
+  <img src="https://img.shields.io/badge/版本-v2.8.1-orange" alt="Version" />
   <img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-red" alt="License" />
   <br />
   <p>
@@ -33,10 +33,24 @@
   - <https://morningstar202604.github.io/chushi-radar/>
 - **官网（品牌门户）**：<https://x33834.github.io/chushi-radar/%E5%AE%98%E7%BD%91/%E4%BA%BA%E6%83%85%E4%B8%96%E6%95%85%E9%9B%B7%E8%BE%BE%E5%AE%98%E7%BD%91.html>，源码在 `官网/人情世故雷达官网.html`
 - **本地使用**：直接打开仓库根 `人情世故雷达.html`（或 `index.html`）即可，单文件自包含、离线可用
+- **源码仓库**：[GitHub](https://github.com/X33834/chushi-radar) · [GitCode](https://gitcode.com/badhope/chushi-radar) · [Gitee](https://gitee.com/badhope/chushi-radar)
 
 > 提示：GitHub Pages 在某些网络环境下直连可能较慢，可下载 `人情世故雷达.html` 到本机随时打开，功能完全一致。
 
 所有版本同源：仓库根 `index.html` 即网页版（与 `人情世故雷达.html` 同内容），推送 main 后 GitHub Pages 自动部署。
+
+## 界面预览
+
+| 雷达总览 | 人脉管理 | 快速记录 |
+| --- | --- | --- |
+| ![雷达总览](docs/screenshots/01-radar.png) | ![人脉管理](docs/screenshots/02-persons.png) | ![快速记录](docs/screenshots/03-record.png) |
+
+| 修炼场 | 我的数据中心 | 搜索高亮 |
+| --- | --- | --- |
+| ![修炼场](docs/screenshots/04-scenario.png) | ![我的](docs/screenshots/05-me.png) | ![搜索高亮](docs/screenshots/06-search.png) |
+
+![人脉详情](docs/screenshots/07-detail.png)
+*人脉详情页：五维雷达图 + 热度指标 + 往来时间线 + 关系解读*
 
 ## 核心玩法（五模块闭环）
 
@@ -69,10 +83,11 @@
 
 | 版本 | 要点 |
 | --- | --- |
-| v2.0 | 四合一重构：雷达/人脉/记录/修炼，原生 JS + ECharts（v1 答题版已删除，全部以 v2 经营版为主） |
-| v2.1–v2.6 | 农历节日提醒、日记本美术、安装引导、待办管理、维度解读、年度报告、备份迁移、批量修 bug |
-| v2.7 | 品牌体系（Logo/Slogan/欢迎引导/关于页）、提醒紧急度颜色修复 |
+| v2.8.1 | 性能优化（computePerson 全局缓存 + 事件版本号失效）；自定义日记风确认弹层；删除/清空全部可撤销；搜索关键词高亮 + 匹配计数；Toast ✕ 手动关闭；ECharts 降级；XSS 加固；closeModal 图表恢复修复 |
 | v2.8 | 提醒直通记录、全部往来总览、最值得经营的人 Top3、往来类型分布图；记住上次页面、搜索空态优化 |
+| v2.7 | 品牌体系（Logo/Slogan/欢迎引导/关于页）、提醒紧急度颜色修复 |
+| v2.1–v2.6 | 农历节日提醒、日记本美术、安装引导、待办管理、维度解读、年度报告、备份迁移、批量修 bug |
+| v2.0 | 四合一重构：雷达/人脉/记录/修炼，原生 JS + ECharts（v1 答题版已删除，全部以 v2 经营版为主） |
 
 ## 运行
 
