@@ -1,99 +1,154 @@
 <div align="center">
-  <h1>人情世故雷达</h1>
-  <p><b>把人情账记明白，把关系经营成细水长流</b></p>
-  <p>人脉经营 · 人情账本 · 社交修炼 —— 本地优先的轻量个人助手</p>
-  <p>
-    <a href="README.md"><b>简体中文</b></a> · <a href="README.en.md">English</a>
-  </p>
-  <img src="https://img.shields.io/badge/平台-网页%20PWA%20%2B%20微信小程序-green" alt="Platform" />
-  <img src="https://img.shields.io/badge/玩法-人脉经营-lightblue" alt="Playstyle" />
-  <img src="https://img.shields.io/badge/存储-本地优先-blue" alt="Storage" />
-  <img src="https://img.shields.io/badge/版本-v2.8.1-orange" alt="Version" />
-  <img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-red" alt="License" />
-  <br />
-  <p>
-    <a href="https://github.com/X33834/chushi-radar">GitHub</a> ·
-    <a href="https://gitcode.com/badhope/chushi-radar">GitCode</a> ·
-    <a href="https://gitee.com/badhope/chushi-radar">Gitee</a>
-  </p>
+
+# RENQING · RADAR
+
+**人情世故雷达 — Keep your favors clear, keep your relationships flowing.**
+
+Relationship management · Favor ledger · Social practice — lightweight, **local-first**, private-by-design.
+
+<a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
+
+[![Platform](https://img.shields.io/badge/Platform-Web%20PWA%20%2B%20WeChat%20Mini%20Program-2da44e)](https://github.com/Morningstar202604/chushi-radar)
+[![Release](https://img.shields.io/github/v/release/Morningstar202604/chushi-radar?include_prereleases&label=Version&color=orange)](https://github.com/Morningstar202604/chushi-radar/releases)
+[![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-red)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/Morningstar202604/chushi-radar?style=social)](https://github.com/Morningstar202604/chushi-radar/stargazers)
+
+**Mirror repos:** [GitHub @badhope](https://github.com/badhope/chushi-radar) · [GitHub @x33834](https://github.com/x33834/chushi-radar) · [GitHub @Morningstar202604](https://github.com/Morningstar202604/chushi-radar) · [GitCode](https://gitcode.com/badhope/chushi-radar) · [Gitee](https://gitee.com/badhope/chushi-radar)
+
 </div>
 
 ---
 
-## 这是什么
+## ✨ Try Online
 
-「人情世故雷达」是一款**人脉经营工具**，不是答题测评。
+| Channel | Link |
+|---|---|
+| **Web (GitHub Pages, auto-deploy)** | <https://morningstar202604.github.io/chushi-radar/> |
+| **Mirror (GitHub @x33834)** | <https://x33834.github.io/chushi-radar/> |
+| **Mirror (GitHub @badhope)** | <https://badhope.github.io/chushi-radar/> |
+| **Official Brand Site** | <https://morningstar202604.github.io/chushi-radar/%E5%AE%98%E7%BD%91/%E4%BA%BA%E6%83%85%E4%B8%96%E6%95%85%E9%9B%B7%E8%BE%BE%E5%AE%98%E7%BD%91.html> |
 
-旧版「处世 Radar」是 81 道题的社交智力测验（9 维打分）；v2 起彻底重构为**经营型玩法**：你只需要在饭局散场后花 10 秒记一笔往来，雷达自动完成其余一切——画关系画像、算人情热度、提醒你该走动、该还人情、该送祝福。
+> **No internet at all?** Just download `人情世故雷达.html`, open it in any browser — fully offline-capable, identical functionality.
 
-## 在线体验
+---
 
-- **网页版（GitHub Pages，push 即自动部署）**：
-  - <https://x33834.github.io/chushi-radar/>
-  - <https://morningstar202604.github.io/chushi-radar/>
-- **官网（品牌门户）**：<https://x33834.github.io/chushi-radar/%E5%AE%98%E7%BD%91/%E4%BA%BA%E6%83%85%E4%B8%96%E6%95%85%E9%9B%B7%E8%BE%BE%E5%AE%98%E7%BD%91.html>，源码在 `官网/人情世故雷达官网.html`
-- **本地使用**：直接打开仓库根 `人情世故雷达.html`（或 `index.html`）即可，单文件自包含、离线可用
-- **源码仓库**：[GitHub](https://github.com/X33834/chushi-radar) · [GitCode](https://gitcode.com/badhope/chushi-radar) · [Gitee](https://gitee.com/badhope/chushi-radar)
+## 📸 Screenshots
 
-> 提示：GitHub Pages 在某些网络环境下直连可能较慢，可下载 `人情世故雷达.html` 到本机随时打开，功能完全一致。
-
-所有版本同源：仓库根 `index.html` 即网页版（与 `人情世故雷达.html` 同内容），推送 main 后 GitHub Pages 自动部署。
-
-## 界面预览
-
-| 雷达总览 | 人脉管理 | 快速记录 |
+| Radar Overview | People Management | Quick Record |
 | --- | --- | --- |
-| ![雷达总览](docs/screenshots/01-radar.png) | ![人脉管理](docs/screenshots/02-persons.png) | ![快速记录](docs/screenshots/03-record.png) |
+| ![Radar](docs/screenshots/01-radar.png) | ![People](docs/screenshots/02-persons.png) | ![Record](docs/screenshots/03-record.png) |
 
-| 修炼场 | 我的数据中心 | 搜索高亮 |
+| Practice Arena | My Data Center | Search Highlight |
 | --- | --- | --- |
-| ![修炼场](docs/screenshots/04-scenario.png) | ![我的](docs/screenshots/05-me.png) | ![搜索高亮](docs/screenshots/06-search.png) |
+| ![Practice](docs/screenshots/04-scenario.png) | ![Data](docs/screenshots/05-me.png) | ![Search](docs/screenshots/06-search.png) |
 
-![人脉详情](docs/screenshots/07-detail.png)
-*人脉详情页：五维雷达图 + 热度指标 + 往来时间线 + 关系解读*
+![Person Detail](docs/screenshots/07-detail.png)
+*Five-axis radar + warmth metrics + interaction timeline + relationship insight*
 
-## 核心玩法（五模块闭环）
+---
+
+## 🎯 What Is This
+
+**RENQING · RADAR (人情世故雷达)** is a **relationship-keeping tool**, not a personality quiz.
+
+> *Renqing* (人情) = the unspoken currency of favors, debts, and care that oils human relationships.
+
+The legacy "Chushi Radar" was an 81-question social-intelligence test. Since v2, it has been rebuilt as a **keep-and-grow** workflow:
+
+1. **Spend 10 seconds** after a dinner recording one interaction
+2. The **radar does the rest** — auto-drawing profiles, computing warmth scores, and nudging you whom to visit, which favor to return, and whose birthday to celebrate
+
+### Who is it for
+
+- People who attend dinners, weddings, and gatherings and want to manage the "favor bank"
+- Anyone tired of forgetting birthdays, missing festival greetings, or owing invisible debts
+- Learners of Chinese social scenarios — 15 built-in practice cases with difficulty tiers
+
+---
+
+## 🔁 Core Loop (5 Closed Modules)
 
 ```
-记录往来 → 自动画像 → 智能提醒 → 情景修炼 → 年度报告
+Record interactions → Auto profile → Smart reminders → Scenario training → Annual report
 ```
 
-| 模块 | 作用 |
+| Module | What it does |
 | --- | --- |
-| 雷达总览 | 五维画像（人脉规模/人情热度/往来频率/人情信用/处世智慧）+ 人情指数 + 智能提醒（节日/欠人情/久未往来/生日/待办，按紧急度配色） |
-| 人脉管理 | 每人一张雷达卡，热度 = 事件加权 + 90 天半衰期衰减，可手动微调；搜索 / 身份筛选 / 三种排序 |
-| 快速记录 | 10 类事件自动带人情值（饭局/互助/送礼/借钱/深聊…），支持撤销 |
-| 修炼场 | 15 个中国式社交情景（随礼/挡酒/借钱/救场…），难度分级，练完涨处世智慧与段位 |
-| 我的 | 月度洞察、近 6 月趋势、年度人情报告、待办管理、备份迁移（剪贴板/文件/CSV） |
+| **Radar Overview** | 5-dimension profile (network scale / warmth / frequency / credit / wisdom) + composite index + smart reminders (festivals, favors owed, long-no-contact, birthdays, todos — color-coded by urgency) |
+| **People Management** | One radar card per person; warmth = event weighting + 90-day half-life decay, manually adjustable; search / role filter / 3 sort modes |
+| **Quick Record** | 10 interaction types auto-weighted (dinner, help, gifts, loans, heart-to-heart…); undo supported |
+| **Practice Arena** | 15 Chinese social scenarios (wedding gifts, toasting, borrowing money, saving face…), difficulty tiers, raises wisdom & level |
+| **My Data** | Monthly insights, 6-month trend, annual report, todo management, backup & migration (clipboard / file / CSV) |
 
-## 双端形态
+---
 
-| 形态 | 说明 |
+## 📱 Two Platforms, One Data Format
+
+| Platform | Description |
 | --- | --- |
-| 网页版（PWA） | 单文件自包含 HTML（约 1.1MB，零构建），离线可用，可添加到主屏幕当 App 用；内置 ECharts 开源可视化 |
-| 微信小程序 | 完整小程序工程（本仓库 `人情世故雷达-小程序/`），Canvas 手绘雷达零依赖，与网页版数据结构互通 |
+| **Web (PWA)** | Single self-contained HTML (~1.1 MB, zero build), works offline, installable to home screen; built-in open-source ECharts visualization |
+| **WeChat Mini Program** | Full mini-program project (`chushi-radar/人情世故雷达-小程序/`), hand-drawn radar on Canvas with zero dependencies; web↔mini data is fully interoperable (SCHEMA_VERSION) |
 
-## 数据与隐私
+### Mini Program Highlights
 
-- 所有数据仅存本机（浏览器 localStorage / 小程序本地缓存），**不上传任何服务器**
-- 换设备用「导出备份 / 复制备份 → 新设备粘贴导入」，数据格式互通
-- 日期与节日提醒内置农历换算（1900–2100）
+- **Custom UI components** — unified modal/toast with smooth entrance/exit animations (replaces all native wx modals)
+- **Search highlighting** — real-time yellow highlight on matching characters across name/identity/tags
+- **Press feedback** — all interactive cards have scale-press animations
+- **Urgency pulse** — overdue reminders pulse with red glow
+- **Lunar calendar built in** — supports Chinese festival detection (1900–2100)
 
-## 版本历程
+---
 
-| 版本 | 要点 |
+## 🔐 Data & Privacy
+
+- **Zero server** — all data stays on your device (browser localStorage / mini-program local cache)
+- **No analytics, no ads, no sign-up** — you are not the product
+- **Seamless migration** — export → copy clipboard → paste-import on new device; web↔mini formats are interoperable
+- Built-in Chinese lunar calendar for festival reminders (1900–2100)
+
+---
+
+## 🆕 What's New in v2.8.1
+
+- **Unified UI components** — custom modal/toast system with smooth animations across all 7 mini-program pages
+- **Search highlight** — find anyone instantly with yellow character-level highlighting + match count
+- **Relationship network graph** — Canvas ring layout showing all connections (web)
+- **Annual report PNG export** — html2canvas-powered one-tap image sharing (web)
+- **Performance** — computePerson global cache + event-versioned invalidation
+- **PWA support** — Service Worker Cache First strategy for fully offline web
+- **Build system** — zero-dep ESM build script (`build.js`)
+- **Unit tests** — 10 passing tests via `node --test`
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Choice |
 | --- | --- |
-| v2.8.1 | 性能优化（computePerson 全局缓存 + 事件版本号失效）；自定义日记风确认弹层；删除/清空全部可撤销；搜索关键词高亮 + 匹配计数；Toast ✕ 手动关闭；ECharts 降级；XSS 加固；closeModal 图表恢复修复 |
-| v2.8 | 提醒直通记录、全部往来总览、最值得经营的人 Top3、往来类型分布图；记住上次页面、搜索空态优化 |
-| v2.7 | 品牌体系（Logo/Slogan/欢迎引导/关于页）、提醒紧急度颜色修复 |
-| v2.1–v2.6 | 农历节日提醒、日记本美术、安装引导、待办管理、维度解读、年度报告、备份迁移、批量修 bug |
-| v2.0 | 四合一重构：雷达/人脉/记录/修炼，原生 JS + ECharts（v1 答题版已删除，全部以 v2 经营版为主） |
+| Language | Vanilla JavaScript (zero framework) |
+| Chart | ECharts 5 (inlined) / Canvas 2D (mini program) |
+| Storage | localStorage / wx.storage (local-only) |
+| PWA | Service Worker + Cache First |
+| Build | `build.js` — ESM, zero dependencies |
+| Test | `node --test` built-in runner |
 
-## 运行
+---
 
-- **网页版**：直接打开 `人情世故雷达.html` 即可（建议 Chrome / Safari / 微信内置浏览器）
-- **小程序**：微信开发者工具导入 `人情世故雷达-小程序/` 目录即可预览
+## 📦 Quick Start
 
-## 许可
+- **Web**: open `人情世故雷达.html` directly in Chrome, Safari, or WeChat browser
+- **Mini Program**: import `chushi-radar/人情世故雷达-小程序/` into WeChat DevTools
 
-Creative Commons Attribution-NonCommercial 4.0 International（CC BY-NC 4.0），详见 `LICENSE`。
+---
+
+## 📄 License
+
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0), see [`LICENSE`](LICENSE).
+
+---
+
+<div align="center">
+
+⭐ **Star this repo** if it helps · 🍴 **Fork** to build your own · 🐛 **Issues** are welcome
+
+</div>
