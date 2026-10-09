@@ -1,6 +1,7 @@
-// 人情世故雷达 · 小程序版 纯逻辑引擎（由网页版移植：纯计算逻辑，存储用 wx 本地缓存）
+// 人情世故雷达 · 小程序版 v2.8 纯逻辑引擎
 let S = { persons: [], events: [], reminders: [], progress: {}, streak: { n: 0, last: '' }, lastEventId: null };
 const DAY = 86400000;
+const SCHEMA_VERSION = 3;
 const state = S; // 网页版计算函数引用全局 state，这里恒等指向 S
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -158,12 +159,24 @@ function computePerson(p) {
   };
 }
 
+/* ----- 计算缓存层 ----- */
+let _computeCache = {}, _eventVersion = 0;
+function invalidateCache() { _computeCache = {}; _eventVersion++; }
+function computedFor(personId) {
+  const c = _computeCache[personId];
+  if (c && c.__v === _eventVersion) return c.result;
+  const p = S.persons.find(x => x.id === personId);
+  const r = p ? computePerson(p) : null;
+  _computeCache[personId] = { result: r, __v: _eventVersion };
+  return r;
+}
+
 /* 首页总览五维：人脉规模 / 人情热度 / 往来频率 / 人情信用 / 处世智慧 */
 function overallMetrics() {
   const now = Date.now();
   const n = state.persons.length;
   if (!n) return null;
-  const pms = state.persons.map(p => computePerson(p));
+  const pms = state.persons.map(p => computedFor(p.id));
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map(p => p.heat));
   const n30 = state.events.filter(e => now - e.time < 30 * DAY).length;
@@ -210,7 +223,7 @@ function buildAlerts() {
   const fst = upcomingFestival();
   if (fst) out.push({ ic: 'fest', cls: 'blue', personId: '', text: `${fst.days === 0 ? '今天是' : fst.days + ' 天后是'}${fst.n}，记得给重要的人送个祝福、走动一下` });
   for (const p of state.persons) {
-    const m = computePerson(p);
+    const m = computedFor(p.id);
     if (m.debt >= 20) out.push({ ic: 'debt', cls: 'amber', personId: p.id, text: `<b>${esc(p.name)}</b>：你欠着人情债（${Math.round(m.debt)}），建议近期请顿饭或回个礼` });
     if (m.lastDays !== null && m.lastDays >= 60) out.push({ ic: 'stale', cls: 'red', personId: p.id, text: `<b>${esc(p.name)}</b>：已 ${m.lastDays} 天没往来，逢年过节走动一下` });
     if (p.birthday) {
@@ -230,7 +243,7 @@ function buildAlerts() {
 
 /* 走动建议（规则生成，不依赖外部 AI） */
 function getSuggestion(p) {
-  const m = computePerson(p);
+  const m = computedFor(p.id);
   if (m.debt >= 20) return '人情要趁热还：找个由头约顿饭，开场提一句「上次那事多亏你」，顺手带点小特产，把债了了。';
   if (m.lastDays !== null && m.lastDays >= 60) return '别硬找话题：以问候破冰最自然——「最近忙啥呢，好久没聚了」，顺势约个饭或喝杯茶。';
   if (m.intimacy >= 70) return '关系正热，值得深化：约个球局或下午茶，聊点工作之外的事，让交情从「有事才联系」变成「没事也联系」。';
@@ -240,7 +253,7 @@ function getSuggestion(p) {
 
 /* 关系解读：把雷达数据翻译成一句话（规则生成） */
 function relationRead(p) {
-  const m = computePerson(p);
+  const m = computedFor(p.id);
   const seg = [];
   if (m.lastDays === null) seg.push('刚记进来，还没怎么走动');
   else if (m.lastDays >= 60) seg.push('有段时间没走动了');
@@ -432,25 +445,28 @@ function _empty() { S.persons = []; S.events = []; S.reminders = []; S.progress 
 function load() {
   try {
     const raw = wx.getStorageSync(DB_KEY);
-    if (!raw) { _empty(); return S; }
+    if (!raw) { _empty(); invalidateCache(); return S; }
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (!d || !Array.isArray(d.persons)) { _empty(); return S; }
+    if (!d || !Array.isArray(d.persons) || !Array.isArray(d.events)) { _empty(); invalidateCache(); return S; }
     S.persons = d.persons || []; S.events = d.events || []; S.reminders = d.reminders || [];
     S.progress = d.progress || {}; S.streak = d.streak || { n: 0, last: '' }; S.lastEventId = d.lastEventId || null;
+    invalidateCache();
     return S;
-  } catch (e) { _empty(); return S; }
+  } catch (e) { _empty(); invalidateCache(); return S; }
 }
 function save() {
-  try { wx.setStorageSync(DB_KEY, S); } catch (e) { wx.showToast({ title: '保存失败', icon: 'none' }); }
+  try { wx.setStorageSync(DB_KEY, { schema: SCHEMA_VERSION, ...S }); } catch (e) { wx.showToast({ title: '保存失败', icon: 'none' }); }
+  invalidateCache();
 }
 function getState() { return S; }
 function backupText() { return JSON.stringify({ app: '人情世故雷达', version: 2, exportedAt: Date.now(), persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak }, null, 1); }
 function restoreText(txt) {
   const d = JSON.parse(txt);
-  if (!d || !Array.isArray(d.persons)) throw new Error('bad');
+  if (!d || !Array.isArray(d.persons) || !Array.isArray(d.events)) throw new Error('bad');
   S.persons = d.persons || []; S.events = d.events || []; S.reminders = d.reminders || [];
   S.progress = d.progress || {}; S.streak = d.streak || { n: 0, last: '' }; S.lastEventId = d.lastEventId || null;
   save();
+  invalidateCache();
   return S;
 }
 /* ---------------- 小程序版提醒（纯文本） ---------------- */
@@ -459,7 +475,7 @@ function wxAlerts() {
   const fst = upcomingFestival();
   if (fst) out.push({ icon: 'fest', level: 3, personId: '', text: (fst.days === 0 ? '今天是' : fst.days + ' 天后是') + fst.n + '，记得给重要的人送个祝福、走动一下' });
   for (const p of S.persons) {
-    const m = computePerson(p);
+    const m = computedFor(p.id);
     if (m.debt >= 20) out.push({ icon: 'debt', level: 1, personId: p.id, text: p.name + '：你欠着人情债（' + Math.round(m.debt) + '），建议近期请顿饭或回个礼' });
     if (m.lastDays !== null && m.lastDays >= 60) out.push({ icon: 'stale', level: 0, personId: p.id, text: p.name + '：已 ' + m.lastDays + ' 天没往来，逢年过节走动一下' });
     if (p.birthday) {
@@ -484,7 +500,7 @@ function monthData() {
   const top = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, n]) => { const p = S.persons.find(x => x.id === id); return p ? p.name + ' ' + n + ' 笔' : ''; })
     .filter(Boolean).join('、') || '暂无';
-  const debts = S.persons.map(p => ({ p, m: computePerson(p) }))
+  const debts = S.persons.map(p => ({ p, m: computedFor(p.id) }))
     .filter(x => x.m.debt > 0).sort((a, b) => b.m.debt - a.m.debt).slice(0, 3)
     .map(x => x.p.name + ' ' + Math.round(x.m.debt)).join('、') || '暂无欠债';
   const np = S.persons.filter(p => fmtDate(p.createdAt || 0).startsWith(ym)).length;
@@ -509,7 +525,7 @@ function annualData() {
   const top = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, n]) => { const p = S.persons.find(x => x.id === id); return p ? p.name + ' ' + n + ' 笔' : ''; })
     .filter(Boolean) || [];
-  const debts = S.persons.map(p => ({ p, m: computePerson(p) }))
+  const debts = S.persons.map(p => ({ p, m: computedFor(p.id) }))
     .filter(x => x.m.debt > 0).sort((a, b) => b.m.debt - a.m.debt).slice(0, 3)
     .map(x => x.p.name + ' ' + Math.round(x.m.debt)).join('、') || '暂无欠债';
   const w = getWisdom(), lv = getLevel(w);
@@ -522,7 +538,7 @@ function annualData() {
   else kw.push('往来偏少，明年可以多走动');
   if (w >= 60) kw.push('修炼有成，已迈入人情大师');
   else if (w >= 15) kw.push('修炼起步，已略懂世故');
-  if (debts !== '暂无欠债') kw.push('人情债榜首是「' + debts.split('、')[0].split(' ')[0] + '」，记得还');
+  if (debts !== '暂无欠债') kw.push('人情债榜首是「' + debts.split('、')[0] + '」，记得还');
   return { months, total, top, debts, w, levelName: lv.cur.name, peak, bestM, kw };
 }
 module.exports = {
@@ -530,7 +546,8 @@ module.exports = {
   uid, DAY, todayStr, fmtDate, timeAgo, toMMDD, toDateInput, daysUntil, initials,
   solarToLunar, upcomingFestival,
   EVENT_TYPES, PLACEHOLDERS, IDENTITIES: ['领导', '同事', '客户', '朋友', '家人', '长辈', '其他'],
-  computePerson, overallMetrics, getWisdom, getLevel, DIFFS, LEVELS,
+  SCHEMA_VERSION, computePerson, computedFor, invalidateCache,
+  overallMetrics, getWisdom, getLevel, DIFFS, LEVELS,
   buildAlerts: wxAlerts, getSuggestion, relationRead,
   SCENARIOS, monthData, trendData, annualData
 };

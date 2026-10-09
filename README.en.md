@@ -28,6 +28,7 @@ The legacy "处世 Radar" was an 81-question social-intelligence test. Since v2 
 - **GitHub Pages** (mirror-hosted, auto-deploys on every push):
   - <https://x33834.github.io/chushi-radar/>
   - <https://morningstar202604.github.io/chushi-radar/>
+- **Gitee** (domestic mirror): <https://badhope.gitee.io/chushi-radar/>
 - **Brand website**: <https://x33834.github.io/chushi-radar/%E5%AE%98%E7%BD%91/%E4%BA%BA%E6%83%85%E4%B8%96%E6%95%85%E9%9B%B7%E8%BE%BE%E5%AE%98%E7%BD%91.html> (source in `官网/人情世故雷达官网.html`)
 
 All editions share the same codebase: `index.html` at the repo root is the web app (identical to `人情世故雷达.html`); pushing to `main` auto-deploys it to GitHub Pages.
@@ -67,6 +68,7 @@ Record interactions → Auto profile → Smart reminders → Scenario training �
 | v2.1–v2.6 | Lunar festival reminders, diary-note aesthetics, install guide, todo management, dimension insights, annual report, backup migration, batch bug fixes |
 | v2.7 | Brand system (Logo / Slogan / welcome guide / about page), reminder urgency color fix |
 | v2.8 | Reminder-to-record shortcut, full transaction overview, Top-3 people to keep, interaction-type distribution chart; remembers last tab, search empty-state polish |
+| v2.8.1 | Annual report PNG export (html2canvas), relationship network Canvas graph (ring layout, identity-colored nodes, click-to-view person details) |
 
 ## Run locally
 

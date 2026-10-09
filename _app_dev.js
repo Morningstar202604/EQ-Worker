@@ -716,6 +716,9 @@ function afterRender() {
       tooltip: { trigger: 'axis', backgroundColor: '#fffdf7', borderColor: 'rgba(185,164,128,.35)', borderWidth: 1, textStyle: { color: '#4a4238', fontSize: 12 }, formatter: (ps) => ps[0].axisValue + '：' + ps[0].value + ' 笔往来' }
     });
   }
+  if (state.tab === 'me' && document.getElementById('network-canvas')) {
+    drawNetwork(document.getElementById('network-canvas'));
+  }
   if (state.tab === 'me' && document.getElementById('typeChart')) {
     const nowT = new Date();
     const yStartT = `${nowT.getFullYear() - 1}-${String(nowT.getMonth() + 1).padStart(2, '0')}-01`;
@@ -1081,6 +1084,10 @@ function openAnnualReport() {
     ${x.c ? `<span style="font-size:9px;color:var(--teal);font-weight:700">${x.c}</span>` : ''}
   </div>`).join('');
   openSheet('年度人情报告', `
+    <div id="me-report-section">
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="btn sm" data-act="exportAnnualPng">导出图片</button>
+    </div>
     <div class="card" style="margin:0 0 12px;padding:12px 14px;text-align:center">
       <div class="sub">最近 12 个月 · ${months[0].label} — ${months[11].label}</div>
       <div style="font-size:34px;font-weight:700;color:var(--teal);margin:6px 0 2px;font-family:var(--kaiti)">${total}</div>
@@ -1102,7 +1109,105 @@ function openAnnualReport() {
       <div style="font-size:14px;line-height:1.8;margin-top:8px">${kw.map(k => '· ' + k).join('<br>')}</div>
     </div>
     <div style="text-align:center;color:var(--dim);font-size:12px;margin-top:16px;font-family:var(--kaiti);letter-spacing:2px">—— ${BRAND.name} · 细水长流 ——</div>
+    </div>
   `, true);
+}
+
+/* ---------------- 年度报告图片导出（html2canvas） ---------------- */
+function exportAnnualPng() {
+  const target = document.getElementById('me-report-section');
+  if (!target) { toast('请先打开年度报告'); return; }
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => {
+    if (typeof html2canvas !== 'undefined') {
+      doExport(target);
+      return;
+    }
+    toast('正在生成图片…');
+    const s = document.createElement('script');
+    s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+    s.onload = () => doExport(target);
+    s.onerror = () => toast('请截图分享：双击电源键+音量上');
+    document.head.appendChild(s);
+  }, 300);
+  function doExport(el) {
+    html2canvas(el, { backgroundColor: '#fffdf7', scale: 2 }).then(canvas => {
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url; a.download = '人情世故雷达-年报.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast('已下载年度报告图片');
+    }).catch(() => toast('请截图分享：双击电源键+音量上'));
+  }
+}
+
+/* ---------------- 关系网络节点图（纯 Canvas） ---------------- */
+function drawNetwork(canvas) {
+  if (!canvas || !canvas.parentElement) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth || 320;
+  const H = 320;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+  const persons = state.persons.slice(0, 20);
+  if (!persons.length) {
+    ctx.fillStyle = '#a89b88'; ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('添加人脉后这里会显示关系网络', W / 2, H / 2);
+    return;
+  }
+  const ID_COLORS = {
+    '领导': '#8aa6c9', '同事': '#7da08f', '客户': '#c97b3b',
+    '朋友': '#5fbfb3', '家人': '#c97b7b', '长辈': '#a78bbd', '其他': '#a89b88'
+  };
+  /* 热度映射节点大小 */
+  const heats = persons.map(p => Math.round(computedFor(p.id).heat));
+  const maxH = Math.max(...heats, 1);
+  const cx = W / 2, cy = H / 2, radius = Math.min(W, H) / 2 - 40;
+  /* 连线：两人共同事件数 */
+  const evByP = {};
+  for (const p of persons) evByP[p.id] = state.events.filter(e => e.personId === p.id).length;
+  /* 环形布局：第一人在中心，其余均匀分布圆周 */
+  const nodes = persons.map((p, i) => {
+    if (i === 0) return { x: cx, y: cy, p, heat: heats[0] };
+    const ang = (2 * Math.PI * (i - 1)) / (persons.length - 1) - Math.PI / 2;
+    return { x: cx + radius * Math.cos(ang), y: cy + radius * Math.sin(ang), p, heat: heats[i] };
+  });
+  /* 画连线 */
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      const shared = Math.min(evByP[a.p.id] || 0, evByP[b.p.id] || 0);
+      if (shared > 0) {
+        const lw = Math.min(1 + shared * 0.5, 5);
+        ctx.strokeStyle = 'rgba(185,164,128,' + Math.min(0.15 + shared * 0.05, 0.5) + ')';
+        ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+    }
+  }
+  /* 画节点 */
+  canvas.onclick = function (e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    for (const n of nodes) {
+      const r = 8 + (n.heat / maxH) * 14;
+      if ((mx - n.x) ** 2 + (my - n.y) ** 2 <= r * r) { openPerson(n.p.id); return; }
+    }
+  };
+  for (const n of nodes) {
+    const r = 8 + (n.heat / maxH) * 14;
+    const color = ID_COLORS[n.p.identity] || ID_COLORS['其他'];
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = '#fffdf7'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 2 * Math.PI); ctx.stroke();
+    ctx.fillStyle = '#4a4238'; ctx.font = '11px sans-serif';
+    ctx.fillText(initials(n.p.name), n.x, n.y + r + 10);
+  }
 }
 
 /* 剪贴板：无后端环境下的数据搬运 */
@@ -1237,6 +1342,11 @@ function viewMe() {
         : '<div class="sub" style="margin-top:6px">添加人脉并记录往来后，这里会生成你的画像。</div>'}
       <div class="sub" style="margin-top:10px">当前段位：<b style="color:var(--teal)">${lv.cur.name}</b></div>
       <button class="btn sm" style="margin-top:12px" data-act="annualReport">年度人情报告</button>
+    </div>
+    <div id="relation-network" class="card">
+      <h3>关系网络</h3>
+      <div class="sub" style="margin-top:4px">点击节点可查看人脉详情</div>
+      <canvas id="network-canvas" style="width:100%;display:block;margin-top:10px"></canvas>
     </div>
     <div class="card">
       <h3>数据管理</h3>
@@ -1718,6 +1828,7 @@ function onClick(e) {
     case 'export': store.export(); toast('备份已导出'); break;
     case 'exportCsv': store.exportCsv(); toast('人脉清单已导出（CSV）'); break;
     case 'annualReport': openAnnualReport(); break;
+    case 'exportAnnualPng': exportAnnualPng(); break;
     case 'copyBackup': {
       const txt = backupText();
       if (navigator.clipboard && navigator.clipboard.writeText) {
