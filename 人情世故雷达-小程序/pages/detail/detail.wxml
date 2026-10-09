@@ -1,3 +1,7 @@
+<import src="/templates/ui.wxml"/>
+<template is="uiModal" data="{{..._modal}}"/>
+<template is="uiToast" data="{{..._toast}}"/>
+
 <!-- 添加 / 编辑表单 -->
 <view wx:if="{{mode === 'add' || mode === 'edit'}}" class="card">
   <view class="card-title">{{mode === 'add' ? '添加人脉' : '编辑人脉'}}</view>

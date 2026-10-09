@@ -1,4 +1,5 @@
 const engine = require('../../utils/engine');
+const ui = require('../../utils/ui');
 const { drawRadar } = require('../../utils/radar');
 
 const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '其他'];
@@ -12,7 +13,9 @@ Page({
     rel: '', suggestion: '',
     timeline: [],
     form: { name: '', identityIdx: 3, birthday: '', tags: '', note: '' },
-    identities: IDENTITIES
+    identities: IDENTITIES,
+    _modal: { show: false, anim: '' },
+    _toast: { show: false, anim: '' }
   },
   onLoad(q) {
     if (q.mode === 'add') {
@@ -28,7 +31,7 @@ Page({
   refresh() {
     const S = engine.getState();
     const p = S.persons.find(x => x.id === this.data.id);
-    if (!p) { wx.showToast({ title: '该人脉不存在', icon: 'none' }); wx.navigateBack(); return; }
+    if (!p) { ui.toast(this, '该人脉不存在', { icon: '✕' }); setTimeout(() => wx.navigateBack(), 600); return; }
     const m = engine.computePerson(p);
     const labels = ['热度', '亲密度', '信任度', '活跃度', '人情债'];
     const vals = [Math.round(m.heat), Math.round(m.intimacy), Math.round(m.trust), m.activity, Math.round(m.debt)];
@@ -60,6 +63,11 @@ Page({
   draw() {
     if (this.data.radarVals.length) drawRadar('#pRadar', this.data.dims, this.data.radarVals);
   },
+  /* ── UI handlers ── */
+  onModalConfirm() { ui.modalClose(this, true); },
+  onModalCancel() { ui.modalClose(this, false); },
+  onModalInput(e) { ui.modalInput(this, e); },
+  noop() {},
   adjust(e) {
     const d = +e.currentTarget.dataset.d;
     const S = engine.getState();
@@ -75,16 +83,11 @@ Page({
   delEvent(e) {
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
-    wx.showModal({
-      title: '删除这条记录？', confirmText: '删除', confirmColor: '#b65f5f',
-      success: (r) => {
-        if (r.confirm) {
-          S.events = S.events.filter(x => x.id !== id);
-          engine.save();
-          this.refresh();
-        }
-      }
-    });
+    ui.confirm(this, '删除这条记录？', '此操作无法撤销。', () => {
+      S.events = S.events.filter(x => x.id !== id);
+      engine.save();
+      this.refresh();
+    }, true);
   },
   openEdit() {
     const p = this.data.p;
@@ -108,7 +111,7 @@ Page({
   savePerson() {
     const f = this.data.form;
     const name = f.name.trim();
-    if (!name) { wx.showToast({ title: '名字不能为空', icon: 'none' }); return; }
+    if (!name) { ui.toast(this, '名字不能为空', { icon: '✕' }); return; }
     const S = engine.getState();
     const tags = f.tags.split(/[、,，\s]+/).filter(Boolean).slice(0, 6);
     if (this.data.mode === 'add') {
@@ -117,8 +120,9 @@ Page({
         birthday: engine.toMMDD(f.birthday), tags, note: f.note.trim(),
         adjust: 0, createdAt: Date.now()
       });
-      wx.showToast({ title: '已添加', icon: 'success' });
-      wx.navigateBack();
+      engine.save();
+      ui.toast(this, '已添加', { icon: '✓' });
+      setTimeout(() => wx.navigateBack(), 400);
     } else {
       const p = S.persons.find(x => x.id === this.data.id);
       if (!p) return;
@@ -136,38 +140,32 @@ Page({
   },
   addReminder() {
     const S = engine.getState();
-    wx.showModal({
+    ui.modal(this, {
       title: '添加待办提醒',
+      placeholder: '如：下周约吃个饭',
       editable: true,
-      placeholderText: '如：下周约王总吃个饭',
       confirmText: '添加',
-      success: (r) => {
-        if (r.confirm && r.content && r.content.trim()) {
+      confirmType: 'teal',
+      onConfirm: (val) => {
+        if (val && val.trim()) {
           S.reminders.push({
             id: engine.uid(), personId: this.data.id,
-            content: r.content.trim(), date: '', status: 'pending'
+            content: val.trim(), date: '', status: 'pending'
           });
           engine.save();
-          wx.showToast({ title: '已添加提醒', icon: 'success' });
+          ui.toast(this, '已添加提醒', { icon: '✓' });
         }
       }
     });
   },
   delPerson() {
     const S = engine.getState();
-    wx.showModal({
-      title: '删除这个人脉？',
-      content: '其往来记录也会一并删除，且不可恢复。',
-      confirmText: '删除', confirmColor: '#b65f5f',
-      success: (r) => {
-        if (r.confirm) {
-          S.persons = S.persons.filter(x => x.id !== this.data.id);
-          S.events = S.events.filter(x => x.personId !== this.data.id);
-          S.reminders = S.reminders.filter(x => x.personId !== this.data.id);
-          engine.save();
-          wx.navigateBack();
-        }
-      }
-    });
+    ui.confirm(this, '删除这个人脉？', '其往来记录也会一并删除，且不可恢复。', () => {
+      S.persons = S.persons.filter(x => x.id !== this.data.id);
+      S.events = S.events.filter(x => x.personId !== this.data.id);
+      S.reminders = S.reminders.filter(x => x.personId !== this.data.id);
+      engine.save();
+      wx.navigateBack();
+    }, true);
   }
 });

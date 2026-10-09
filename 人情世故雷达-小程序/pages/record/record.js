@@ -1,4 +1,5 @@
 const engine = require('../../utils/engine');
+const ui = require('../../utils/ui');
 
 const EVENTS = engine.EVENT_TYPES;
 const TYPES = Object.keys(EVENTS).map(k => ({ key: k, label: EVENTS[k].label, w: EVENTS[k].weight, on: k === 'meal' }));
@@ -14,7 +15,9 @@ Page({
     weight: 7,
     note: '',
     recent: [],
-    canUndo: false
+    canUndo: false,
+    _modal: { show: false, anim: '' },
+    _toast: { show: false, anim: '' }
   },
   onShow() {
     this.refreshPersons();
@@ -53,10 +56,16 @@ Page({
     const d = +e.currentTarget.dataset.d;
     this.setData({ weight: Math.max(-20, Math.min(20, this.data.weight + d)) });
   },
+  /* ── UI handlers ── */
+  onModalConfirm() { ui.modalClose(this, true); },
+  onModalCancel() { ui.modalClose(this, false); },
+  onModalInput(e) { ui.modalInput(this, e); },
+  noop() {},
+  /* ── submit ── */
   submit() {
     const S = engine.getState();
     const p = this.data.persons[this.data.personIdx];
-    if (!p) { wx.showToast({ title: '先添加人脉', icon: 'none' }); return; }
+    if (!p) { ui.toast(this, '先添加人脉', { icon: '✕' }); return; }
     const ev = {
       id: engine.uid(), personId: p.id, type: this.data.curType,
       title: (this.data.title || EVENTS[this.data.curType].label).trim(),
@@ -69,7 +78,7 @@ Page({
     engine.save();
     this.setData({ title: '', date: '', note: '', weight: 7 });
     this.refreshRecent();
-    wx.showToast({ title: '已记录', icon: 'success' });
+    ui.toast(this, '已记录', { icon: '✓' });
   },
   undo() {
     const S = engine.getState();
@@ -78,21 +87,15 @@ Page({
     S.lastEventId = null;
     engine.save();
     this.refreshRecent();
-    wx.showToast({ title: '已撤销', icon: 'none' });
+    ui.toast(this, '已撤销', { icon: '↺' });
   },
   delEvent(e) {
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
-    wx.showModal({
-      title: '删除这条记录？',
-      confirmText: '删除', confirmColor: '#b65f5f',
-      success: (r) => {
-        if (r.confirm) {
-          S.events = S.events.filter(x => x.id !== id);
-          engine.save();
-          this.refreshRecent();
-        }
-      }
-    });
+    ui.confirm(this, '删除这条记录？', '此操作无法撤销。', () => {
+      S.events = S.events.filter(x => x.id !== id);
+      engine.save();
+      this.refreshRecent();
+    }, true);
   }
 });

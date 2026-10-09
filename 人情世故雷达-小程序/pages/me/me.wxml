@@ -1,3 +1,7 @@
+<import src="/templates/ui.wxml"/>
+<template is="uiModal" data="{{..._modal}}"/>
+<template is="uiToast" data="{{..._toast}}"/>
+
 <view class="card" style="display:flex;text-align:center;padding:30rpx 10rpx">
   <view style="flex:1" wx:for="{{stats}}" wx:key="l">
     <view style="font-size:44rpx;font-weight:700;color:#5f8575">{{item.n}}</view>

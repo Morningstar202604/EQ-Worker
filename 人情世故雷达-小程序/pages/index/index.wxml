@@ -26,8 +26,8 @@
     <view class="card-title">今日提醒 <text class="card-sub">（{{alerts.length}} 条）</text></view>
     <view wx:for="{{alerts}}" wx:key="text" style="padding:14rpx 0;border-bottom:1rpx solid rgba(185,164,128,.25)" bindtap="{{item.reminderId ? 'quickDone' : (item.personId ? 'openPerson' : '')}}"
       data-id="{{item.personId}}" data-rid="{{item.reminderId}}">
-      <view style="display:flex;align-items:center;gap:14rpx">
-        <view style="width:12rpx;height:12rpx;border-radius:50%;background:{{item.level===0?'#b65f5f':item.level===1?'#d98a4a':item.level===2?'#c9a86a':'#7d8bb0'}}"></view>
+      <view style="display:flex;align-items:center;gap:14rpx" class="tap-fade">
+        <view style="width:12rpx;height:12rpx;border-radius:50%;background:{{item.level===0?'#b65f5f':item.level===1?'#d98a4a':item.level===2?'#c9a86a':'#7d8bb0'}};{{item.level===0?'box-shadow:0 0 0 0 rgba(182,95,95,0.3);animation:pulse 1.8s ease-in-out infinite':''}}"></view>
         <view style="flex:1;font-size:26rpx">{{item.text}}</view>
         <view wx:if="{{item.reminderId}}" class="btn sm" catchtap="quickDone" data-rid="{{item.reminderId}}">完成</view>
       </view>

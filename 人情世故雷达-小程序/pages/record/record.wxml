@@ -1,3 +1,7 @@
+<import src="/templates/ui.wxml"/>
+<template is="uiModal" data="{{..._modal}}"/>
+<template is="uiToast" data="{{..._toast}}"/>
+
 <view wx:if="{{!persons.length}}" class="empty">
   <view class="t">先添加人脉</view>
   <view class="d">记录往来要先关联一个人，去「人脉」页添加第一位重要的人吧。</view>

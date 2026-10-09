@@ -1,4 +1,5 @@
 const engine = require('../../utils/engine');
+const ui = require('../../utils/ui');
 
 Page({
   data: {
@@ -13,7 +14,9 @@ Page({
     showReport: false,
     showImport: false,
     importText: '',
-    version: 'v2.8'
+    version: 'v2.8',
+    _modal: { show: false, anim: '' },
+    _toast: { show: false, anim: '' }
   },
   onShow() {
     const S = engine.getState();
@@ -60,15 +63,21 @@ Page({
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
     const r = S.reminders.find(x => x.id === id);
-    if (r) { r.status = 'done'; engine.save(); this.onShow(); }
+    if (r) { r.status = 'done'; engine.save(); this.onShow(); ui.toast(this, '已完成', { icon: '✓' }); }
   },
+  /* ── UI handlers ── */
+  onModalConfirm() { ui.modalClose(this, true); },
+  onModalCancel() { ui.modalClose(this, false); },
+  onModalInput(e) { ui.modalInput(this, e); },
+  noop() {},
   delReminder(e) {
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
-    wx.showModal({
-      title: '删除这条提醒？', confirmText: '删除', confirmColor: '#b65f5f',
-      success: (r) => { if (r.confirm) { S.reminders = S.reminders.filter(x => x.id !== id); engine.save(); this.onShow(); } }
-    });
+    ui.confirm(this, '删除这条提醒？', '', () => {
+      S.reminders = S.reminders.filter(x => x.id !== id);
+      engine.save();
+      this.onShow();
+    }, true);
   },
   addReminder() {
     const S = engine.getState();
@@ -80,16 +89,18 @@ Page({
       success: (r) => {
         if (!persons.length) return;
         idx = r.tapIndex;
-        wx.showModal({
+        ui.modal(this, {
           title: '添加待办提醒',
+          placeholder: '如：下周约' + persons[idx].name + '吃个饭',
           editable: true,
-          placeholderText: '如：下周约' + persons[idx].name + '吃个饭',
           confirmText: '添加',
-          success: (res) => {
-            if (res.confirm && res.content && res.content.trim()) {
-              S.reminders.push({ id: engine.uid(), personId: persons[idx].id, content: res.content.trim(), date: '', status: 'pending' });
+          confirmType: 'teal',
+          onConfirm: (val) => {
+            if (val && val.trim()) {
+              S.reminders.push({ id: engine.uid(), personId: persons[idx].id, content: val.trim(), date: '', status: 'pending' });
               engine.save();
               this.onShow();
+              ui.toast(this, '已添加提醒', { icon: '✓' });
             }
           }
         });
@@ -118,7 +129,7 @@ Page({
     const p = S.persons.length, e = S.events.length;
     wx.setClipboardData({
       data: engine.backupText(),
-      success: () => wx.showToast({ title: '已复制 ' + p + ' 人 / ' + e + ' 笔数据', icon: 'none' })
+      success: () => ui.toast(this, '已复制 ' + p + ' 人 / ' + e + ' 笔数据')
     });
   },
   openImport() { this.setData({ showImport: true, importText: '' }); },
@@ -126,30 +137,22 @@ Page({
   onImport(e) { this.setData({ importText: e.detail.value }); },
   doImport() {
     const txt = this.data.importText.trim();
-    if (!txt) { wx.showToast({ title: '先粘贴备份内容', icon: 'none' }); return; }
+    if (!txt) { ui.toast(this, '先粘贴备份内容', { icon: '✕' }); return; }
     try {
       engine.restoreText(txt);
       this.setData({ showImport: false });
       this.onShow();
-      wx.showToast({ title: '导入成功', icon: 'success' });
+      ui.toast(this, '导入成功', { icon: '✓' });
     } catch (err) {
-      wx.showToast({ title: '导入失败：格式不对', icon: 'none' });
+      ui.toast(this, '导入失败：格式不对', { icon: '✕' });
     }
   },
   clearAll() {
-    wx.showModal({
-      title: '清空所有数据？',
-      content: '所有记录将永久删除，不可恢复。建议先「复制备份」。',
-      confirmText: '清空', confirmColor: '#b65f5f',
-      success: (r) => {
-        if (r.confirm) {
-          const S = engine.getState();
-          S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' };
-          engine.save();
-          this.onShow();
-        }
-      }
-    });
-  },
-  noop() {}
+    ui.confirm(this, '清空所有数据？', '所有记录将永久删除，不可恢复。建议先「复制备份」。', () => {
+      const S = engine.getState();
+      S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' };
+      engine.save();
+      this.onShow();
+    }, true);
+  }
 });

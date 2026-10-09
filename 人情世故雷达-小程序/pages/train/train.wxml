@@ -26,7 +26,7 @@
   <view class="chip-sel {{diffIdx === index ? 'on' : ''}}" wx:for="{{diffKeys}}" wx:key="*this" data-i="{{index}}" bindtap="tapDiff">{{item}}</view>
 </scroll-view>
 
-<view wx:for="{{list}}" wx:key="id" class="card" bindtap="open" data-id="{{item.id}}">
+<view wx:for="{{list}}" wx:key="id" class="card tap-fade" bindtap="open" data-id="{{item.id}}">
   <view style="display:flex;align-items:center;justify-content:space-between">
     <view style="font-size:28rpx;font-weight:600;flex:1">{{item.title}}</view>
     <text class="chip {{item.chip}}">{{item.diff}}</text>

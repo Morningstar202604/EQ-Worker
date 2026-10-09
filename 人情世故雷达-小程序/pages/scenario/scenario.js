@@ -1,7 +1,8 @@
 const engine = require('../../utils/engine');
+const ui = require('../../utils/ui');
 
 Page({
-  data: { sc: null, pick: -1 },
+  data: { sc: null, pick: -1, _modal: { show: false, anim: '' }, _toast: { show: false, anim: '' } },
   onLoad(q) {
     const id = q.id;
     const sc = engine.SCENARIOS.find(x => x.id === id) || engine.SCENARIOS[0];
@@ -17,9 +18,14 @@ Page({
     const i = +e.currentTarget.dataset.i;
     this.setData({ pick: i });
   },
+  /* ── UI handlers ── */
+  onModalConfirm() { ui.modalClose(this, true); },
+  onModalCancel() { ui.modalClose(this, false); },
+  onModalInput(e) { ui.modalInput(this, e); },
+  noop() {},
   confirm() {
     const pick = this.data.pick;
-    if (pick < 0) { wx.showToast({ title: '先选一个答案', icon: 'none' }); return; }
+    if (pick < 0) { ui.toast(this, '先选一个答案', { icon: '✕' }); return; }
     const S = engine.getState();
     const sc = this.data.sc;
     const opt = sc.choices[pick];
@@ -39,19 +45,18 @@ Page({
     engine.save();
     const after = engine.getWisdom();
     const lv = engine.getLevel(after);
-    wx.showModal({
+    ui.modal(this, {
       title: opt.t,
       content: (opt.r || '') + '\n\n' + (sc.tip ? '小贴士：' + sc.tip + '\n\n' : '') + '本局得分 ' + base + '，难度加成 ×' + sc.w + '，智慧值 +' + gained + '（' + pre + ' → ' + after + '）\n当前段位：' + lv.cur.name,
-      confirmText: '再练一个', cancelText: '返回修炼场',
-      success: (r) => {
-        if (r.confirm) {
-          const list = engine.SCENARIOS;
-          const idx = list.findIndex(x => x.id === sc.id);
-          wx.redirectTo({ url: '/pages/scenario/scenario?id=' + list[(idx + 1) % list.length].id });
-        } else {
-          wx.navigateBack();
-        }
-      }
+      confirmText: '再练一个',
+      confirmType: 'teal',
+      cancelText: '返回修炼场',
+      onConfirm: () => {
+        const list = engine.SCENARIOS;
+        const idx = list.findIndex(x => x.id === sc.id);
+        wx.redirectTo({ url: '/pages/scenario/scenario?id=' + list[(idx + 1) % list.length].id });
+      },
+      onCancel: () => { wx.navigateBack(); }
     });
   }
 });

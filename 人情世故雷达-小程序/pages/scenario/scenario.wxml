@@ -1,3 +1,7 @@
+<import src="/templates/ui.wxml"/>
+<template is="uiModal" data="{{..._modal}}"/>
+<template is="uiToast" data="{{..._toast}}"/>
+
 <view class="card" wx:if="{{sc}}">
   <view style="display:flex;align-items:center;justify-content:space-between">
     <text class="card-title">{{sc.tag}}</text>

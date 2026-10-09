@@ -1,0 +1,24 @@
+<template name="uiModal">
+  <view wx:if="{{_modal.show}}" class="ui-mask u-anim-{{_modal.anim}}-mask" catchtouchmove="noop">
+    <view class="ui-modal-card u-anim-{{_modal.anim}}" catchtap="noop">
+      <view wx:if="{{_modal.title}}" class="ui-modal-title">{{_modal.title}}</view>
+      <view wx:if="{{_modal.msg}}" class="ui-modal-msg">{{_modal.msg}}</view>
+      <view wx:if="{{_modal.editable}}" class="ui-modal-input-wrap">
+        <textarea class="ui-modal-input" placeholder="{{_modal.placeholder}}" value="{{_modal.inputVal}}" bindinput="onModalInput" auto-height maxlength="200" />
+      </view>
+      <view class="ui-modal-btns">
+        <view class="ui-btn ui-btn-text" bindtap="onModalCancel">{{_modal.cancelText}}</view>
+        <view class="ui-btn ui-btn-{{_modal.confirmType}}" bindtap="onModalConfirm">{{_modal.confirmText}}</view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<template name="uiToast">
+  <view wx:if="{{_toast.show}}" class="ui-toast-wrap u-anim-{{_toast.anim}}">
+    <view class="ui-toast ui-toast-{{_toast.mode}}">
+      <text wx:if="{{_toast.icon}}" class="ui-toast-icon">{{_toast.icon}}</text>
+      <text class="ui-toast-text">{{_toast.msg}}</text>
+    </view>
+  </view>
+</template>

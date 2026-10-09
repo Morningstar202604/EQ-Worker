@@ -168,4 +168,87 @@ page {
   font-size: 26rpx;
 }
 
+/* 人脉卡片 (persons) */
+.person-card { display:flex; align-items:center; gap:20rpx; transition: background-color 0.12s, transform 0.12s; }
+.person-card:active { transform: scale(0.98); background-color: rgba(185,164,128,0.06); }
+.person-card .avatar { width:88rpx; height:88rpx; border-radius:50%; background:rgba(127,174,131,.16); color:#5f8575; display:flex; align-items:center; justify-content:center; font-size:34rpx; font-weight:700; flex-shrink:0; }
+
 .tag-row { display: flex; flex-wrap: wrap; margin: 4rpx 0; }
+
+/* ─────────── 全局动效：Modal / Toast ─────────── */
+.ui-mask {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(50, 42, 32, 0);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.22s ease;
+}
+.ui-mask.u-anim-modal-in-mask { animation: ui-mask-in 0.22s ease forwards; }
+.ui-mask.u-anim-modal-out-mask { animation: ui-mask-out 0.22s ease forwards; }
+@keyframes ui-mask-in { from { background: rgba(50,42,32,0); } to { background: rgba(50,42,32,0.52); } }
+@keyframes ui-mask-out { from { background: rgba(50,42,32,0.52); } to { background: rgba(50,42,32,0); } }
+
+.ui-modal-card {
+  width: 620rpx; max-width: 88vw;
+  background: var(--card);
+  border-radius: 24rpx;
+  padding: 40rpx 36rpx 28rpx;
+  box-shadow: 0 24rpx 60rpx rgba(50,42,32,0.18), 0 4rpx 12rpx rgba(50,42,32,0.10);
+  transform: scale(0.88); opacity: 0;
+}
+.u-anim-modal-in .ui-modal-card { animation: ui-card-in 0.24s cubic-bezier(0.22,0.96,0.34,1.2) forwards; }
+.u-anim-modal-out .ui-modal-card { animation: ui-card-out 0.18s ease forwards; }
+@keyframes ui-card-in { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes ui-card-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.92); opacity: 0; } }
+
+.ui-modal-title { font-size: 32rpx; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.4; }
+.ui-modal-msg { font-size: 27rpx; color: var(--sub); line-height: 1.75; margin-top: 16rpx; text-align: center; white-space: pre-line; }
+.ui-modal-input-wrap { margin-top: 20rpx; }
+.ui-modal-input {
+  width: 100%; min-height: 120rpx;
+  background: #fff; border: 1px solid var(--line); border-radius: 14rpx;
+  padding: 18rpx 22rpx; font-size: 26rpx; line-height: 1.7;
+  box-sizing: border-box; color: var(--ink);
+}
+.ui-modal-btns { display: flex; gap: 20rpx; margin-top: 32rpx; }
+.ui-btn {
+  flex: 1; text-align: center;
+  padding: 20rpx 0; border-radius: 14rpx;
+  font-size: 28rpx; font-weight: 600;
+  transition: opacity 0.1s;
+}
+.ui-btn-hover, .ui-btn:active { opacity: 0.8; }
+.ui-btn-text { background: rgba(185,164,128,0.18); color: var(--dim); }
+.ui-btn-teal { background: var(--teal); color: #fff; }
+.ui-btn-danger { background: var(--red); color: #fff; }
+.ui-btn-primary { background: var(--teal); color: #fff; }
+
+/* ─────────── Toast ─────────── */
+.ui-toast-wrap {
+  position: fixed; top: 38%; left: 0; right: 0; z-index: 99999;
+  display: flex; justify-content: center; pointer-events: none;
+}
+.ui-toast {
+  display: inline-flex; align-items: center; gap: 10rpx;
+  padding: 18rpx 34rpx; border-radius: 999rpx;
+  font-size: 26rpx; line-height: 1.4;
+  box-shadow: 0 8rpx 24rpx rgba(50,42,32,0.16);
+  max-width: 80vw;
+}
+.ui-toast-dark { background: rgba(50,42,32,0.93); color: #fffdf6; }
+.ui-toast-light { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.ui-toast-icon { font-size: 30rpx; font-weight: 700; }
+.u-anim-toast-in { animation: ui-toast-in 0.25s cubic-bezier(0.22,0.96,0.34,1.2) forwards; }
+.u-anim-toast-out { animation: ui-toast-out 0.2s ease forwards; }
+@keyframes ui-toast-in { from { transform: translateY(-12rpx) scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ui-toast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(-8rpx); } }
+
+/* ─────────── 操作反馈动效（卡片按压 / 选项选中） ─────────── */
+.tap-fade { transition: background-color 0.12s, transform 0.12s; }
+.tap-fade:active { transform: scale(0.97); background-color: rgba(185,164,128,0.08); }
+
+/* 状态点 / 脉冲 */
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(182,95,95,0.3); } 50% { box-shadow: 0 0 0 10rpx rgba(182,95,95,0); } }
+.pulse { animation: pulse 1.8s ease-in-out infinite; }
+
+/* 搜索高亮 */
+.hl-mark { background: rgba(201,168,106,0.35); color: #7a5f2a; border-radius: 4rpx; padding: 0 4rpx; }

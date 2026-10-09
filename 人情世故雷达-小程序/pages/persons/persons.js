@@ -1,64 +1,110 @@
 const engine = require('../../utils/engine');
+const ui = require('../../utils/ui');
 
 const IDENTITIES = ['全部', '领导', '同事', '客户', '朋友', '家人', '长辈', '其他'];
+const SORTS = ['热度', '亲密度', '信任度', '活跃度', '最近往来'];
+
+// 高亮分段：返回 [{text, hl}]
+function seg(text, q) {
+  text = String(text || '');
+  if (!q) return [{ text, hl: false }];
+  const kw = String(q).toLowerCase(), lo = text.toLowerCase();
+  const out = []; let i = 0;
+  while (i < text.length) {
+    const idx = lo.indexOf(kw, i);
+    if (idx === -1) { out.push({ text: text.slice(i), hl: false }); break; }
+    if (idx > i) out.push({ text: text.slice(i, idx), hl: false });
+    out.push({ text: text.slice(idx, idx + kw.length), hl: true });
+    i = idx + kw.length;
+  }
+  return out;
+}
 
 Page({
   data: {
-    list: [],
-    total: 0,
-    q: '',
-    ids: IDENTITIES.map((x, i) => ({ n: x, on: i === 0 })),
-    sortIdx: 0,
-    sorts: ['热度', '最近往来', '欠债最多']
+    q: '', total: 0, list: [],
+    ids: IDENTITIES.map(n => ({ n, on: n === '全部' })),
+    sorts: SORTS, sortIdx: 0, sortName: '热度',
+    _modal: { show: false, anim: '' },
+    _toast: { show: false, anim: '' }
   },
-  onShow() {
+  onShow() { this.refresh(); },
+  setSort(e) {
+    const i = +e.currentTarget.dataset.i;
+    this.setData({ sortIdx: i, sortName: SORTS[i] });
+    this.refresh();
+  },
+  onInput(e) { this.setData({ q: e.detail.value }); this.refresh(); },
+  addPerson() { wx.navigateTo({ url: '/pages/detail/detail?mode=add' }); },
+  clearQ() { this.setData({ q: '' }); this.refresh(); },
+  openDetail(e) { wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id }); },
+  /* ── UI handlers ── */
+  onModalConfirm() { ui.modalClose(this, true); },
+  onModalCancel() { ui.modalClose(this, false); },
+  onModalInput(e) { ui.modalInput(this, e); },
+  noop() {},
+  tapIdent(e) {
+    const i = +e.currentTarget.dataset.i;
+    const ids = this.data.ids.map((x, j) => ({ n: x.n, on: j === i }));
+    this.setData({ ids });
+    this.refresh();
+  },
+  tapSort(e) {
+    const i = +e.currentTarget.dataset.i;
+    this.setData({ sortIdx: i });
     this.refresh();
   },
   refresh() {
     const S = engine.getState();
     const q = this.data.q.trim();
-    const idIdx = this.data.ids.findIndex(x => x.on);
-    const ident = IDENTITIES[idIdx];
-    let list = S.persons
-      .filter(p => {
-        if (ident !== '全部' && p.identity !== ident) return false;
-        if (!q) return true;
-        const hay = (p.name + (p.identity || '') + (p.tags || []).join('') + (p.note || '')).toLowerCase();
-        return hay.includes(q.toLowerCase());
-      })
-      .map(p => {
-        const m = engine.computePerson(p);
-        const last = S.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-        return {
-          id: p.id, name: p.name, identity: p.identity || '朋友',
-          tags: (p.tags || []).slice(0, 3), note: p.note || '',
-          heat: Math.round(m.heat), debt: Math.round(m.debt), eventCount: m.eventCount,
-          lastText: last ? engine.timeAgo(last) : '尚无往来'
-        };
-      });
-    const sortBy = this.data.sorts[this.data.sortIdx];
-    if (sortBy === '最近往来') {
-      list.sort((a, b) => this.lastTs(b) - this.lastTs(a));
-    } else if (sortBy === '欠债最多') {
-      list.sort((a, b) => b.debt - a.debt);
-    } else {
-      list.sort((a, b) => b.heat - a.heat);
+    const curId = this.data.ids.find(x => x.on);
+    const idf = curId.n === '全部' ? '' : curId.n;
+    const sortKey = ['heat', 'intimacy', 'trust', 'activity', 'lastTime'][this.data.sortIdx];
+    const sortName = SORTS[this.data.sortIdx];
+
+    let list = S.persons.map(p => {
+      const m = engine.computePerson(p);
+      const events = S.events.filter(e => e.personId === p.id);
+      const lastTime = events.reduce((mx, e) => Math.max(mx, e.time), 0);
+      return {
+        id: p.id, name: p.name, identity: p.identity || '朋友',
+        tags: p.tags || [], heat: Math.round(m.heat),
+        eventCount: events.length, lastText: lastTime ? engine.timeAgo(lastTime) : '尚无往来',
+        debt: Math.round(m.debt),
+        _heat: m.heat, _intimacy: m.intimacy, _trust: m.trust,
+        _activity: m.activity, _lastTime: lastTime
+      };
+    });
+
+    // 筛选
+    if (idf) list = list.filter(p => p.identity === idf);
+    if (q) {
+      const low = q.toLowerCase();
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(low) ||
+        (p.identity || '').toLowerCase().includes(low) ||
+        (p.tags || '').toLowerCase().includes(low) ||
+        (p.note || '').toLowerCase().includes(low)
+      );
     }
-    this.setData({ list, total: S.persons.length });
-  },
-  lastTs(p) {
-    const S = engine.getState();
-    return S.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-  },
-  onInput(e) { this.setData({ q: e.detail.value }); this.refresh(); },
-  tapIdent(e) {
-    const i = e.currentTarget.dataset.i;
-    const ids = this.data.ids.map((x, k) => ({ n: x.n, on: k === i }));
-    this.setData({ ids }); this.refresh();
-  },
-  tapSort(e) {
-    this.setData({ sortIdx: e.currentTarget.dataset.i }); this.refresh();
-  },
-  openDetail(e) { wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id }); },
-  addPerson() { wx.navigateTo({ url: '/pages/detail/detail?mode=add' }); }
+
+    // 排序
+    const keyMap = { heat: '_heat', intimacy: '_intimacy', trust: '_trust', activity: '_activity', lastTime: '_lastTime' };
+    const k = keyMap[sortKey] || '_heat';
+    list.sort((a, b) => {
+      if (sortKey === 'lastTime') return b._lastTime - a._lastTime;
+      return b[k] - a[k];
+    });
+
+    // 附加高亮分段
+    if (q) {
+      list.forEach(p => {
+        p.nameParts = seg(p.name, q);
+        p.identityParts = seg(p.identity, q);
+        p.tagsParts = (p.tags || []).map(t => seg(t, q));
+      });
+    }
+
+    this.setData({ list, total: S.persons.length, sortName });
+  }
 });
