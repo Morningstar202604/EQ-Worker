@@ -3,3 +3,16 @@ _shots/
 _test/
 _backup/
 *.zip
+keystore.properties
+
+# 双端构建产物（可用脚本随时重建）
+android/*/build/
+android/.gradle/
+android/captures/
+android/local.properties
+desktop/node_modules/
+desktop/dist/
+desktop/index.html
+desktop/icon.png
+brand/dist/
+android/build/

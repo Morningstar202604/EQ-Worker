@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="人情世故雷达 · RENQING RADAR">
+  <title>人情世故雷达</title>
+  <defs>
+    <radialGradient id="paperGlow" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#fffdf7"/>
+      <stop offset="100%" stop-color="#f6f1e4"/>
+    </radialGradient>
+    <linearGradient id="inkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6b9683"/>
+      <stop offset="100%" stop-color="#5f8575"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 纸底 -->
+  <circle cx="256" cy="256" r="248" fill="url(#paperGlow)"/>
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#cbb894" stroke-opacity=".45" stroke-width="3"/>
+
+  <!-- 雷达网格：三层五边形，呼应五维画像 -->
+  <g fill="none" stroke="#b9a480" stroke-opacity=".45" stroke-width="4" stroke-linejoin="round">
+    <polygon points="256,86 417.6,201.5 350.9,383.5 161.1,383.5 94.4,201.5"/>
+    <polygon points="256,141 365.5,216.5 321.3,348.3 190.7,348.3 146.5,216.5"/>
+    <polygon points="256,196 313.4,231.6 291.6,313.1 220.4,313.1 198.6,231.6"/>
+  </g>
+
+  <!-- 五条轴 -->
+  <g stroke="#b9a480" stroke-opacity=".38" stroke-width="3.5" stroke-linecap="round">
+    <line x1="256" y1="256" x2="256" y2="86"/>
+    <line x1="256" y1="256" x2="417.6" y2="201.5"/>
+    <line x1="256" y1="256" x2="350.9" y2="383.5"/>
+    <line x1="256" y1="256" x2="161.1" y2="383.5"/>
+    <line x1="256" y1="256" x2="94.4" y2="201.5"/>
+  </g>
+
+  <!-- 数据区：五维画像 -->
+  <polygon points="256,116 360.6,222.0 329.5,357.1 200.2,332.9 141.9,218.9"
+           fill="url(#inkGrad)" fill-opacity=".9"/>
+  <polygon points="256,116 360.6,222.0 329.5,357.1 200.2,332.9 141.9,218.9"
+           fill="none" stroke="#4e6f61" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- 五个维度顶点 -->
+  <g fill="#fffdf7" stroke="#4e6f61" stroke-width="5">
+    <circle cx="256" cy="116" r="13"/>
+    <circle cx="360.6" cy="222.0" r="13"/>
+    <circle cx="329.5" cy="357.1" r="13"/>
+    <circle cx="200.2" cy="332.9" r="13"/>
+    <circle cx="141.9" cy="218.9" r="13"/>
+  </g>
+
+  <!-- 圆心：那一笔"人情" -->
+  <circle cx="256" cy="256" r="26" fill="#c9a86a"/>
+  <circle cx="256" cy="256" r="11" fill="#fffdf7"/>
+</svg>

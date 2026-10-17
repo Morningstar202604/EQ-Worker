@@ -1,0 +1,56 @@
+plugins { id 'com.android.application' }
+
+// 发布签名：存在 android/keystore.properties 时用正式签名，否则回退 debug 签名（可安装、可更新，
+// 但换机器构建签名不变 —— keystore.properties 与 keystore 文件不要提交到公共仓库）。
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+android {
+    namespace 'com.renqing.radar'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.renqing.radar'
+        minSdk 23
+        targetSdk 34
+        versionCode 281
+        versionName '2.8.1'
+        resValue 'string', 'app_version', versionName
+    }
+
+    if (keystorePropsFile.exists()) {
+        signingConfigs {
+            release {
+                storeFile rootProject.file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packagingOptions {
+        resources.excludes += ['META-INF/*.kotlin_module']
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
