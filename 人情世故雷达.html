@@ -1948,6 +1948,9 @@ function loadDemo() {
     { id: uid(), personId: p.zhang.id, content: '请老张吃顿饭，还上次借车的人情', date: fmtDate(now + 3 * DAY), status: 'pending' },
     { id: uid(), personId: p.wang.id, content: '王总生日，发条祝福', date: fmtDate(now + 6 * DAY), status: 'pending' }
   ];
+  // 修炼进度：演示数据带一点处世智慧，五维雷达不再缺一角（35 分 = 「人情通达」段位）
+  state.progress = { wedding: { best: 40, times: 2 } };
+  state.streak = { n: 2, last: fmtDate(now) };
   invalidateCache(); store.save(); render();
   toast('已载入 6 位人脉演示数据，可在「我的」里清空重建');
 }
