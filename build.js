@@ -20,7 +20,18 @@ async function build() {
   if (!template.includes('/*__APP_JS__*/')) {
     throw new Error('模板中未找到 /*__APP_JS__*/ 占位符');
   }
-  const html = template.replace('/*__APP_JS__*/', () => appJs);
+  // 3.1 内联 html2canvas（年报导出图片，离线可用，不再依赖外网 CDN）
+  let h2c = '';
+  let html0 = template;
+  try {
+    h2c = await readFile(resolve(ROOT, 'vendor/html2canvas.min.js'), 'utf8');
+  } catch (e) {
+    console.warn('[build] 未找到 vendor/html2canvas.min.js，年报导出将退回 CDN 方案');
+  }
+  if (template.includes('/*__HTML2CANVAS__*/')) {
+    html0 = template.replace('/*__HTML2CANVAS__*/', () => h2c);
+  }
+  const html = html0.replace('/*__APP_JS__*/', () => appJs);
 
   // 4. 写 index.html
   const indexPath = resolve(ROOT, 'index.html');

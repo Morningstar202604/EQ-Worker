@@ -1,6 +1,10 @@
-// Service Worker 注册：仅 https / http 环境启用。
-// file:// 直接打开单文件时（README 承诺的"完全没网也能用"场景），
-// 浏览器不支持 SW 会抛错并污染 console —— 静默跳过，功能不受影响。
-if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+// Service Worker 注册：仅真实网页环境（GitHub Pages / localhost）启用。
+// 原生壳（Android WebViewAssetLoader 的虚拟 https 域 appassets.androidplatform.net、
+// Windows Electron 的 file:// 等）与 file:// 直接打开场景不注册，
+// 避免 WebView / Electron 中 SW 拦截或缓存导致白屏或更新异常。
+var __rqHost = location.hostname || '';
+var __rqIsWeb = /^https?:$/.test(location.protocol) &&
+  /(github\.io$|^localhost$|^127\.0\.0\.1$|^0\.0\.0\.0$)/.test(__rqHost);
+if ('serviceWorker' in navigator && __rqIsWeb) {
   navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () { /* 环境不支持则忽略 */ });
 }

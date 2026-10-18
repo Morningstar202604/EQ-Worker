@@ -353,8 +353,8 @@ function relationRead(p) {
   else if (m.intimacy >= 35) seg.push('关系不错，熟而不腻');
   else seg.push('还停留在客气阶段');
   if (m.debt >= 15) seg.push(`欠着人情（${Math.round(m.debt)}），记得还`);
-  else if (m.debt > 0) seg.push('人情账大致平衡');
-  else seg.push('对方反而欠着你人情');
+  else if (m.debt > 0) seg.push('还略欠点人情，有空回个礼');
+  else seg.push('人情账清清爽爽，互不亏欠');
   if (m.heat >= 70) seg.push('热度在线，趁热经营');
   else if (m.heat < 45) seg.push('热度偏低，多走动会回暖');
   return seg.join('，') + '。';
@@ -1119,19 +1119,15 @@ function exportAnnualPng() {
   if (!target) { toast('请先打开年度报告'); return; }
   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(() => {
-    if (typeof html2canvas !== 'undefined') {
-      doExport(target);
+    // html2canvas 已随应用内联打包，离线即可导出，无需任何外网请求
+    if (typeof html2canvas === 'undefined') {
+      toast('请截图分享：双击电源键+音量上');
       return;
     }
-    toast('正在生成图片…');
-    const s = document.createElement('script');
-    s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-    s.onload = () => doExport(target);
-    s.onerror = () => toast('请截图分享：双击电源键+音量上');
-    document.head.appendChild(s);
+    doExport(target);
   }, 300);
   function doExport(el) {
-    html2canvas(el, { backgroundColor: '#fffdf7', scale: 2 }).then(canvas => {
+    html2canvas(el, { backgroundColor: '#fffdf7', scale: 2, logging: false, useCORS: true }).then(canvas => {
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = url; a.download = '人情世故雷达-年报.png';
