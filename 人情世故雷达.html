@@ -398,13 +398,16 @@ function daysUntil(birthday) { // 'MM-DD' → 距下次生日的天数
   const now = new Date();
   const [m, d] = bd.split('-').map(Number);
   if (!m || !d) return 1e9;
+  /* 必须归一化到当天 0 点再比较：否则「生日就是今天」时 t(00:00) < now(含时分)
+     会被判成已过，跳到下一年，导致当天永远显示 365 天、提醒永不触发。 */
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let t = new Date(now.getFullYear(), m - 1, d);
   if (t.getMonth() !== m - 1) t = new Date(now.getFullYear(), m - 1, 28); // 2/29 非闰年按 2/28 算
-  if (t.getTime() < now.getTime()) {
+  if (t.getTime() < today.getTime()) {
     t = new Date(now.getFullYear() + 1, m - 1, d);
     if (t.getMonth() !== m - 1) t = new Date(now.getFullYear() + 1, m - 1, 28);
   }
-  return Math.ceil((t - now) / DAY);
+  return Math.round((t - today) / DAY);
 }
 function initials(name) { return (name || '?').slice(0, 1); }
 
@@ -461,6 +464,89 @@ function upcomingFestival() {
 /* ---------------- 2. 存储层（本机 localStorage，零依赖） ---------------- */
 const DB_KEY = 'rqsg_radar_v2';
 const SCHEMA_VERSION = 3;
+
+/* localStorage 安全包装：Safari 隐私模式 / 禁用站点数据 / iframe 沙箱下，直接访问
+   localStorage 会抛 SecurityError。init() 里裸调用会让启动中断、整页白屏。
+   这里统一兜底：读写失败时降级为内存存储，保证功能可用（仅本次会话不持久）。 */
+const _memStore = {};
+function lsGet(k) {
+  try { const v = localStorage.getItem(k); return (v === null || v === undefined) ? (_memStore[k] ?? null) : v; }
+  catch (e) { return _memStore[k] ?? null; }
+}
+function lsSet(k, v) {
+  _memStore[k] = v;
+  try { localStorage.setItem(k, v); return true; } catch (e) { return false; }
+}
+function lsHas(k) { return lsGet(k) !== null; }
+
+/* 导入数据清洗：外部 JSON 一律视为不可信，逐字段校验并修正。
+   不做清洗的后果（都是真实可触发的）：
+   - events 不是数组 → 后续 state.events.filter 抛错
+   - progress.best 不是数字 → 指数/段位变 NaN → 进度条 width:NaN% → 整页白屏且无恢复入口
+   - 缺 id / 类型错乱 → 卡片渲染异常、删除与撤销失效 */
+function sanitizeImport(d) {
+  const warn = [];
+  const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+  const num = (x, def) => (typeof x === 'number' && isFinite(x)) ? x : def;
+  const str = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+
+  let persons = Array.isArray(d.persons) ? d.persons : [];
+  const nP = persons.length;
+  persons = persons
+    .filter(p => isObj(p) && typeof p.name === 'string' && p.name.trim())
+    .map(p => ({
+      id: typeof p.id === 'string' && p.id ? p.id : uid(),
+      name: str(p.name, 60),
+      identity: str(p.identity, 40),
+      tags: Array.isArray(p.tags) ? p.tags.filter(t => typeof t === 'string').map(t => t.slice(0, 20)).slice(0, 10) : [],
+      birthday: str(p.birthday, 10),
+      note: str(p.note, 500),
+      adjust: num(p.adjust, 0),
+      createdAt: num(p.createdAt, Date.now())
+    }));
+  if (nP !== persons.length) warn.push('人脉 ' + (nP - persons.length) + ' 条');
+
+  let events = Array.isArray(d.events) ? d.events : [];
+  const nE = events.length;
+  events = events
+    .filter(e => isObj(e) && typeof e.type === 'string' && num(e.time, 0) > 0)
+    .map(e => ({
+      id: typeof e.id === 'string' && e.id ? e.id : uid(),
+      personId: str(e.personId, 40),
+      type: e.type,
+      title: str(e.title, 80),
+      time: num(e.time, Date.now()),
+      weight: num(e.weight, 6),
+      note: str(e.note, 500)
+    }));
+  if (nE !== events.length) warn.push('往来 ' + (nE - events.length) + ' 条');
+
+  const reminders = Array.isArray(d.reminders)
+    ? d.reminders.filter(r => isObj(r)).map(r => ({
+        id: typeof r.id === 'string' && r.id ? r.id : uid(),
+        personId: str(r.personId, 40),
+        content: str(r.content, 200),
+        date: str(r.date, 20),
+        status: r.status === 'done' ? 'done' : 'pending'
+      }))
+    : [];
+
+  /* progress.best 必须是有限数字：否则段位与百分比会变成 NaN */
+  const rawProg = isObj(d.progress) ? d.progress : {};
+  const progress = {};
+  for (const k of Object.keys(rawProg)) {
+    const v = rawProg[k];
+    if (isObj(v)) progress[k] = { best: num(v.best, 0), times: num(v.times, 0) };
+  }
+
+  const st = isObj(d.streak) ? d.streak : {};
+  const streak = { n: num(st.n, 0), last: str(st.last, 20) };
+
+  return {
+    persons, events, reminders, progress, streak, warn,
+    schemaMismatch: (typeof d.schema === 'number' && d.schema !== SCHEMA_VERSION)
+  };
+}
 const store = {
   load() {
     try {
@@ -507,7 +593,15 @@ const store = {
       rows.push([p.name, p.identity || '', (p.tags || []).join('；'), p.birthday || '', p.note || '',
         Math.round(m.heat), m.eventCount, last ? fmtDate(last) : '']);
     }
-    const csv = '\ufeff' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    /* CSV 公式注入防护：Excel/WPS 会把以 = + - @ 开头的单元格当公式执行
+       （例如备注写成 =HYPERLINK(...) 或 =cmd|... 会变成攻击载荷）。
+       统一前置单引号强制按文本处理，同时保留原有双引号转义。 */
+    const cell = (v) => {
+      let s = String(v == null ? '' : v);
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return '"' + s.replace(/"/g, '""') + '"';
+    };
+    const csv = '\ufeff' + rows.map(r => r.map(cell).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -518,27 +612,31 @@ const store = {
   import(file) {
     const reader = new FileReader();
     reader.onload = () => {
-      try {
-        const d = JSON.parse(reader.result);
-        if (!d || !Array.isArray(d.persons)) throw new Error('bad');
-        if (state.persons.length) {
-          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(d), true);
-        } else {
-          store.applyImport(d);
-        }
-      } catch (e) { toast('导入失败：文件格式不对'); }
+      let d;
+      try { d = JSON.parse(reader.result); }
+      catch (e) { toast('导入失败：不是合法的 JSON 文件'); return; }
+      if (!d || typeof d !== 'object' || !Array.isArray(d.persons)) { toast('导入失败：文件格式不对（缺少 persons）'); return; }
+      const clean = sanitizeImport(d);
+      const apply = () => store.applyImport(clean);
+      if (state.persons.length) {
+        confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', apply, true);
+      } else { apply(); }
     };
+    reader.onerror = () => toast('导入失败：文件读取失败');
     reader.readAsText(file);
   },
-  applyImport(d) {
-    state.persons = d.persons || [];
-    state.events = d.events || [];
-    state.reminders = d.reminders || [];
-    state.progress = d.progress || {};
-    state.streak = d.streak || { n: 0, last: '' };
+  applyImport(clean) {
+    state.persons = clean.persons;
+    state.events = clean.events;
+    state.reminders = clean.reminders;
+    state.progress = clean.progress;
+    state.streak = clean.streak;
     state.lastEventId = null; state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部';
     invalidateCache(); store.save(); render();
-    toast('导入成功，共 ' + state.persons.length + ' 位人脉');
+    let msg = '导入成功，共 ' + state.persons.length + ' 位人脉';
+    if (clean.warn.length) msg += '（已过滤无效：' + clean.warn.join('、') + '）';
+    if (clean.schemaMismatch) msg += '（数据结构版本不同，已按当前版本兼容处理）';
+    toast(msg);
   }
 };
 
@@ -591,7 +689,10 @@ function computePerson(p) {
     const days = (now - ev.time) / DAY;
     const ratio = Math.pow(0.5, days / 90);           // 90 天半衰期
     const t = EVENT_TYPES[ev.type] || EVENT_TYPES.other;
-    const w = ev.weight / (t.dHeat === 0 ? 1 : Math.abs(t.dHeat) || 1); // 归一化到类型基准
+    /* 归一化到类型基准：必须保留 dHeat 的符号，否则 conflict（dHeat<0）会导致
+       热度/信任/亲密反向增长（记一次冲突反而升温）。无基准或权重非法时按 1 倍计。 */
+    const denom = Number.isFinite(t.dHeat) && t.dHeat !== 0 ? t.dHeat : 1;
+    const w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
     heat += t.dHeat * ratio * w;
     trust += t.dTrust * ratio * w;
     intim += t.dIntimacy * ratio * w;
@@ -931,19 +1032,24 @@ function toastUndo(msg, undoFn) {
 function closeToast() { clearTimeout(toastTimer); const t = $('#toast-root'); if (t) t.classList.remove('show'); }
 /* 搜索高亮：在文本中标记匹配关键词 */
 function highlightKw(text, kw) {
-  if (!kw) return esc(text);
-  const safe = esc(text);
-  const lower = safe.toLowerCase(), k = esc(kw).toLowerCase();
-  if (!k) return safe;
+  /* 必须在「未转义」的原文上定位，再逐段转义。
+     旧实现先 esc() 再查找：会在 &amp; 等 HTML 实体内部误匹配（例如搜 "amp" 命中 &amp;），
+     并且按转义后的长度去切片，会把实体截成 &<mark>amp</mark>; 导致显示错乱。 */
+  const raw = String(text == null ? '' : text);
+  if (!kw) return esc(raw);
+  const lower = raw.toLowerCase(), k = String(kw).toLowerCase();
+  if (!k) return esc(raw);
   const mark = '<mark style="background:rgba(201,168,106,.35);color:inherit;border-radius:2px;padding:0 1px">';
-  /* split+join 支持多次匹配高亮 */
   const parts = lower.split(k);
-  if (parts.length <= 1) return safe;
+  if (parts.length <= 1) return esc(raw);
   let result = '', pos = 0;
   for (let i = 0; i < parts.length; i++) {
-    result += safe.slice(pos, pos + parts[i].length);
+    result += esc(raw.slice(pos, pos + parts[i].length));
     pos += parts[i].length;
-    if (i < parts.length - 1) { result += mark + safe.slice(pos, pos + k.length) + '</mark>'; pos += k.length; }
+    if (i < parts.length - 1) {
+      result += mark + esc(raw.slice(pos, pos + k.length)) + '</mark>';
+      pos += k.length;
+    }
   }
   return result;
 }
@@ -1104,7 +1210,13 @@ function onHomeChartClick(params) {
 /* 维度解读 */
 function openDimInsight(dim) {
   const m = overallMetrics();
-  const lastTsOf = (id) => state.events.filter(e => e.personId === id).reduce((mx, e) => Math.max(mx, e.time), 0);
+  /* 预建「人脉 → 最后往来时间」映射：原本 lastTsOf 在排序比较器里对每个人做一次
+     全量 events.filter，复杂度 O(人×log人×事件)，人多时会明显卡顿。改为一次遍历 O(事件)。 */
+  const lastTsMap = {};
+  for (const ev of state.events) {
+    if (!lastTsMap[ev.personId] || ev.time > lastTsMap[ev.personId]) lastTsMap[ev.personId] = ev.time;
+  }
+  const lastTsOf = (id) => lastTsMap[id] || 0;
   const chips = (arr) => arr.slice(0, 3).map(p => `<span class="chip">${esc(p.name)}</span>`).join(' ') || '<span class="chip">暂无</span>';
   const byHeat = state.persons.slice().sort((a, b) => computedFor(b.id).heat - computedFor(a.id).heat);
   const byLast = state.persons.slice().sort((a, b) => lastTsOf(b.id) - lastTsOf(a.id));
@@ -1350,7 +1462,7 @@ function viewTrain() {
       <span class="tag">${s.tag}</span> <span class="chip ${dc.chip}">${s.diff}</span>
       <h4>${s.title}</h4>
       <div class="sc">${s.scene}</div>
-      <div class="foot"><span>${pr ? `已完成 · 最高 ${pr.best} 分` : '未挑战'}</span><span style="color:var(--teal)">开始 →</span></div>
+      <div class="foot"><span>${pr ? `已完成 · 最高 ${esc(pr.best)} 分` : '未挑战'}</span><span style="color:var(--teal)">开始 →</span></div>
     </div>`;
   }).join('');
   const td = DIFFS[today.diff];
@@ -1593,6 +1705,56 @@ function openAllEvents() {
 }
 
 /* ---------- 我的 ---------- */
+/* 成就徽章：全部由当前数据实时推导，不新增持久化字段（避免数据结构迁移风险）。 */
+function achievementsList() {
+  const nP = state.persons.length;
+  const nE = state.events.length;
+  const sk = state.streak || { n: 0, last: '' };
+  const trained = Object.keys(state.progress || {}).filter(k => ((state.progress[k] || {}).times > 0)).length;
+  const withBirthday = state.persons.filter(p => p.birthday).length;
+  const m = overallMetrics();
+  const idx = m ? m.index : 0;
+  let clear = nP > 0;
+  for (const p of state.persons) {
+    const mm = computedFor(p.id);
+    if (mm && mm.debt > 0) { clear = false; break; }
+  }
+  const defs = [
+    { t: '破冰者', d: '记下第一笔往来', cur: Math.min(nE, 1), need: 1 },
+    { t: '初结人脉', d: '添加 5 位人脉', cur: Math.min(nP, 5), need: 5 },
+    { t: '圈子成型', d: '添加 20 位人脉', cur: Math.min(nP, 20), need: 20 },
+    { t: '百人脉络', d: '添加 100 位人脉', cur: Math.min(nP, 100), need: 100 },
+    { t: '日积月累', d: '累计 50 笔往来', cur: Math.min(nE, 50), need: 50 },
+    { t: '人情练达', d: '累计 200 笔往来', cur: Math.min(nE, 200), need: 200 },
+    { t: '三日不辍', d: '连续记录 3 天', cur: Math.min(sk.n, 3), need: 3 },
+    { t: '七日成习', d: '连续记录 7 天', cur: Math.min(sk.n, 7), need: 7 },
+    { t: '初入修炼', d: '完成 5 道情景题', cur: Math.min(trained, 5), need: 5 },
+    { t: '世事洞明', d: '完成 15 道情景题', cur: Math.min(trained, 15), need: 15 },
+    { t: '两不相欠', d: '所有人情账都还清', cur: clear ? 1 : 0, need: 1 },
+    { t: '人情大师', d: '人情指数达到 60', cur: Math.min(idx, 60), need: 60 },
+    { t: '细心人', d: '为 3 位人脉记下生日', cur: Math.min(withBirthday, 3), need: 3 }
+  ];
+  return defs.map(x => ({ t: x.t, d: x.d, cur: x.cur, need: x.need, done: x.cur >= x.need }));
+}
+function achievementsHtml() {
+  const list = achievementsList();
+  const got = list.filter(x => x.done).length;
+  const items = list.map(x => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:${x.done ? 'rgba(201,168,106,.14)' : 'rgba(255,255,255,.03)'};border:1px solid ${x.done ? 'rgba(201,168,106,.4)' : 'var(--line)'}">
+      <div style="font-size:17px;opacity:${x.done ? 1 : .35}">${x.done ? '🏅' : '🔒'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;opacity:${x.done ? 1 : .55}">${esc(x.t)}</div>
+        <div class="sub" style="font-size:11px">${esc(x.d)}</div>
+      </div>
+      <div style="font-size:11px;color:${x.done ? 'var(--teal)' : 'var(--sub)'};font-weight:600;white-space:nowrap">${x.done ? '已达成' : x.cur + '/' + x.need}</div>
+    </div>`).join('');
+  return `<div class="card">
+    <h3>成就徽章 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">${got} / ${list.length} 已达成</span></h3>
+    <div class="sub" style="margin:8px 0 12px">用真实往来解锁徽章：记录、走动、修炼、还清人情，都会留下痕迹。</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${items}</div>
+  </div>`;
+}
+
 function viewMe() {
   const m = overallMetrics();
   const w = getWisdom(), lv = getLevel(w);
@@ -1691,6 +1853,7 @@ function viewMe() {
       <div class="sub" style="margin-top:4px">点击节点可查看人脉详情</div>
       <canvas id="network-canvas" style="width:100%;display:block;margin-top:10px"></canvas>
     </div>
+    ${achievementsHtml()}
     <div class="card">
       <h3>数据管理</h3>
       <div class="sub" style="margin:8px 0 12px">所有数据只保存在本机浏览器，不上传任何服务器。换设备前记得导出备份，或用剪贴板把数据搬到新设备。</div>
@@ -1805,7 +1968,7 @@ function openPerson(id) {
         <button class="btn sm" data-act="adjust" data-arg="-1">−1</button>
         <button class="btn sm" data-act="adjust" data-arg="1">＋1</button>
         <button class="btn sm" data-act="adjust" data-arg="5">＋5</button>
-        <span class="chip" style="margin-left:auto">当前热度 ${Math.round(m.heat)}${p.adjust ? `（含手动 ±${p.adjust}）` : ''}</span>
+        <span class="chip" style="margin-left:auto">当前热度 ${Math.round(m.heat)}${p.adjust ? `（含手动 ±${esc(p.adjust)}）` : ''}</span>
       </div>
     </div>
     <div class="card" style="border-color:rgba(127,174,131,.4)">
@@ -1838,7 +2001,7 @@ function personForm(id) {
     <div class="field"><label>身份</label>
       <select class="inp" id="pfIdentity">${IDENTITIES.map(i => `<option ${p && p.identity === i ? 'selected' : ''}>${i}</option>`).join('')}</select></div>
     <div class="field"><label>标签（逗号分隔）</label><input class="inp" id="pfTags" value="${esc(p ? (p.tags || []).join('，') : '')}" placeholder="如：大学死党，球友"></div>
-    <div class="field"><label>生日（用于生日提醒，可选）</label><input class="inp" id="pfBirth" type="date" value="${p && p.birthday ? toDateInput(p.birthday) : ''}"></div>
+    <div class="field"><label>生日（用于生日提醒，可选）</label><input class="inp" id="pfBirth" type="date" value="${p && p.birthday ? esc(toDateInput(p.birthday)) : ''}"></div>
     <div class="field"><label>备注</label><textarea class="inp" id="pfNote" placeholder="重要细节、忌讳、最近在忙什么…">${esc(p ? p.note || '' : '')}</textarea></div>
     <button class="btn primary block" data-act="personSubmit" data-arg="${p ? p.id : ''}">保存</button>
   `, true);
@@ -2008,13 +2171,19 @@ function onClick(e) {
 
     case 'delPerson': {
       confirmModal('删除后该人脉的所有往来记录与提醒都会一并删除，确定吗？', () => {
+        /* 连同该人脉的往来记录与提醒一起备份：否则撤销后 events/reminders 已落盘丢失，
+           人脉恢复了但记录永久消失（不可接受的静默数据丢失）。 */
         const backup = state.persons.find(x => x.id === arg);
+        const backupEvents = state.events.filter(x => x.personId === arg);
+        const backupReminders = state.reminders.filter(x => x.personId === arg);
         state.persons = state.persons.filter(x => x.id !== arg);
         state.events = state.events.filter(x => x.personId !== arg);
         state.reminders = state.reminders.filter(x => x.personId !== arg);
         invalidateCache(); store.save(); closeModal(); render();
         toastUndo('已删除「' + (backup ? backup.name : '') + '」', () => {
           if (backup) state.persons.push(backup);
+          if (backupEvents.length) state.events = state.events.concat(backupEvents);
+          if (backupReminders.length) state.reminders = state.reminders.concat(backupReminders);
           invalidateCache(); store.save(); render();
         });
       }, true);
@@ -2144,7 +2313,7 @@ function onClick(e) {
       }
       break;
     }
-    case 'iosHintClose': localStorage.setItem('rqsg_ios_hint', '1'); render(); break;
+    case 'iosHintClose': lsSet('rqsg_ios_hint', '1'); render(); break;
 
     case 'scenario': scenarioModal(arg); break;
     case 'choice': {
@@ -2260,15 +2429,23 @@ function onChange(e) {
   else if (act === 'importFile') { if (el.files && el.files[0]) store.import(el.files[0]); el.value = ''; }
 }
 /* 搜索：input 实时筛选，保持焦点（IME 组合期间不重建） */
+/* 搜索防抖定时器（见下方 onInput 的 search 分支） */
+let _searchTimer = null;
 function onInput(e) {
   const el = e.target.closest('[data-change]');
   if (!el || el.dataset.ime) return;
   const act = el.dataset.change;
   if (act === 'search') {
     state.filter = el.value;
-    render();
-    const si = $('#fSearch');
-    if (si) { si.focus(); const v = si.value; si.setSelectionRange(v.length, v.length); }
+    /* 防抖：原本每敲一个字符就整页 render()（含图表重建），输入会明显卡顿且焦点闪烁。
+       改为停止输入 180ms 后再渲染，输入框在此期间保持原焦点不被重建。 */
+    if (_searchTimer) clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => {
+      _searchTimer = null;
+      render();
+      const si = $('#fSearch');
+      if (si) { si.focus(); const v = si.value; si.setSelectionRange(v.length, v.length); }
+    }, 180);
   }
 }
 document.addEventListener('click', onClick);
@@ -2276,6 +2453,13 @@ document.addEventListener('change', onChange);
 document.addEventListener('input', onInput);
 document.addEventListener('compositionstart', (e) => { if (e.target && e.target.setAttribute) e.target.setAttribute('data-ime', '1'); });
 document.addEventListener('compositionend', (e) => { if (e.target && e.target.removeAttribute) e.target.removeAttribute('data-ime'); });
+/* ESC 关闭弹层：此前完全没有键盘处理，弹层只能靠鼠标点 ✕ 关闭，
+   键盘用户会被卡住（删除确认这类危险弹层尤其难受）。 */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' && e.key !== 'Esc') return;
+  const root = $('#modal-root');
+  if (root && root.innerHTML.trim()) closeModal();
+});
 
 /* 弹层遮罩点击关闭 */
 document.addEventListener('click', (e) => {
@@ -2321,7 +2505,7 @@ function installCard() {
       <button class="btn primary" style="margin-top:10px" data-act="installApp">添加到主屏幕</button>
     </div>`;
   }
-  if (isIOS && localStorage.getItem('rqsg_ios_hint') !== '1') {
+  if (isIOS && lsGet('rqsg_ios_hint') !== '1') {
     return `<div class="card">
       <h3>装成 App 用</h3>
       <div class="sub" style="margin-top:6px">在 Safari 里点底部「分享」，选「添加到主屏幕」，就能像 App 一样全屏使用、离线可用。</div>
@@ -2334,10 +2518,10 @@ function installCard() {
 /* ---------------- 11. 启动 ---------------- */
 function init() {
   store.load();
-  const savedTab = localStorage.getItem('rqsg_tab');
+  const savedTab = lsGet('rqsg_tab');
   if (savedTab && ['radar', 'persons', 'record', 'train', 'me'].includes(savedTab)) state.tab = savedTab;
   render();
-  if (!state.persons.length && localStorage.getItem('rqsg_welcomed') !== '1') {
+  if (!state.persons.length && lsGet('rqsg_welcomed') !== '1') {
     /* 首次打开：品牌欢迎引导 */
     showWelcome();
   }

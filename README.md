@@ -117,7 +117,7 @@ Record interactions → Auto profile → Smart reminders → Scenario training �
 - **Performance** — computePerson global cache + event-versioned invalidation
 - **PWA support** — Service Worker Cache First strategy for fully offline web
 - **Build system** — zero-dep ESM build script (`build.js`)
-- **Unit tests** — 10 passing tests via `node --test`
+- **Unit tests** — 26 passing tests via `node --test`（覆盖 H5 引擎边界、导入清洗、段位与半衰期）
 
 ---
 

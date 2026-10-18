@@ -3,24 +3,32 @@
 // 用法：在 Page 中 require 后调用 ui.toast / ui.modal / ui.modalClose / ui.modalInput
 const DURATION = 220; // 动效毫秒
 
+/* 页面可能已被销毁（navigateBack / switchTab / 关闭），此时 setData 会抛异常并中断
+   后续逻辑（尤其是 toast/modal 的延时回调里）。统一兜底，避免控制台报错与状态错乱。 */
+function safeSet(page, data) {
+  try { page.setData(data); } catch (e) {}
+}
+
 /* ───────── Toast ───────── */
 function toast(page, msg, opts) {
   opts = opts || {};
+  /* 两个定时器都要记录：旧的只清了外层，内层仍会在页面销毁后触发 setData。 */
   if (page.__toastTimer) clearTimeout(page.__toastTimer);
-  page.setData({
+  if (page.__toastTimer2) clearTimeout(page.__toastTimer2);
+  safeSet(page, {
     _toast: { show: true, msg: msg, icon: opts.icon || '', anim: 'toast-in', mode: opts.mode || 'dark' }
   });
   const dur = opts.duration || (msg.length > 10 ? 2200 : 1500);
   page.__toastTimer = setTimeout(function () {
-    page.setData({ '_toast.anim': 'toast-out' });
-    setTimeout(function () { page.setData({ '_toast.show': false }); }, DURATION);
+    safeSet(page, { '_toast.anim': 'toast-out' });
+    page.__toastTimer2 = setTimeout(function () { safeSet(page, { '_toast.show': false }); }, DURATION);
   }, dur);
 }
 
 /* ───────── Modal ───────── */
 function modal(page, cfg) {
   page._modalCb = { confirm: cfg.onConfirm, cancel: cfg.onCancel, input: cfg.onInput };
-  page.setData({
+  safeSet(page, {
     _modal: {
       show: true,
       title: cfg.title || '',
@@ -41,16 +49,16 @@ function modalClose(page, confirmed) {
   var m = page.data._modal;
   var cb = confirmed ? (page._modalCb && page._modalCb.confirm) : (page._modalCb && page._modalCb.cancel);
   // 编辑模式下 confirm 把内容传给回调
-  page.setData({ '_modal.anim': 'modal-out' });
+  safeSet(page, { '_modal.anim': 'modal-out' });
   setTimeout(function () {
-    page.setData({ '_modal.show': false });
+    safeSet(page, { '_modal.show': false });
     if (cb) cb(confirmed && m.editable ? m.inputVal : undefined);
   }, DURATION);
 }
 
 function modalInput(page, e) {
   var v = e.detail.value;
-  page.setData({ '_modal.inputVal': v });
+  safeSet(page, { '_modal.inputVal': v });
   if (page._modalCb && typeof page._modalCb.input === 'function') page._modalCb.input(v);
 }
 

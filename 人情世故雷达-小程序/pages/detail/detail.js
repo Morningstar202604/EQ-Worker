@@ -60,6 +60,8 @@ Page({
     });
     this.draw();
   },
+  /* 同 index：onLoad 早于 onReady，需在节点就绪后补绘一次雷达图。 */
+  onReady() { this.draw(); },
   draw() {
     if (this.data.radarVals.length) drawRadar('#pRadar', this.data.dims, this.data.radarVals);
   },

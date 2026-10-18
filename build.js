@@ -1,6 +1,6 @@
 // 人情世故雷达 · 构建脚本（零依赖 ES Module）
 // 将 _app_dev.js + index.template.html → index.html + 人情世故雷达.html
-import { readFile, writeFile, copyFile } from 'node:fs/promises';
+import { readFile, writeFile, copyFile, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -41,11 +41,49 @@ async function build() {
   const cnPath = resolve(ROOT, '人情世故雷达.html');
   await copyFile(indexPath, cnPath);
 
+  /* 5.5 同步到原生端产物（关键！）
+     Android APK 与 Windows 桌面版各自内嵌一份 index.html / sw.js / sw-register.js。
+     以前这一步靠手工复制，只要忘了同步，APK 和 EXE 就会静默停留在旧逻辑上
+     （本次体检就实际发生了：两端产物比 index.html 旧，不含新修复）。
+     这里改为构建时强制同步，并在结尾校验一致性。 */
+  const SYNC_FILES = ['index.html', 'sw.js', 'sw-register.js'];
+  const SYNC_TARGETS = [
+    resolve(ROOT, 'android/app/src/main/assets'),
+    resolve(ROOT, 'desktop')
+  ];
+  const synced = [];
+  for (const dir of SYNC_TARGETS) {
+    for (const name of SYNC_FILES) {
+      const src = resolve(ROOT, name);
+      const dst = resolve(dir, name);
+      try {
+        await access(dst);              // 目标已存在才同步，避免给无关目录凭空造文件
+        await copyFile(src, dst);
+        synced.push(dir.replace(ROOT + '/', '') + '/' + name);
+      } catch (e) { /* 目标不存在则跳过 */ }
+    }
+  }
+
   // 6. 输出构建信息
   const dt = Date.now() - t0;
   const ts = new Date().toISOString();
   console.log(`[build] OK  index.html          ${html.length.toString().padStart(10)} bytes`);
   console.log(`[build] OK  人情世故雷达.html   ${html.length.toString().padStart(10)} bytes`);
+  if (synced.length) console.log(`[build] OK  已同步原生端产物: ${synced.join(', ')}`);
+
+  /* 6.5 一致性校验：任何一份产物与 index.html 不一致就报错退出，防止再次静默漂移 */
+  const built = await readFile(indexPath, 'utf8');
+  for (const dir of SYNC_TARGETS) {
+    const p = resolve(dir, 'index.html');
+    try {
+      await access(p);
+      const cur = await readFile(p, 'utf8');
+      if (cur !== built) {
+        console.error(`[build] FAILED: ${dir.replace(ROOT + '/', '')}/index.html 与最新构建不一致`);
+        process.exit(1);
+      }
+    } catch (e) { /* 不存在则跳过 */ }
+  }
   console.log(`[build] done in ${dt}ms  @ ${ts}`);
 }
 

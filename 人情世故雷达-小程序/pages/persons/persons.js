@@ -81,9 +81,10 @@ Page({
     if (q) {
       const low = q.toLowerCase();
       list = list.filter(p =>
-        p.name.toLowerCase().includes(low) ||
+        (p.name || '').toLowerCase().includes(low) ||
         (p.identity || '').toLowerCase().includes(low) ||
-        (p.tags || '').toLowerCase().includes(low) ||
+        /* p.tags 是数组，直接调 .toLowerCase() 会抛 TypeError 导致搜索一输入就崩。 */
+        (Array.isArray(p.tags) ? p.tags.join('、') : (p.tags || '')).toLowerCase().includes(low) ||
         (p.note || '').toLowerCase().includes(low)
       );
     }

@@ -262,8 +262,10 @@ function relationRead(p) {
   else if (m.intimacy >= 35) seg.push('关系不错，熟而不腻');
   else seg.push('还停留在客气阶段');
   if (m.debt >= 15) seg.push(`欠着人情（${Math.round(m.debt)}），记得还`);
-  else if (m.debt > 0) seg.push('人情账大致平衡');
-  else seg.push('对方反而欠着你人情');
+  else if (m.debt > 0) seg.push('还略欠点人情，有空回个礼');
+  /* debt 已被 clamp(0,100) 恒为非负，因此 else 分支只可能是 debt===0。
+     旧文案「对方反而欠着你人情」是误报（与 Web 端已修复的同款 bug 保持一致）。 */
+  else seg.push('人情账清清爽爽，互不亏欠');
   if (m.heat >= 70) seg.push('热度在线，趁热经营');
   else if (m.heat < 45) seg.push('热度偏低，多走动会回暖');
   return seg.join('，') + '。';

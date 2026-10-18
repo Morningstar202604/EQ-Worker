@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const engine = require('./mp-engine-stub.cjs');
+const engine = require('../test-fixtures/mp-engine-stub.cjs');
 
 const { computePerson, solarToLunar, clamp, avg, esc } = engine;
 

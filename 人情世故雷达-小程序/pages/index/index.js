@@ -32,6 +32,9 @@ Page({
     });
     this.draw();
   },
+  /* 首次进入时 onShow 早于 onReady，canvas 节点尚未就绪，drawRadar 会静默返回
+     → 雷达图一片空白（要切一次 tab 才画出来）。在 onReady 补绘一次。 */
+  onReady() { this.draw(); },
   draw() {
     if (!this.data.hasData) return;
     const vals = this.data.dimRows.map(r => r.v);

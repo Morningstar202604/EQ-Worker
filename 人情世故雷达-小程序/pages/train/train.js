@@ -20,7 +20,9 @@ Page({
     const trainedToday = sk.last === todayStr;
     const scs = engine.SCENARIOS;
     const diff = engine.DIFFS;
-    const todayIdx = new Date().getDate() % scs.length;
+    /* 与 Web 端口径保持一致：用「 Unix 天数 % 情景数 」取模。
+       旧写法用 getDate()（月内日 1-31），同一天两端会指向不同情景。 */
+    const todayIdx = Math.floor(Date.now() / 86400000) % scs.length;
     const today = scs[todayIdx];
     const td = diff[today.diff] || diff['入门'];
     this.refreshList();
@@ -48,7 +50,9 @@ Page({
     this.setData({ list });
   },
   tapDiff(e) {
-    this.setData({ diffIdx: e.currentTarget.dataset.i });
+    /* dataset.i 是字符串，wxml 里用 diffIdx === index（数字）严格比较，
+       不转数字会导致难度 chip 高亮永不生效。 */
+    this.setData({ diffIdx: parseInt(e.currentTarget.dataset.i, 10) || 0 });
     this.refreshList();
   },
   open(e) {
