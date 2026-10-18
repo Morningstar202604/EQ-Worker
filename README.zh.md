@@ -145,6 +145,34 @@
 
 ---
 
+## 🧪 五端体检验证（v2.8.1）
+
+每个版本都跨 **5 端** 体检：网页（本地 + GitHub Pages）、安卓 APK、Windows 桌面版、微信小程序、品牌官网。下方截图由自动化 Playwright 真实浏览器实跑截得（JS 真实执行），`debt=0` 关系解读误报的修复已在公开 Pages 站点复测通过。
+
+| 端 | 跳转 / 响应 | 模型计算 | 可视化 | 发布 |
+| --- | --- | --- | --- | --- |
+| **网页**（本地 + Pages） | ✓ 控制台/页面 0 报错，五 Tab 全通 | ✓ 人情指数=70，段位「人情大师」 | ✓ 雷达图 + 趋势 + 饼图 + 关系网 | Pages 已上线（3 镜像） |
+| **安卓 APK** | ✓ WebView 壳 | ✓ 内嵌修复 | ✓ html2canvas 内联 | Release v2.8.1 |
+| **Windows EXE** | ✓ Electron 启动 | ✓ 内嵌修复 | ✓ html2canvas 内联 | Release v2.8.1 |
+| **微信小程序** | ✓ 7 页路由 | 独立引擎 | 原生组件 | 工程校验通过 |
+| **品牌官网** | ✓ 双端下载链接可达 | — | — | 已上线 |
+
+**线上 Pages（真实浏览器实跑）：**
+
+| 雷达总览 | 我的数据中心 |
+| --- | --- |
+| ![live radar](docs/screenshots/verification/live-pages-radar.png) | ![live me](docs/screenshots/verification/live-pages-me.png) |
+
+**网页桌面端（GitHub Pages）与移动端：**
+
+| 桌面雷达 | 桌面我的 | 桌面年度报告 | 移动雷达 |
+| --- | --- | --- | --- |
+| ![d-radar](docs/screenshots/verification/web-pages-desktop-radar.png) | ![d-me](docs/screenshots/verification/web-pages-desktop-me.png) | ![d-annual](docs/screenshots/verification/web-pages-desktop-annual.png) | ![m-radar](docs/screenshots/verification/web-mobile-radar.png) |
+
+> 五个 Git 镜像（GitHub @badhope / @x33834 / @Morningstar202604、GitCode、Gitee）均已同步至标签 **v2.8.1**（`e87b9fd`）。完整报告见 `五端体检/体检报告.html`。
+
+---
+
 ## 📄 许可
 
 Creative Commons Attribution-NonCommercial 4.0 International（CC BY-NC 4.0），详见 `LICENSE`。

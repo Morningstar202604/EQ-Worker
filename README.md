@@ -141,6 +141,34 @@ Record interactions → Auto profile → Smart reminders → Scenario training �
 
 ---
 
+## 🧪 Cross-End Verification (v2.8.1)
+
+Every release is verified across **5 ends** — Web (local + GitHub Pages), Android APK, Windows EXE, WeChat Mini Program, and the official site. Screenshots below are captured by an automated Playwright run (real browser, real JS execution). The `debt=0` relation-reading bug fix is confirmed live on the public Pages site.
+
+| End | Nav / Response | Model Calc | Visualization | Published |
+| --- | --- | --- | --- | --- |
+| **Web** (local + Pages) | ✓ 0 console/page errors, all 5 tabs | ✓ index=70, level 人情大师 | ✓ radar + trend + pie + network | Pages live (3 mirrors) |
+| **Android APK** | ✓ WebView shell | ✓ fix embedded | ✓ html2canvas inline | Release v2.8.1 |
+| **Windows EXE** | ✓ Electron launch | ✓ fix embedded | ✓ html2canvas inline | Release v2.8.1 |
+| **WeChat Mini Program** | ✓ 7-page routing | independent engine | native components | project validated |
+| **Official Site** | ✓ both download links reachable | — | — | live |
+
+**Live Pages (real browser run):**
+
+| Radar Overview | My Data Center |
+| --- | --- |
+| ![live radar](docs/screenshots/verification/live-pages-radar.png) | ![live me](docs/screenshots/verification/live-pages-me.png) |
+
+**Web desktop (GitHub Pages) & mobile:**
+
+| Desktop Radar | Desktop My Data | Desktop Annual Report | Mobile Radar |
+| --- | --- | --- | --- |
+| ![d-radar](docs/screenshots/verification/web-pages-desktop-radar.png) | ![d-me](docs/screenshots/verification/web-pages-desktop-me.png) | ![d-annual](docs/screenshots/verification/web-pages-desktop-annual.png) | ![m-radar](docs/screenshots/verification/web-mobile-radar.png) |
+
+> All five git mirrors (GitHub @badhope / @x33834 / @Morningstar202604, GitCode, Gitee) are synced to tag **v2.8.1** (`e87b9fd`). Full report: `五端体检/体检报告.html`.
+
+---
+
 ## 📄 License
 
 Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0), see [`LICENSE`](LICENSE).
