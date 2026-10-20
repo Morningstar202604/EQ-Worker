@@ -86,7 +86,7 @@ Record interactions → Auto profile → Smart reminders → Scenario training �
 
 | Platform | Description |
 | --- | --- |
-| **Web (PWA)** | Single self-contained HTML (~1.1 MB, zero build), works offline, installable to home screen; built-in open-source ECharts visualization |
+| **Web (PWA)** | Single self-contained HTML (~1.36 MB, zero build), works offline, installable to home screen; built-in open-source ECharts visualization |
 | **WeChat Mini Program** | Full mini-program project (`chushi-radar/人情世故雷达-小程序/`), hand-drawn radar on Canvas with zero dependencies; web↔mini data is fully interoperable (SCHEMA_VERSION) |
 
 ### Mini Program Highlights
@@ -117,7 +117,7 @@ Record interactions → Auto profile → Smart reminders → Scenario training �
 - **Performance** — computePerson global cache + event-versioned invalidation
 - **PWA support** — Service Worker Cache First strategy for fully offline web
 - **Build system** — zero-dep ESM build script (`build.js`)
-- **Unit tests** — 26 passing tests via `node --test`（覆盖 H5 引擎边界、导入清洗、段位与半衰期）
+- **Unit tests** — 35 passing tests via `node --test`（覆盖 H5/小程序引擎、导入清洗、段位、半衰期与生日边界）
 
 ---
 
@@ -147,7 +147,7 @@ Every release is verified across **5 ends** — Web (local + GitHub Pages), Andr
 
 | End | Nav / Response | Model Calc | Visualization | Published |
 | --- | --- | --- | --- | --- |
-| **Web** (local + Pages) | ✓ 0 console/page errors, all 5 tabs | ✓ index=70, level 人情大师 | ✓ radar + trend + pie + network | Pages live (3 mirrors) |
+| **Web** (local + Pages) | ✓ 0 console/page errors, all 5 tabs | ✓ index=73, level 人情大师 | ✓ radar + trend + pie + network | Pages live (3 mirrors) |
 | **Android APK** | ✓ WebView shell | ✓ fix embedded | ✓ html2canvas inline | Release v2.8.1 |
 | **Windows EXE** | ✓ Electron launch | ✓ fix embedded | ✓ html2canvas inline | Release v2.8.1 |
 | **WeChat Mini Program** | ✓ 7-page routing | independent engine | native components | project validated |

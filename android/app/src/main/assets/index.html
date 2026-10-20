@@ -248,7 +248,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
   <header class="topbar">
     <div class="brand">
       <svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>
-      <span>人情世故雷达<span class="slogan">把人情账记明白</span></span><span class="ver">v2.8</span>
+      <span>人情世故雷达<span class="slogan">把人情账记明白</span></span><span class="ver">v2.8.1</span>
     </div>
     <div class="scorebox">
       <div class="lab">人情指数</div>
@@ -362,7 +362,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 /* 品牌（Logo / 名称 / Slogan 统一出口） */
 const LOGO_SVG = `<svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>`;
-const BRAND = { name: '人情世故雷达', slogan: '把人情账记明白，把关系经营成细水长流', en: 'RENQING · RADAR', version: 'v2.8' };
+const BRAND = { name: '人情世故雷达', slogan: '把人情账记明白，把关系经营成细水长流', en: 'RENQING · RADAR', version: 'v2.8.1' };
 
 function timeAgo(ts) {
   const s = (Date.now() - ts) / 1000;
@@ -489,6 +489,14 @@ function sanitizeImport(d) {
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const num = (x, def) => (typeof x === 'number' && isFinite(x)) ? x : def;
   const str = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+  /* 事件人情值：缺省取类型基准；负向事件（dHeat<0）强制为负，
+     防止旧数据里「冲突」被存成 +7 后反向升温。 */
+  const fixWeight = (type, w) => {
+    const t = EVENT_TYPES[type] || EVENT_TYPES.other;
+    let n = num(w, t.dHeat);
+    if (t.dHeat < 0 && n > 0) n = -n;
+    return n;
+  };
 
   let persons = Array.isArray(d.persons) ? d.persons : [];
   const nP = persons.length;
@@ -516,7 +524,9 @@ function sanitizeImport(d) {
       type: e.type,
       title: str(e.title, 80),
       time: num(e.time, Date.now()),
-      weight: num(e.weight, 6),
+      /* 缺 weight 时按该类型基准补齐；负向事件（冲突）的权重再统一取负，
+         兼容旧小程序把 weight 恒存为 +7 的历史数据，避免冲突被算成升温。 */
+      weight: fixWeight(e.type, e.weight),
       note: str(e.note, 500)
     }));
   if (nE !== events.length) warn.push('往来 ' + (nE - events.length) + ' 条');
@@ -554,11 +564,14 @@ const store = {
       if (!raw) return false;
       const d = JSON.parse(raw);
       if (!d || !Array.isArray(d.persons)) return false;
-      state.persons = (d.persons || []).filter(p => p && typeof p.name === 'string' && p.name.trim());
-      state.events = (d.events || []).filter(e => e && typeof e.type === 'string' && (e.time > 0));
-      state.reminders = d.reminders || [];
-      state.progress = d.progress || {};
-      state.streak = d.streak || { n: 0, last: '' };
+      /* 本地缓存同样按不可信数据处理：旧版本/手改/半截写入都可能留下
+         progress.best 非数字、events 非数组等脏值，直接进 state 会 NaN 白屏。 */
+      const clean = sanitizeImport(d);
+      state.persons = clean.persons;
+      state.events = clean.events;
+      state.reminders = clean.reminders;
+      state.progress = clean.progress;
+      state.streak = clean.streak;
       return true;
     } catch (e) { return false; }
   },
@@ -727,12 +740,20 @@ function overallMetrics() {
   return { scale, heatAvg, freq, credit, wisdom, index };
 }
 
-/* 处世智慧：情景修炼累计（按难度加成，封顶 100） */
+/* 处世智慧：情景修炼按难度加权后归一化到 0-100。
+   满分为「全部情景都拿到 100 分」时的加权总分，这样单题满分不会一次拉满段位，
+   也不是简单累加后硬截断（旧实现一道高手题 95×1.5=142 就封顶 100）。 */
 const DIFFS = {
   入门: { w: 1, chip: 'chip teal' },
   进阶: { w: 1.25, chip: 'chip amber' },
   高手: { w: 1.5, chip: 'chip red' }
 };
+/* SCENARIOS 在本节之后才声明，满分只能在调用时算（不能写成模块级常量，否则 TDZ 报错）。 */
+let _wisdomFull = 0;
+function wisdomFull() {
+  if (!_wisdomFull) _wisdomFull = SCENARIOS.reduce((sum, sc) => sum + 100 * DIFFS[sc.diff].w, 0);
+  return _wisdomFull;
+}
 function getWisdom() {
   let s = 0;
   for (const k in state.progress) {
@@ -740,7 +761,9 @@ function getWisdom() {
     const w = DIFFS[sc ? sc.diff : '入门'].w;
     s += state.progress[k].best * w;
   }
-  return clamp(Math.round(s), 0, 100);
+  const full = wisdomFull();
+  if (!(full > 0)) return 0;
+  return clamp(Math.round(s / full * 100), 0, 100);
 }
 const LEVELS = [
   { min: 0, name: '人情小白', desc: '刚入门，多留心身边人的感受' },
@@ -1327,13 +1350,15 @@ function viewRadar() {
 /* ---------- 人脉列表 ---------- */
 function viewPersons() {
   const kw = state.filter.trim().toLowerCase();
+  /* 最后往来时间一次遍历建表：旧实现在排序比较器里对每个人做全量 events.filter，
+     复杂度 O(人 × log人 × 事件)，人一多列表就明显卡顿。 */
+  const lastTsMap = {};
+  for (const ev of state.events) {
+    if (!lastTsMap[ev.personId] || ev.time > lastTsMap[ev.personId]) lastTsMap[ev.personId] = ev.time;
+  }
   let list = state.persons.slice();
   if (state.sortBy === 'last') {
-    list.sort((a, b) => {
-      const la = state.events.filter(e => e.personId === a.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-      const lb = state.events.filter(e => e.personId === b.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-      return lb - la;
-    });
+    list.sort((a, b) => (lastTsMap[b.id] || 0) - (lastTsMap[a.id] || 0));
   } else if (state.sortBy === 'debt') {
     list.sort((a, b) => computedFor(b.id).debt - computedFor(a.id).debt);
   } else {
@@ -1361,7 +1386,7 @@ function viewPersons() {
           <div class="track"><div class="fill" style="width:${m.heat}%"></div></div>
           <span class="val">${Math.round(m.heat)}</span></div>
       </div>
-      <div class="pc-right">${m.lastDays === null ? '尚无往来' : timeAgo(state.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0))}<br>${m.eventCount} 笔记录</div>
+      <div class="pc-right">${m.lastDays === null ? '尚无往来' : timeAgo(lastTsMap[p.id])}<br>${m.eventCount} 笔记录</div>
     </div>`;
   }).join('');
   const matchInfo = kw ? `<div style="padding:0 14px 6px;font-size:12px;color:var(--dim)">匹配 ${list.length} / ${totalBefore} 人</div>` : '';
@@ -1621,9 +1646,10 @@ function drawNetwork(canvas) {
   const heats = persons.map(p => Math.round(computedFor(p.id).heat));
   const maxH = Math.max(...heats, 1);
   const cx = W / 2, cy = H / 2, radius = Math.min(W, H) / 2 - 40;
-  /* 连线：两人共同事件数 */
-  const evByP = {};
-  for (const p of persons) evByP[p.id] = state.events.filter(e => e.personId === p.id).length;
+  /* 连线：数据模型里事件只挂在单人身上，没有「两人共同事件」这种字段，
+     所以关联度用「共同标签数」表示（同好、同圈子才连线），旧注释的说法与实现不符。 */
+  const tagSet = {};
+  for (const p of persons) tagSet[p.id] = new Set(p.tags || []);
   /* 环形布局：第一人在中心，其余均匀分布圆周 */
   const nodes = persons.map((p, i) => {
     if (i === 0) return { x: cx, y: cy, p, heat: heats[0] };
@@ -1635,7 +1661,8 @@ function drawNetwork(canvas) {
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i], b = nodes[j];
-      const shared = Math.min(evByP[a.p.id] || 0, evByP[b.p.id] || 0);
+      let shared = 0;
+      for (const t of tagSet[a.p.id]) if (tagSet[b.p.id].has(t)) shared++;
       if (shared > 0) {
         const lw = Math.min(1 + shared * 0.5, 5);
         ctx.strokeStyle = 'rgba(185,164,128,' + Math.min(0.15 + shared * 0.05, 0.5) + ')';
@@ -1850,7 +1877,7 @@ function viewMe() {
     </div>
     <div id="relation-network" class="card">
       <h3>关系网络</h3>
-      <div class="sub" style="margin-top:4px">点击节点可查看人脉详情</div>
+      <div class="sub" style="margin-top:4px">点击节点可查看人脉详情；节点越大热度越高，连线表示两人有共同标签</div>
       <canvas id="network-canvas" style="width:100%;display:block;margin-top:10px"></canvas>
     </div>
     ${achievementsHtml()}
@@ -2127,8 +2154,16 @@ function loadDemo() {
     { id: uid(), personId: p.zhang.id, content: '请老张吃顿饭，还上次借车的人情', date: fmtDate(now + 3 * DAY), status: 'pending' },
     { id: uid(), personId: p.wang.id, content: '王总生日，发条祝福', date: fmtDate(now + 6 * DAY), status: 'pending' }
   ];
-  // 修炼进度：演示数据带一点处世智慧，五维雷达不再缺一角（35 分 = 「人情通达」段位）
-  state.progress = { wedding: { best: 40, times: 2 } };
+  /* 修炼进度：智慧值按「全部情景满分」归一化，单题满分只有个位数分值。
+     这里给 10 道题打满（4 入门 + 5 进阶 + 1 高手），落地约 64 分，
+     演示数据维持在「人情大师」段位，五维雷达不缺一角。 */
+  state.progress = {
+    wedding: { best: 100, times: 2 }, paybill: { best: 100, times: 1 },
+    redpacket: { best: 100, times: 1 }, praise: { best: 100, times: 1 },
+    toast: { best: 100, times: 1 }, gossip: { best: 100, times: 1 },
+    thanks: { best: 100, times: 1 }, borrow: { best: 100, times: 1 },
+    gift: { best: 100, times: 1 }, weekend: { best: 100, times: 1 }
+  };
   state.streak = { n: 2, last: fmtDate(now) };
   invalidateCache(); store.save(); render();
   toast('已载入 6 位人脉演示数据，可在「我的」里清空重建');
@@ -2359,10 +2394,13 @@ function onClick(e) {
       try {
         const d = JSON.parse(raw);
         if (!d || !Array.isArray(d.persons)) throw new Error('bad');
+        /* 与文件导入走同一条清洗链：剪贴板内容同样是外部输入，
+           直接 applyImport 会把 progress.best='oops' 之类的脏值带进 state。 */
+        const clean = sanitizeImport(d);
         if (state.persons.length) {
-          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(d), true);
+          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(clean), true);
         } else {
-          store.applyImport(d);
+          store.applyImport(clean);
         }
       } catch (e) { toast('导入失败：内容格式不对'); }
       break;

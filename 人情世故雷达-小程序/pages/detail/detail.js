@@ -75,7 +75,8 @@ Page({
     const S = engine.getState();
     const p = S.persons.find(x => x.id === this.data.id);
     if (!p) return;
-    p.adjust = Math.max(-50, Math.min(50, (p.adjust || 0) + d));
+    /* 与 Web 端一致：手动微调上限 ±30，避免单靠微调把热度拉满。 */
+    p.adjust = Math.max(-30, Math.min(30, (p.adjust || 0) + d));
     engine.save();
     this.refresh();
   },

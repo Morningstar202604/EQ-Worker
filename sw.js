@@ -1,5 +1,6 @@
 // 人情世故雷达 · PWA Service Worker
-const CACHE_NAME = 'rqsg-radar-v2.8.1';
+/* 每次发版必须更新缓存名：Cache First 策略下，名字不变会让老用户永远拿到旧 HTML。 */
+const CACHE_NAME = 'rqsg-radar-v2.8.1-r2';
 const PRECACHE_URLS = [
   './index.html',
   './人情世故雷达.html'

@@ -18,7 +18,7 @@ function loadH5() {
   src += `
 ;globalThis.__h5 = { state, computePerson, computedFor, overallMetrics, getLevel, getWisdom,
   relationRead, daysUntil, sanitizeImport, esc, clamp, uid, EVENT_TYPES, invalidateCache, store,
-  highlightKw };`;
+  highlightKw, SCENARIOS, lsSet, lsGet };`;
 
   const el = () => ({
     innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, children: [],
@@ -177,6 +177,29 @@ test('overallMetrics：有人脉时五项均在 0-100 且 index 为有限数', (
     assert.ok(Number.isFinite(m[k]), `${k} 应为有限数，实际 ${m[k]}`);
     assert.ok(m[k] >= 0 && m[k] <= 100, `${k} 应在 0-100，实际 ${m[k]}`);
   }
+});
+
+test('[P0 回归] 本地缓存损坏时 load() 仍得到干净状态', () => {
+  H.lsSet('rqsg_radar_v2', JSON.stringify({
+    persons: [{ name: 'A' }],
+    events: [{ id: 'e1', personId: 'x', type: 'meal', time: 0 }],
+    progress: { s1: { best: 'oops', times: 1 } }
+  }));
+  assert.equal(H.store.load(), true);
+  assert.equal(H.state.events.length, 0);
+  assert.ok(Number.isFinite(H.state.progress.s1.best));
+  assert.equal(H.state.progress.s1.best, 0);
+});
+
+test('getWisdom：单题满分不会一次拉满（归一化到全部情景满分）', () => {
+  H.state.progress = { wedding: { best: 100, times: 1 } };
+  const w = H.getWisdom();
+  assert.ok(w > 0 && w < 100, `单题满分应远小于 100，实际 ${w}`);
+  // 全部情景满分才到 100
+  const all = {};
+  for (const sc of H.SCENARIOS) all[sc.id] = { best: 100, times: 1 };
+  H.state.progress = all;
+  assert.equal(H.getWisdom(), 100);
 });
 
 test('getLevel：段位边界正确', () => {
