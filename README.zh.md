@@ -13,6 +13,10 @@
 [![版本](https://img.shields.io/badge/版本-v3.0.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![许可](https://img.shields.io/badge/许可-CC%20BY--NC%204.0-red)](LICENSE)
 
+**在线体验：** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
+
+**仓库：** [GitCode](https://gitcode.com/badhope/EQ-Worker) · [Gitee](https://gitee.com/badhope/EQ-Worker) · [GitHub @badhope](https://github.com/badhope/EQ-Worker) · [GitHub @X33834](https://github.com/X33834/EQ-Worker) · [GitHub @Morningstar202604](https://github.com/Morningstar202604/EQ-Worker)
+
 </div>
 
 ---
