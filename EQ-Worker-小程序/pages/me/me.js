@@ -82,7 +82,7 @@ Page({
   },
   addReminder() {
     const S = engine.getState();
-    if (!S.persons.length) { ui.toast(this, '先添加人脉', { icon: '✕' }); return; }
+    if (!S.persons.length) { ui.toast(this, '先添加人脉', { icon: '×' }); return; }
     /* 用页面内的自定义选择层替代原生 wx.showActionSheet：
        原生弹层与日记本文风不统一，且无法在真机自定义配色。 */
     this.setData({
@@ -147,14 +147,14 @@ Page({
   onImport(e) { this.setData({ importText: e.detail.value }); },
   doImport() {
     const txt = this.data.importText.trim();
-    if (!txt) { ui.toast(this, '先粘贴备份内容', { icon: '✕' }); return; }
+    if (!txt) { ui.toast(this, '先粘贴备份内容', { icon: '×' }); return; }
     try {
       engine.restoreText(txt);
       this.setData({ showImport: false });
       this.onShow();
       ui.toast(this, '导入成功', { icon: '✓' });
     } catch (err) {
-      ui.toast(this, '导入失败：格式不对', { icon: '✕' });
+      ui.toast(this, '导入失败：格式不对', { icon: '×' });
     }
   },
   clearAll() {

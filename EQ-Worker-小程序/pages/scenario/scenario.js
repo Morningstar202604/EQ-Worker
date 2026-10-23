@@ -25,7 +25,7 @@ Page({
   noop() {},
   confirm() {
     const pick = this.data.pick;
-    if (pick < 0) { ui.toast(this, '先选一个答案', { icon: '✕' }); return; }
+    if (pick < 0) { ui.toast(this, '先选一个答案', { icon: '×' }); return; }
     const S = engine.getState();
     const sc = this.data.sc;
     const opt = sc.choices[pick];

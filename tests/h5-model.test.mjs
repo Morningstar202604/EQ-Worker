@@ -317,7 +317,7 @@ test('giftAdvice：对方曾给过 2000，还礼不低于 2000', () => {
   ]);
   const a = H.giftAdvice('p1', '婚礼', { tier: 'simple', city: '三线' });
   assert.ok(a.mid >= 2000, `还礼应不低于对方给过的 2000，实际 ${a.mid}`);
-  assert.ok(a.reasons.some(r => r.includes('2000')));
+  assert.ok(a.reasons.some(r => r.includes('2,000')));
 });
 
 test('personHealth：分数在 0-100 且给出可执行建议', () => {
