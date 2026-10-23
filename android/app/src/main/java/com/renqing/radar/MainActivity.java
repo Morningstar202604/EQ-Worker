@@ -16,7 +16,7 @@ import android.webkit.WebViewClient;
 import androidx.webkit.WebViewAssetLoader;
 
 /**
- * 人情世故雷达 · 安卓壳
+ * EQ-Worker · 安卓壳
  *
  * 设计原则：
  *  1. 网页版是单文件自包含 HTML（约 1.1MB，零依赖），壳只做三件事：
@@ -28,7 +28,7 @@ import androidx.webkit.WebViewAssetLoader;
 public class MainActivity extends Activity {
 
     /** 应用内资源的虚拟域：与 assets 目录一一对应 */
-    private static final String VIRTUAL_DOMAIN = "appassets.renqingradar.local";
+    private static final String VIRTUAL_DOMAIN = "appassets.eqworker.local";
     private static final String START_URL = "https://" + VIRTUAL_DOMAIN + "/assets/index.html";
 
     private WebView webView;

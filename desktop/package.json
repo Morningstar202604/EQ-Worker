@@ -1,8 +1,8 @@
 {
-  "name": "renqing-radar-desktop",
-  "productName": "人情世故雷达",
-  "version": "2.8.1",
-  "description": "人情世故雷达 · Windows 桌面版（Electron 壳 + 单文件网页应用）",
+  "name": "eq-worker-desktop",
+  "productName": "EQ-Worker",
+  "version": "3.0.0",
+  "description": "EQ-Worker · Windows 桌面版（Electron 壳 + 单文件网页应用）",
   "main": "main.js",
   "private": true,
   "scripts": {

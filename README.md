@@ -1,182 +1,182 @@
 <div align="center">
 
-# RENQING · RADAR
+# EQ-Worker
 
-**人情世故雷达 — Keep your favors clear, keep your relationships flowing.**
+**A local-first Chinese social intelligence assistant — keep favors clear, keep relationships warm.**
 
-Relationship management · Favor ledger · Social practice — lightweight, **local-first**, private-by-design.
+Daily actions · Favor ledger · Gift advisor · Conversation scripts · Relationship health
+
+Local-first · Zero server · No ads · No tracking
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![Platform](https://img.shields.io/badge/Platform-Web%20PWA%20%2B%20WeChat%20Mini%20Program-2da44e)](https://github.com/Morningstar202604/chushi-radar)
-[![Release](https://img.shields.io/github/v/release/Morningstar202604/chushi-radar?include_prereleases&label=Version&color=orange)](https://github.com/Morningstar202604/chushi-radar/releases)
-[![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-red)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/Morningstar202604/chushi-radar?style=social)](https://github.com/Morningstar202604/chushi-radar/stargazers)
-
-**Mirror repos:** [GitHub @badhope](https://github.com/badhope/chushi-radar) · [GitHub @x33834](https://github.com/x33834/chushi-radar) · [GitHub @Morningstar202604](https://github.com/Morningstar202604/chushi-radar) · [GitCode](https://gitcode.com/badhope/chushi-radar) · [Gitee](https://gitee.com/badhope/chushi-radar)
+[![Version](https://img.shields.io/badge/version-v3.0.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 </div>
 
 ---
 
-## ✨ Try Online
+## Why EQ-Worker
 
-| Channel | Link |
-|---|---|
-| **Web (GitHub Pages, auto-deploy)** | <https://morningstar202604.github.io/chushi-radar/> |
-| **Mirror (GitHub @x33834)** | <https://x33834.github.io/chushi-radar/> |
-| **Mirror (GitHub @badhope)** | <https://badhope.github.io/chushi-radar/> |
-| **Official Brand Site** | <https://morningstar202604.github.io/chushi-radar/%E5%AE%98%E7%BD%91/%E4%BA%BA%E6%83%85%E4%B8%96%E6%95%85%E9%9B%B7%E8%BE%BE%E5%AE%98%E7%BD%91.html> |
+Most people do not struggle with relationships because they do not care. They struggle because they cannot remember, cannot calculate, and cannot find the right words:
 
-> **No internet at all?** Just download `人情世故雷达.html`, open it in any browser — fully offline-capable, identical functionality.
+- Who helped you, whom you owe a dinner, what happened last month;
+- How much to give for a wedding, a baby, a housewarming, or a hospital visit;
+- How to decline a loan request, ask for money back, or apologize without sounding cold.
 
----
+EQ-Worker puts these into one **local-first workspace**. Every time you open it, it tells you what to do today, then gives you the ledger, a gift range, and scripts you can copy.
 
-## 📸 Screenshots
-
-| Radar Overview | People Management | Quick Record |
-| --- | --- | --- |
-| ![Radar](docs/screenshots/01-radar.png) | ![People](docs/screenshots/02-persons.png) | ![Record](docs/screenshots/03-record.png) |
-
-| Practice Arena | My Data Center | Search Highlight |
-| --- | --- | --- |
-| ![Practice](docs/screenshots/04-scenario.png) | ![Data](docs/screenshots/05-me.png) | ![Search](docs/screenshots/06-search.png) |
-
-![Person Detail](docs/screenshots/07-detail.png)
-*Five-axis radar + warmth metrics + interaction timeline + relationship insight*
+> It is not a fancier contacts app. It is an assistant that **thinks one step ahead about your relationships**.
 
 ---
 
-## 🎯 What Is This
+## Core features
 
-**RENQING · RADAR (人情世故雷达)** is a **relationship-keeping tool**, not a personality quiz.
+### 1. Daily actions (assistant home)
 
-> *Renqing* (人情) = the unspoken currency of favors, debts, and care that oils human relationships.
+Combines birthdays, anniversaries, overdue reminders, fading relationships, favor debt, ledger balances, thank-you follow-ups, and key-relationship maintenance into one prioritized list.
 
-The legacy "Chushi Radar" was an 81-question social-intelligence test. Since v2, it has been rebuilt as a **keep-and-grow** workflow:
+Every action carries two buttons, for example:
 
-1. **Spend 10 seconds** after a dinner recording one interaction
-2. The **radar does the rest** — auto-drawing profiles, computing warmth scores, and nudging you whom to visit, which favor to return, and whose birthday to celebrate
+- **Gift advisor** → a concrete gift range;
+- **Reconnect script** → three ready-to-copy tones;
+- **Log it** → record the interaction in ten seconds.
 
-### Who is it for
+### 2. Favor ledger
 
-- People who attend dinners, weddings, and gatherings and want to manage the "favor bank"
-- Anyone tired of forgetting birthdays, missing festival greetings, or owing invisible debts
-- Learners of Chinese social scenarios — 15 built-in practice cases with difficulty tiers
+- Record gift / received gift / loan / repayment with amount, direction, and occasion;
+- Per-person net position: **I owe them** / **they owe me** / **settled**;
+- Totals: given, received, net, people owed, people owing;
+- Filters and CSV export;
+- **Money only affects the ledger, never the heat / trust / favor-debt scores.**
+
+### 3. Gift advisor
+
+Suggests **simple / appropriate / generous** ranges based on relationship, occasion, tier, and city, with explanations:
+
+- baseline by relationship and occasion;
+- what they gave you on the same occasion (return gifts should not be lower);
+- an upward adjustment when your ledger shows a net debt;
+- their likes and taboos as gift-selection hints.
+
+> Gift amounts vary heavily by region, closeness, and local custom. Treat this as a reference, not a rule.
+
+### 4. Conversation scripts
+
+16 high-frequency scenes: reconnect, thank, apologize, ask a favor, decline, refuse a loan, collect a debt, give a gift, toast, visit the sick, decline an invitation, festival greetings, invite to dinner, follow up, birthday, anniversary.
+
+Each scene offers **steady / close / brief** versions, automatically using the person's name, role, and latest interaction. One-click copy.
+
+### 5. Relationship health
+
+Combines heat, trust, intimacy, activity, ledger reciprocity, and conflicts in the past year into a 0–100 score with concrete next steps.
+
+### 6. Important dates and calendar
+
+Birthdays and anniversaries recur yearly; reminders are one-off events. Export everything as `.ics`.
+
+### 7. Everything from v2 remains
+
+- Five-dimension person profiles;
+- Quick logging with undo, search highlight, role filters, three sort modes;
+- 15 Chinese social scenarios and ranks;
+- Monthly insights, annual report, relationship network;
+- Achievements, PWA offline support, JSON / clipboard / CSV migration.
 
 ---
 
-## 🔁 Core Loop (5 Closed Modules)
+## Screenshots
 
-```
-Record interactions → Auto profile → Smart reminders → Scenario training → Annual report
-```
-
-| Module | What it does |
+| Assistant | Favor ledger |
 | --- | --- |
-| **Radar Overview** | 5-dimension profile (network scale / warmth / frequency / credit / wisdom) + composite index + smart reminders (festivals, favors owed, long-no-contact, birthdays, todos — color-coded by urgency) |
-| **People Management** | One radar card per person; warmth = event weighting + 90-day half-life decay, manually adjustable; search / role filter / 3 sort modes |
-| **Quick Record** | 10 interaction types auto-weighted (dinner, help, gifts, loans, heart-to-heart…); undo supported |
-| **Practice Arena** | 15 Chinese social scenarios (wedding gifts, toasting, borrowing money, saving face…), difficulty tiers, raises wisdom & level |
-| **My Data** | Monthly insights, 6-month trend, annual report, todo management, backup & migration (clipboard / file / CSV) |
+| ![assistant](docs/screenshots/v3/01-assistant.png) | ![ledger](docs/screenshots/v3/02-ledger.png) |
 
----
-
-## 📱 Two Platforms, One Data Format
-
-| Platform | Description |
+| Gift advisor | Conversation scripts |
 | --- | --- |
-| **Web (PWA)** | Single self-contained HTML (~1.1 MB, zero build), works offline, installable to home screen; built-in open-source ECharts visualization |
-| **WeChat Mini Program** | Full mini-program project (`chushi-radar/人情世故雷达-小程序/`), hand-drawn radar on Canvas with zero dependencies; web↔mini data is fully interoperable (SCHEMA_VERSION) |
+| ![gift](docs/screenshots/v3/03-gift.png) | ![scripts](docs/screenshots/v3/04-script.png) |
 
-### Mini Program Highlights
-
-- **Custom UI components** — unified modal/toast with smooth entrance/exit animations (replaces all native wx modals)
-- **Search highlighting** — real-time yellow highlight on matching characters across name/identity/tags
-- **Press feedback** — all interactive cards have scale-press animations
-- **Urgency pulse** — overdue reminders pulse with red glow
-- **Lunar calendar built in** — supports Chinese festival detection (1900–2100)
+| Quick record | Mobile |
+| --- | --- |
+| ![record](docs/screenshots/v3/05-record.png) | ![mobile](docs/screenshots/v3/06-mobile.png) |
 
 ---
 
-## 🔐 Data & Privacy
+## Platforms
 
-- **Zero server** — all data stays on your device (browser localStorage / mini-program local cache)
-- **No analytics, no ads, no sign-up** — you are not the product
-- **Seamless migration** — export → copy clipboard → paste-import on new device; web↔mini formats are interoperable
-- Built-in Chinese lunar calendar for festival reminders (1900–2100)
-
----
-
-## 🆕 What's New in v2.8.1
-
-- **Unified UI components** — custom modal/toast system with smooth animations across all 7 mini-program pages
-- **Search highlight** — find anyone instantly with yellow character-level highlighting + match count
-- **Relationship network graph** — Canvas ring layout showing all connections (web)
-- **Annual report PNG export** — html2canvas-powered one-tap image sharing (web)
-- **Performance** — computePerson global cache + event-versioned invalidation
-- **PWA support** — Service Worker Cache First strategy for fully offline web
-- **Build system** — zero-dep ESM build script (`build.js`)
-- **Unit tests** — 26 passing tests via `node --test`（覆盖 H5 引擎边界、导入清洗、段位与半衰期）
+| Platform | Status | Notes |
+| --- | --- | --- |
+| **Web (PWA)** | Full | Self-contained single HTML file, offline-ready |
+| **Android** | Full | Native WebView shell embedding the same `index.html` |
+| **Windows desktop** | Full | Portable Electron build |
+| **WeChat Mini Program** | Lite | Radar, contacts, record, training, profile; data-compatible with Web v4, without the new assistant/advisor UI |
 
 ---
 
-## 🛠 Tech Stack
+## Data and privacy
+
+- **Zero server**: data stays in local storage;
+- No account, no ads, no analytics;
+- Backups are plain JSON and can move between web and mini program;
+- Legacy `rqsg_radar_v2` data migrates automatically to `eqworker_db_v1`.
+
+---
+
+## Quick start
+
+Open `EQ-Worker.html` directly, or serve the folder:
+
+```bash
+python3 -m http.server 8000
+# http://localhost:8000/
+```
+
+Build and test:
+
+```bash
+npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html, sync Android and desktop assets
+npm test        # 49 unit tests
+npm run verify  # build + all tests
+```
+
+Android / Windows build instructions: [`docs/双端构建与发布.md`](docs/双端构建与发布.md).
+
+WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
+
+---
+
+## Tech stack
 
 | Layer | Choice |
 | --- | --- |
-| Language | Vanilla JavaScript (zero framework) |
-| Chart | ECharts 5 (inlined) / Canvas 2D (mini program) |
-| Storage | localStorage / wx.storage (local-only) |
-| PWA | Service Worker + Cache First |
+| Language | Vanilla JavaScript (no framework) |
+| Charts | ECharts 5 (inline) / Canvas 2D (mini program) |
+| Storage | localStorage / wx.storage |
 | Build | `build.js` — ESM, zero dependencies |
-| Test | `node --test` built-in runner |
+| Tests | `node --test`, 49 cases |
+| Advisor | Local explainable rules, no external AI calls |
 
 ---
 
-## 📦 Quick Start
+## v3.0.0
 
-- **Web**: open `人情世故雷达.html` directly in Chrome, Safari, or WeChat browser
-- **Mini Program**: import `chushi-radar/人情世故雷达-小程序/` into WeChat DevTools
-
----
-
-## 🧪 Cross-End Verification (v2.8.1)
-
-Every release is verified across **5 ends** — Web (local + GitHub Pages), Android APK, Windows EXE, WeChat Mini Program, and the official site. Screenshots below are captured by an automated Playwright run (real browser, real JS execution). The `debt=0` relation-reading bug fix is confirmed live on the public Pages site.
-
-| End | Nav / Response | Model Calc | Visualization | Published |
-| --- | --- | --- | --- | --- |
-| **Web** (local + Pages) | ✓ 0 console/page errors, all 5 tabs | ✓ index=70, level 人情大师 | ✓ radar + trend + pie + network | Pages live (3 mirrors) |
-| **Android APK** | ✓ WebView shell | ✓ fix embedded | ✓ html2canvas inline | Release v2.8.1 |
-| **Windows EXE** | ✓ Electron launch | ✓ fix embedded | ✓ html2canvas inline | Release v2.8.1 |
-| **WeChat Mini Program** | ✓ 7-page routing | independent engine | native components | project validated |
-| **Official Site** | ✓ both download links reachable | — | — | live |
-
-**Live Pages (real browser run):**
-
-| Radar Overview | My Data Center |
-| --- | --- |
-| ![live radar](docs/screenshots/verification/live-pages-radar.png) | ![live me](docs/screenshots/verification/live-pages-me.png) |
-
-**Web desktop (GitHub Pages) & mobile:**
-
-| Desktop Radar | Desktop My Data | Desktop Annual Report | Mobile Radar |
-| --- | --- | --- | --- |
-| ![d-radar](docs/screenshots/verification/web-pages-desktop-radar.png) | ![d-me](docs/screenshots/verification/web-pages-desktop-me.png) | ![d-annual](docs/screenshots/verification/web-pages-desktop-annual.png) | ![m-radar](docs/screenshots/verification/web-mobile-radar.png) |
-
-> All five git mirrors (GitHub @badhope / @x33834 / @Morningstar202604, GitCode, Gitee) are synced to tag **v2.8.1** (`e87b9fd`). Full report: `五端体检/体检报告.html`.
+- Rebranded from 人情世故雷达 to **EQ-Worker**;
+- New **assistant home / daily actions**;
+- New **favor ledger** with amounts, direction, occasion, filters, CSV;
+- New **gift advisor**;
+- New **conversation scripts** (16 scenes × 3 tones);
+- New **relationship health** and per-person ledger;
+- New **.ics export**;
+- Data schema v4 with automatic migration;
+- 49 tests passing, zero browser console errors.
 
 ---
 
-## 📄 License
+## License
 
-Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0), see [`LICENSE`](LICENSE).
-
----
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). See [`LICENSE`](LICENSE).
 
 <div align="center">
 
-⭐ **Star this repo** if it helps · 🍴 **Fork** to build your own · 🐛 **Issues** are welcome
-
+**Relationships are not transactions — but remembering matters.**
 </div>

@@ -1,4 +1,4 @@
-// 人情世故雷达 · 小程序 UI 组件控制器
+// EQ-Worker · 小程序 UI 组件控制器
 // 统一接管 wx.showModal / wx.showToast，提供自定义动效 modal + toast
 // 用法：在 Page 中 require 后调用 ui.toast / ui.modal / ui.modalClose / ui.modalInput
 const DURATION = 220; // 动效毫秒

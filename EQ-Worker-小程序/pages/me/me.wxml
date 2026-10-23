@@ -94,11 +94,11 @@
         <view style="position:absolute;left:50%;top:50%;width:14rpx;height:14rpx;transform:translate(-50%,-50%);background:#f6f1e4;border-radius:50%"></view>
       </view>
     </view>
-    <view style="font-size:36rpx;font-weight:700;color:#4a4238;margin-top:14rpx;letter-spacing:4rpx">人情世故雷达</view>
+    <view style="font-size:36rpx;font-weight:700;color:#4a4238;margin-top:14rpx;letter-spacing:4rpx">EQ-Worker</view>
     <view style="font-size:26rpx;color:#5f8575;margin-top:6rpx">把人情账记明白，把关系经营成细水长流</view>
   </view>
   <view class="card-sub" style="text-align:center;line-height:1.8;margin-top:10rpx">
-    本地优先 · 数据只存本机 · RENQING RADAR<br><br>
+    本地优先 · 数据只存本机 · EQ-Worker RADAR<br><br>
     以「记录往来 → 自动画像 → 智能提醒 → 情景修炼 → 年度报告」为主线，帮你把人情账记明白、把关系经营成细水长流。<br><br>
     · 雷达图由 Canvas 绘制，无第三方依赖<br>
     · 数据仅存本机，隐私安全，可随时备份迁移<br>
@@ -140,6 +140,24 @@
       </view>
     </view>
     <view class="btn block" bindtap="closeReport">关闭</view>
+  </view>
+</view>
+
+<!-- 选择关联人弹层（替代原生 showActionSheet） -->
+<view class="mask" wx:if="{{picker.show}}" bindtap="closePicker" catchtouchmove="noop">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-title">选择关联人</view>
+    <view class="card-sub" style="margin-bottom:10rpx">提醒会挂在这位人脉下，方便在详情里回看。</view>
+    <view class="pick-row tap-fade" wx:for="{{picker.options}}" wx:key="id"
+      data-id="{{item.id}}" bindtap="pickPerson">
+      <view class="pick-avatar">{{item.name[0]}}</view>
+      <view style="flex:1;min-width:0">
+        <view style="font-size:28rpx;font-weight:600">{{item.name}}</view>
+        <view style="font-size:22rpx;color:#a89b88">{{item.identity}}</view>
+      </view>
+      <view style="font-size:26rpx;color:#5f8575">›</view>
+    </view>
+    <view class="btn block" bindtap="closePicker">取消</view>
   </view>
 </view>
 

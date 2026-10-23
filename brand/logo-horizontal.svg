@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 180" width="660" height="180" role="img" aria-label="人情世故雷达 · RENQING RADAR">
-  <title>人情世故雷达 · RENQING · RADAR</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 180" width="660" height="180" role="img" aria-label="EQ-Worker · EQ-Worker RADAR">
+  <title>EQ-Worker · EQ · WORKER</title>
   <defs>
     <linearGradient id="inkGradH" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#6b9683"/>
@@ -38,11 +38,11 @@
 
   <!-- 中文字标 -->
   <text x="186" y="96" font-family="'Ma Shan Zheng','KaiTi','STKaiti','Kaiti SC','Noto Serif CJK SC',serif"
-        font-size="62" font-weight="700" fill="#3d3730" letter-spacing="4">人情世故雷达</text>
+        font-size="62" font-weight="700" fill="#3d3730" letter-spacing="4">EQ-Worker</text>
 
   <!-- 英文标识 -->
   <text x="188" y="136" font-family="'Noto Serif SC','Source Han Serif SC','Georgia',serif"
-        font-size="21" fill="#c9a86a" letter-spacing="9">RENQING · RADAR</text>
+        font-size="21" fill="#c9a86a" letter-spacing="9">EQ · WORKER</text>
 
   <!-- 下划细线 -->
   <line x1="186" y1="150" x2="620" y2="150" stroke="#b9a480" stroke-opacity=".45" stroke-width="2"/>

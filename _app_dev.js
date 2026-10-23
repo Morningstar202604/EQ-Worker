@@ -1,5 +1,5 @@
 /* ===================================================================
- * 人情世故雷达 v2 · 应用逻辑
+ * EQ-Worker v2 · 应用逻辑
  * 分层：工具层 → 存储层 → 人情计算引擎 → 情景库 → 视图渲染 → 交互
  * =================================================================== */
 'use strict';
@@ -15,7 +15,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 /* 品牌（Logo / 名称 / Slogan 统一出口） */
 const LOGO_SVG = `<svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>`;
-const BRAND = { name: '人情世故雷达', slogan: '把人情账记明白，把关系经营成细水长流', en: 'RENQING · RADAR', version: 'v2.8' };
+const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: 'v3.0.0' };
 
 function timeAgo(ts) {
   const s = (Date.now() - ts) / 1000;
@@ -115,8 +115,9 @@ function upcomingFestival() {
 }
 
 /* ---------------- 2. 存储层（本机 localStorage，零依赖） ---------------- */
-const DB_KEY = 'rqsg_radar_v2';
-const SCHEMA_VERSION = 3;
+const DB_KEY = 'eqworker_db_v1';
+const LEGACY_DB_KEYS = ['rqsg_radar_v2'];
+const SCHEMA_VERSION = 4;
 
 /* localStorage 安全包装：Safari 隐私模式 / 禁用站点数据 / iframe 沙箱下，直接访问
    localStorage 会抛 SecurityError。init() 里裸调用会让启动中断、整页白屏。
@@ -142,6 +143,28 @@ function sanitizeImport(d) {
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const num = (x, def) => (typeof x === 'number' && isFinite(x)) ? x : def;
   const str = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+  const mmdd = (x) => {
+    const s = str(x, 10);
+    const m = s.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
+    return m ? m[1] + '-' + m[2] : '';
+  };
+  /* 事件人情值：缺省取类型基准；负向事件（dHeat<0）强制为负，
+     防止旧数据里「冲突」被存成 +7 后反向升温。 */
+  const fixWeight = (type, w) => {
+    const t = EVENT_TYPES[type] || EVENT_TYPES.other;
+    let n = num(w, t.dHeat);
+    if (t.dHeat < 0 && n > 0) n = -n;
+    return n;
+  };
+  /* 金额方向：旧数据没有 dir 字段，按事件类型推断；金额为 0 时统一 none。 */
+  const fixDir = (type, dir, amount) => {
+    if (!(amount > 0)) return 'none';
+    if (dir === 'in' || dir === 'out') return dir;
+    if (type === 'gift_get') return 'in';
+    if (type === 'gift_give') return 'out';
+    if (type === 'money') return 'in';
+    return 'none';
+  };
 
   let persons = Array.isArray(d.persons) ? d.persons : [];
   const nP = persons.length;
@@ -152,7 +175,10 @@ function sanitizeImport(d) {
       name: str(p.name, 60),
       identity: str(p.identity, 40),
       tags: Array.isArray(p.tags) ? p.tags.filter(t => typeof t === 'string').map(t => t.slice(0, 20)).slice(0, 10) : [],
-      birthday: str(p.birthday, 10),
+      birthday: mmdd(p.birthday),
+      anniversary: mmdd(p.anniversary),
+      likes: str(p.likes, 200),
+      taboos: str(p.taboos, 200),
       note: str(p.note, 500),
       adjust: num(p.adjust, 0),
       createdAt: num(p.createdAt, Date.now())
@@ -163,15 +189,23 @@ function sanitizeImport(d) {
   const nE = events.length;
   events = events
     .filter(e => isObj(e) && typeof e.type === 'string' && num(e.time, 0) > 0)
-    .map(e => ({
-      id: typeof e.id === 'string' && e.id ? e.id : uid(),
-      personId: str(e.personId, 40),
-      type: e.type,
-      title: str(e.title, 80),
-      time: num(e.time, Date.now()),
-      weight: num(e.weight, 6),
-      note: str(e.note, 500)
-    }));
+    .map(e => {
+      const amount = clamp(num(e.amount, 0), 0, 10000000);
+      return {
+        id: typeof e.id === 'string' && e.id ? e.id : uid(),
+        personId: str(e.personId, 40),
+        type: e.type,
+        title: str(e.title, 80),
+        time: num(e.time, Date.now()),
+        /* 缺 weight 时按该类型基准补齐；负向事件（冲突）的权重再统一取负，
+           兼容旧小程序把 weight 恒存为 +7 的历史数据，避免冲突被算成升温。 */
+        weight: fixWeight(e.type, e.weight),
+        note: str(e.note, 500),
+        amount,
+        dir: fixDir(e.type, e.dir, amount),
+        occasion: str(e.occasion, 20)
+      };
+    });
   if (nE !== events.length) warn.push('往来 ' + (nE - events.length) + ' 条');
 
   const reminders = Array.isArray(d.reminders)
@@ -195,23 +229,43 @@ function sanitizeImport(d) {
   const st = isObj(d.streak) ? d.streak : {};
   const streak = { n: num(st.n, 0), last: str(st.last, 20) };
 
+  const rawSet = isObj(d.settings) ? d.settings : {};
+  const settings = {
+    giftTier: ['simple', 'standard', 'generous'].includes(rawSet.giftTier) ? rawSet.giftTier : 'standard',
+    cityTier: ['三线', '二线', '一线'].includes(rawSet.cityTier) ? rawSet.cityTier : '二线'
+  };
+
   return {
-    persons, events, reminders, progress, streak, warn,
+    persons, events, reminders, progress, streak, settings, warn,
     schemaMismatch: (typeof d.schema === 'number' && d.schema !== SCHEMA_VERSION)
   };
 }
 const store = {
   load() {
     try {
-      const raw = localStorage.getItem(DB_KEY);
+      let raw = localStorage.getItem(DB_KEY);
+      let migrated = false;
+      if (!raw) {
+        for (const k of LEGACY_DB_KEYS) {
+          try {
+            const old = localStorage.getItem(k);
+            if (old) { raw = old; migrated = true; break; }
+          } catch (e) { /* 忽略单个旧键读取失败 */ }
+        }
+      }
       if (!raw) return false;
       const d = JSON.parse(raw);
       if (!d || !Array.isArray(d.persons)) return false;
-      state.persons = (d.persons || []).filter(p => p && typeof p.name === 'string' && p.name.trim());
-      state.events = (d.events || []).filter(e => e && typeof e.type === 'string' && (e.time > 0));
-      state.reminders = d.reminders || [];
-      state.progress = d.progress || {};
-      state.streak = d.streak || { n: 0, last: '' };
+      /* 本地缓存同样按不可信数据处理：旧版本/手改/半截写入都可能留下
+         progress.best 非数字、events 非数组等脏值，直接进 state 会 NaN 白屏。 */
+      const clean = sanitizeImport(d);
+      state.persons = clean.persons;
+      state.events = clean.events;
+      state.reminders = clean.reminders;
+      state.progress = clean.progress;
+      state.streak = clean.streak;
+      state.settings = clean.settings;
+      if (migrated) this.save();
       return true;
     } catch (e) { return false; }
   },
@@ -221,30 +275,33 @@ const store = {
         schema: SCHEMA_VERSION,
         persons: state.persons, events: state.events,
         reminders: state.reminders, progress: state.progress,
-        streak: state.streak
+        streak: state.streak, settings: state.settings
       }));
     } catch (e) { toast('保存失败：本地存储空间不足'); }
   },
   export() {
     const blob = new Blob([JSON.stringify({
-      app: '人情世故雷达', version: 2, exportedAt: Date.now(),
+      app: 'EQ-Worker', version: 3, exportedAt: Date.now(),
       persons: state.persons, events: state.events,
       reminders: state.reminders, progress: state.progress,
-      streak: state.streak
+      streak: state.streak, settings: state.settings
     }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `人情世故雷达备份-${todayStr()}.json`;
+    a.download = `EQ-Worker备份-${todayStr()}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   },
-  exportCsv() { // 人脉清单 CSV，Excel/WPS 可直接打开
-    const rows = [['姓名', '身份', '标签', '生日', '备注', '热度', '往来笔数', '最后往来']];
+  exportCsv() { // 人脉 + 人情账本 CSV，Excel/WPS 可直接打开
+    const rows = [['姓名', '身份', '标签', '生日', '纪念日', '喜好', '忌讳', '备注', '热度', '往来笔数', '最后往来', '送出(元)', '收到(元)', '净额(元)', '账本状态']];
     for (const p of state.persons) {
       const m = computedFor(p.id);
+      const l = personLedger(p.id);
       const last = state.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-      rows.push([p.name, p.identity || '', (p.tags || []).join('；'), p.birthday || '', p.note || '',
-        Math.round(m.heat), m.eventCount, last ? fmtDate(last) : '']);
+      rows.push([p.name, p.identity || '', (p.tags || []).join('；'), p.birthday || '', p.anniversary || '',
+        p.likes || '', p.taboos || '', p.note || '',
+        Math.round(m.heat), m.eventCount, last ? fmtDate(last) : '',
+        l.given, l.received, l.net, l.status === 'owe' ? '我欠对方' : l.status === 'due' ? '对方欠我' : '两清']);
     }
     /* CSV 公式注入防护：Excel/WPS 会把以 = + - @ 开头的单元格当公式执行
        （例如备注写成 =HYPERLINK(...) 或 =cmd|... 会变成攻击载荷）。
@@ -258,7 +315,7 @@ const store = {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `人情世故雷达-人脉清单-${todayStr()}.csv`;
+    a.download = `EQ-Worker-人脉清单-${todayStr()}.csv`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   },
@@ -284,6 +341,7 @@ const store = {
     state.reminders = clean.reminders;
     state.progress = clean.progress;
     state.streak = clean.streak;
+    state.settings = clean.settings || { giftTier: 'standard', cityTier: '二线' };
     state.lastEventId = null; state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部';
     invalidateCache(); store.save(); render();
     let msg = '导入成功，共 ' + state.persons.length + ' 位人脉';
@@ -380,12 +438,20 @@ function overallMetrics() {
   return { scale, heatAvg, freq, credit, wisdom, index };
 }
 
-/* 处世智慧：情景修炼累计（按难度加成，封顶 100） */
+/* 处世智慧：情景修炼按难度加权后归一化到 0-100。
+   满分为「全部情景都拿到 100 分」时的加权总分，这样单题满分不会一次拉满段位，
+   也不是简单累加后硬截断（旧实现一道高手题 95×1.5=142 就封顶 100）。 */
 const DIFFS = {
   入门: { w: 1, chip: 'chip teal' },
   进阶: { w: 1.25, chip: 'chip amber' },
   高手: { w: 1.5, chip: 'chip red' }
 };
+/* SCENARIOS 在本节之后才声明，满分只能在调用时算（不能写成模块级常量，否则 TDZ 报错）。 */
+let _wisdomFull = 0;
+function wisdomFull() {
+  if (!_wisdomFull) _wisdomFull = SCENARIOS.reduce((sum, sc) => sum + 100 * DIFFS[sc.diff].w, 0);
+  return _wisdomFull;
+}
 function getWisdom() {
   let s = 0;
   for (const k in state.progress) {
@@ -393,7 +459,9 @@ function getWisdom() {
     const w = DIFFS[sc ? sc.diff : '入门'].w;
     s += state.progress[k].best * w;
   }
-  return clamp(Math.round(s), 0, 100);
+  const full = wisdomFull();
+  if (!(full > 0)) return 0;
+  return clamp(Math.round(s / full * 100), 0, 100);
 }
 const LEVELS = [
   { min: 0, name: '人情小白', desc: '刚入门，多留心身边人的感受' },
@@ -459,6 +527,263 @@ function relationRead(p) {
   if (m.heat >= 70) seg.push('热度在线，趁热经营');
   else if (m.heat < 45) seg.push('热度偏低，多走动会回暖');
   return seg.join('，') + '。';
+}
+
+/* ---------------- 3.5 人情账本 · 随礼参谋 · 关系体检 · 行动引擎 ---------------- */
+const OCCASIONS = ['日常', '生日', '婚礼', '满月', '乔迁', '探病', '节日', '还礼', '其他'];
+const GIFT_TIERS = {
+  simple: { label: '从简', mult: 0.7 },
+  standard: { label: '得体', mult: 1 },
+  generous: { label: '重视', mult: 1.3 }
+};
+const CITY_TIERS = { '三线': 0.8, '二线': 1, '一线': 1.25 };
+/* 各身份 × 场合的「得体档」参考中位数（元）。不是标准答案，只是参谋的起点。 */
+const GIFT_BASE = {
+  领导: { 生日: 500, 婚礼: 1000, 满月: 800, 乔迁: 500, 探病: 500, 节日: 500, 还礼: 500, 日常: 300, 其他: 500 },
+  同事: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
+  客户: { 生日: 300, 婚礼: 800, 满月: 600, 乔迁: 500, 探病: 500, 节日: 500, 还礼: 500, 日常: 300, 其他: 300 },
+  朋友: { 生日: 200, 婚礼: 600, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
+  家人: { 生日: 500, 婚礼: 1600, 满月: 1000, 乔迁: 800, 探病: 800, 节日: 500, 还礼: 500, 日常: 300, 其他: 500 },
+  长辈: { 生日: 500, 婚礼: 1200, 满月: 1000, 乔迁: 500, 探病: 600, 节日: 500, 还礼: 500, 日常: 300, 其他: 500 },
+  同学: { 生日: 200, 婚礼: 600, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
+  邻居: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
+  其他: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 }
+};
+const LEDGER_STATUS = {
+  owe: { label: '我欠对方', cls: 'amber' },
+  due: { label: '对方欠我', cls: 'blue' },
+  clear: { label: '两清', cls: 'teal' }
+};
+
+/* 金额方向：金额为 0 一律视为不涉及账本；旧数据按事件类型推断。 */
+function eventDir(e) {
+  if (!(Number(e.amount) > 0)) return 'none';
+  if (e.dir === 'in' || e.dir === 'out') return e.dir;
+  if (e.type === 'gift_get') return 'in';
+  if (e.type === 'gift_give') return 'out';
+  return 'none';
+}
+
+/* 单人账本：收到 - 送出 = 净额。正数代表「我欠对方」，负数代表「对方欠我」。 */
+function personLedger(personId) {
+  let given = 0, received = 0, givenCount = 0, receivedCount = 0;
+  let lastAmount = 0, lastDir = 'none', lastTime = 0;
+  for (const e of state.events) {
+    if (e.personId !== personId) continue;
+    const amt = Number(e.amount) || 0;
+    if (amt <= 0) continue;
+    const dir = eventDir(e);
+    if (dir === 'out') { given += amt; givenCount++; }
+    else if (dir === 'in') { received += amt; receivedCount++; }
+    else continue;
+    if (e.time >= lastTime) { lastTime = e.time; lastAmount = amt; lastDir = dir; }
+  }
+  const net = received - given;
+  return {
+    given, received, net, givenCount, receivedCount, lastAmount, lastDir,
+    status: net > 0 ? 'owe' : net < 0 ? 'due' : 'clear'
+  };
+}
+function ledgerTotals() {
+  let given = 0, received = 0, owe = 0, due = 0, oweCount = 0, dueCount = 0;
+  for (const p of state.persons) {
+    const l = personLedger(p.id);
+    given += l.given; received += l.received;
+    if (l.net > 0) { owe += l.net; oweCount++; }
+    else if (l.net < 0) { due += -l.net; dueCount++; }
+  }
+  return { given, received, net: received - given, owe, due, oweCount, dueCount };
+}
+
+/* 把一个金额修成常见的礼金数字，避免「¥873」这种不自然的数。 */
+const NICE_AMOUNTS = [0, 50, 100, 200, 300, 500, 600, 800, 1000, 1200, 1500, 1600, 2000, 3000, 5000, 8000, 10000];
+function niceAmount(n) {
+  n = Math.max(0, Number(n) || 0);
+  if (n > 10000) return Math.round(n / 1000) * 1000;
+  return NICE_AMOUNTS.reduce((a, b) => Math.abs(b - n) < Math.abs(a - n) ? b : a, 0);
+}
+
+/* 随礼参谋：关系 × 场合 × 档位 × 城市系数，再叠加历史往来锚点。 */
+function giftAdvice(personId, occasion, opts) {
+  opts = opts || {};
+  const p = state.persons.find(x => x.id === personId) || null;
+  const identity = (p && p.identity) || '其他';
+  const occ = OCCASIONS.includes(occasion) ? occasion : '其他';
+  const table = GIFT_BASE[identity] || GIFT_BASE['其他'];
+  const base = table[occ] || table['其他'];
+  const st = state.settings || {};
+  const tier = GIFT_TIERS[opts.tier] || GIFT_TIERS[st.giftTier] || GIFT_TIERS.standard;
+  const cityName = CITY_TIERS[opts.city] ? opts.city : (CITY_TIERS[st.cityTier] ? st.cityTier : '二线');
+  const city = CITY_TIERS[cityName];
+  let mid = base * tier.mult * city;
+  const reasons = [
+    `关系「${identity}」× 场合「${occ}」的基准参考约 ¥${base}（未乘档位/城市系数）`,
+    `档位「${tier.label}」× 城市「${cityName}」系数 ${city}`
+  ];
+  const l = personLedger(personId);
+  const sameOcc = state.events
+    .filter(e => e.personId === personId && Number(e.amount) > 0 && eventDir(e) === 'in' && e.occasion === occ)
+    .reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  const maxReceived = state.events
+    .filter(e => e.personId === personId && Number(e.amount) > 0 && eventDir(e) === 'in')
+    .reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  if (sameOcc > 0) {
+    mid = Math.max(mid, sameOcc);
+    reasons.push(`对方在「${occ}」给过你 ¥${sameOcc}，还礼不低于此数才不失礼`);
+  } else if (occ === '还礼' && maxReceived > 0) {
+    mid = Math.max(mid, maxReceived);
+    reasons.push(`对方累计给过你 ¥${maxReceived}，还礼建议不低于此数`);
+  } else if (l.net >= 300) {
+    mid *= 1.1;
+    reasons.push(`账本上你净欠对方 ¥${l.net}，建议适度上浮 10%`);
+  }
+  if (p && p.likes) reasons.push(`对方喜欢：${p.likes}，可优先按喜好挑礼物`);
+  if (p && p.taboos) reasons.push(`需要避开：${p.taboos}`);
+  const midA = niceAmount(mid);
+  const low = niceAmount(midA * 0.7);
+  const high = niceAmount(midA * 1.3);
+  return {
+    low, mid: midA, high, identity, occasion: occ, tier: tier.label, city: cityName,
+    ledger: l, reasons,
+    note: '礼金受地区、亲疏、当地风俗影响很大，本建议只是参谋，最终以你的实际关系和当地习惯为准。'
+  };
+}
+
+/* 关系体检：把雷达指标、账本净额、冲突次数合成一个可执行的健康度。 */
+function personHealth(p) {
+  const m = computedFor(p.id);
+  const l = personLedger(p.id);
+  const evs = state.events.filter(e => e.personId === p.id);
+  const conflicts = evs.filter(e => e.type === 'conflict' && Date.now() - e.time < 365 * DAY).length;
+  const reciprocity = l.net === 0 ? 100 : clamp(100 - Math.abs(l.net) / 30, 20, 95);
+  const score = clamp(Math.round(
+    0.28 * m.heat + 0.22 * m.trust + 0.20 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6
+  ), 0, 100);
+  let level = '需要经营', cls = 'red';
+  if (score >= 80) { level = '关系稳固'; cls = 'teal'; }
+  else if (score >= 60) { level = '状态不错'; cls = 'green'; }
+  else if (score >= 40) { level = '可以更好'; cls = 'amber'; }
+  const tips = [];
+  if (m.debt >= 20) tips.push('人情债偏高，近期安排一次回礼或请饭');
+  if (l.net > 0) tips.push(`账本净欠 ¥${l.net}，找机会还上或回个等值礼`);
+  else if (l.net < 0) tips.push(`对方净欠 ¥${-l.net}，可温和提醒，也可等对方主动`);
+  if (m.lastDays === null) tips.push('还没有往来记录，先从一次轻量问候开始');
+  else if (m.lastDays >= 60) tips.push(`${m.lastDays} 天没联系，发句近况问候破冰`);
+  if (conflicts) tips.push(`近一年有 ${conflicts} 次摩擦，适当降温、就事论事`);
+  if (!tips.length) tips.push('保持当前节奏，偶尔分享近况就能维系');
+  return { score, level, cls, tips, reciprocity: Math.round(reciprocity), conflicts };
+}
+
+/* 今日行动：把提醒、生日、账本、断联、道谢、关键关系合成一份能直接执行的清单。
+   同一人只保留最高优先级的一条，避免一天给同一个人派三件事。 */
+function buildActions(limit) {
+  const out = [];
+  const push = (a) => out.push(a);
+  const now = Date.now();
+  for (const p of state.persons) {
+    const m = computedFor(p.id);
+    const l = personLedger(p.id);
+    if (p.birthday) {
+      const d = daysUntil(p.birthday);
+      if (d >= 0 && d <= 7) push({
+        key: 'bday:' + p.id, personId: p.id, tone: 'teal', icon: 'bday', prio: d <= 1 ? 92 : 84,
+        title: `${p.name} 的生日${d === 0 ? '就是今天' : `还有 ${d} 天`}`,
+        reason: '生日是低成本、高回报的走动时机，一句祝福比临时送礼更自然。',
+        primary: { label: '写句祝福', act: 'scriptModal', arg: 'birthday|' + p.id },
+        secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+      });
+    }
+    if (p.anniversary) {
+      const d = daysUntil(p.anniversary);
+      if (d >= 0 && d <= 7) push({
+        key: 'ann:' + p.id, personId: p.id, tone: 'teal', icon: 'bday', prio: d <= 1 ? 90 : 80,
+        title: `${p.name} 的重要纪念日${d === 0 ? '就是今天' : `还有 ${d} 天`}`,
+        reason: '纪念日比生日更私密，提一句会让对方觉得你真的记得。',
+        primary: { label: '写句话', act: 'scriptModal', arg: 'anniversary|' + p.id },
+        secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+      });
+    }
+    if (m.debt >= 20) push({
+      key: 'debt:' + p.id, personId: p.id, tone: 'amber', icon: 'debt', prio: 82,
+      title: `还 ${p.name} 的人情`,
+      reason: `你欠着 ${Math.round(m.debt)} 点人情，拖久了会变成心理负担。约顿饭或回个礼，把话说开。`,
+      primary: { label: '怎么回礼', act: 'giftModal', arg: p.id },
+      secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+    });
+    if (l.net >= 300) push({
+      key: 'money-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'money', prio: 78,
+      title: `账本上你净欠 ${p.name} ¥${l.net}`,
+      reason: '钱和礼都要有来有往。先确认是礼金还是借款，再决定回礼还是还款。',
+      primary: { label: '还礼参谋', act: 'giftModal', arg: p.id },
+      secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
+    });
+    else if (l.net <= -300) push({
+      key: 'money-due:' + p.id, personId: p.id, tone: 'blue', icon: 'money', prio: 46,
+      title: `${p.name} 还欠你 ¥${-l.net}`,
+      reason: '如果是借款，找个轻松的由头提一句；如果是礼金，等合适场合自然回礼即可。',
+      primary: { label: '催还话术', act: 'scriptModal', arg: 'collect_debt|' + p.id },
+      secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
+    });
+    if (m.lastDays !== null && m.lastDays >= 60) push({
+      key: 'stale:' + p.id, personId: p.id, tone: 'red', icon: 'stale', prio: 72,
+      title: `和 ${p.name} 已 ${m.lastDays} 天没往来`,
+      reason: '关系不是靠大事维系的。发一句近况、约一次饭，比逢年过节群发更有用。',
+      primary: { label: '破冰话术', act: 'scriptModal', arg: 'reconnect|' + p.id },
+      secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+    });
+    const helps = state.events
+      .filter(e => e.personId === p.id && e.type === 'help_them')
+      .sort((a, b) => b.time - a.time);
+    if (helps.length) {
+      const age = (now - helps[0].time) / DAY;
+      if (age >= 1 && age <= 10) push({
+        key: 'thanks:' + p.id, personId: p.id, tone: 'teal', icon: 'thanks', prio: 68,
+        title: `向 ${p.name} 道个谢`,
+        reason: `「${helps[0].title || '对方帮了你'}」已经过去 ${Math.floor(age)} 天，及时反馈比事后补礼更让人舒服。`,
+        primary: { label: '道谢话术', act: 'scriptModal', arg: 'thanks|' + p.id },
+        secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+      });
+    }
+    if (['领导', '客户', '长辈'].includes(p.identity) && m.lastDays !== null && m.lastDays >= 45 && m.lastDays < 60) push({
+      key: 'key:' + p.id, personId: p.id, tone: 'blue', icon: 'key', prio: 52,
+      title: `维护 ${p.name} 这条关键关系`,
+      reason: `「${p.identity}」关系不宜长期断联，45 天是个自然的问候节点。`,
+      primary: { label: '约一下', act: 'scriptModal', arg: 'invite|' + p.id },
+      secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+    });
+  }
+  for (const r of state.reminders) {
+    if (r.status === 'pending' && (!r.date || r.date <= todayStr())) {
+      const p = state.persons.find(x => x.id === r.personId);
+      push({
+        key: 'todo:' + r.id, personId: r.personId || '', tone: 'blue', icon: 'todo', prio: 95,
+        title: `待办：${r.content}`,
+        reason: (p ? p.name + ' · ' : '') + (r.date ? `约定日期 ${r.date}` : '没有设定日期，今天处理掉'),
+        primary: { label: '完成', act: 'quickDone', arg: r.id },
+        secondary: p ? { label: '记一笔', act: 'eventQuick', arg: p.id } : null
+      });
+    }
+  }
+  const fst = upcomingFestival();
+  if (fst) push({
+    key: 'festival', personId: '', tone: 'blue', icon: 'fest', prio: fst.days <= 1 ? 86 : 40,
+    title: `${fst.days === 0 ? '今天是' : fst.days + ' 天后是'}${fst.n}`,
+    reason: '节日祝福适合群发，但对重要的人要单独改一句，才有温度。',
+    primary: { label: '写祝福', act: 'scriptModal', arg: 'festival|' },
+    secondary: { label: '看人脉', act: 'go', arg: 'persons' }
+  });
+  out.sort((a, b) => b.prio - a.prio);
+  const seen = new Set();
+  const picked = [];
+  for (const a of out) {
+    if (a.personId) {
+      if (seen.has(a.personId)) continue;
+      seen.add(a.personId);
+    }
+    picked.push(a);
+    if (picked.length >= (limit || 6)) break;
+  }
+  return picked;
 }
 
 /* ---------------- 4. 情景库（人情修炼场） ---------------- */
@@ -630,16 +955,258 @@ const SCENARIOS = [
   }
 ];
 
+/* ---------------- 4.5 话术库（场景化、可复制） ---------------- */
+const SCRIPT_TONES = [
+  { id: 'stable', label: '稳妥版' },
+  { id: 'close', label: '亲近版' },
+  { id: 'brief', label: '简短版' }
+];
+const SCRIPT_SCENES = [
+  {
+    id: 'reconnect', label: '久未联系破冰', hint: '适合几个月没说话的人，先给台阶再约见',
+    build: (c) => ({
+      stable: `${c.name}，好久没联系了。最近整理通讯录看到您，想起之前${['talk', 'meal'].includes(c.eventType) && c.eventTitle ? c.eventTitle : '一起聊过的事'}，一直记着。最近还顺利吗？有空我请您喝杯茶。`,
+      close: `${c.name}，失踪人口回归一下。最近咋样？刚路过你那边突然想起你，改天约个饭。`,
+      brief: `${c.name}，好久不见，最近还好吗？有空聚聚。`
+    })
+  },
+  {
+    id: 'thanks', label: '道谢/回馈', hint: '对方帮过你，别只说「谢谢」，给一个具体反馈',
+    build: (c) => ({
+      stable: `${c.name}，上次${c.eventTitle ? `「${c.eventTitle}」` : '那件事'}多亏您帮忙，事情已经顺利解决了。一直想正式说声谢谢，改天我请您吃个饭。`,
+      close: `${c.name}，上次那事真帮我大忙了，记你一辈子。别跟我客气，改天请你吃饭。`,
+      brief: `${c.name}，上次的事多谢了，改天请你吃饭。`
+    })
+  },
+  {
+    id: 'apology', label: '道歉和解', hint: '先认错、不找借口，再给一个具体的补救动作',
+    build: (c) => ({
+      stable: `${c.name}，上次${c.context ? `关于${c.context}` : '那件事'}是我考虑不周，让您不舒服了。我不找借口，先跟您说声对不起。如果您愿意，我想找个时间当面聊聊。`,
+      close: `${c.name}，上次是我上头了，说话没过脑子。咱俩这么多年，我不想因为这点事生分。给我个机会，请你吃饭赔罪。`,
+      brief: `${c.name}，上次的事是我不对，跟你说声抱歉。有空我当面聊。`
+    })
+  },
+  {
+    id: 'ask_favor', label: '请人帮忙', hint: '把选择权留给对方，明确「不方便也没关系」',
+    build: (c) => ({
+      stable: `${c.name}，有个事想请您指点一下${c.context ? `：${c.context}` : ''}。我知道您在这方面有经验，不知道最近方不方便？如果不方便也完全没关系，我再想别的办法。`,
+      close: `${c.name}，遇到个坎，第一个想到你${c.context ? `：${c.context}` : ''}。你方便的时候帮我看看，不方便就直说，别为难。`,
+      brief: `${c.name}，有个事想请教您${c.context ? `：${c.context}` : ''}，方便时回我就行。`
+    })
+  },
+  {
+    id: 'decline', label: '婉拒请求', hint: '先接住对方的面子，再清楚地说「这次不行」',
+    build: (c) => ({
+      stable: `${c.name}，您说的这事我认真想过了。${c.context ? `关于${c.context}，` : ''}这次我确实帮不上，怕答应了反而耽误您。要是有其他我能做的，您尽管说。`,
+      close: `${c.name}，这事我这次真接不住，不是跟你客气。${c.context ? `${c.context}这块我确实没把握。` : ''}下次有我能搭把手的地方，你直接喊我。`,
+      brief: `${c.name}，这次实在不方便，帮不上忙，抱歉。`
+    })
+  },
+  {
+    id: 'refuse_loan', label: '拒绝借钱', hint: '共情 + 明确边界 + 给替代帮助，别含糊拖成误会',
+    build: (c) => ({
+      stable: `${c.name}，您开口肯定是遇到难处了。${c.context ? `关于${c.context}，` : ''}不瞒您说，我最近手头也紧，实在拿不出这笔钱。不是不帮，是怕答应了耽误您。`,
+      close: `${c.name}，你知道我不是小气的人，但这次真拿不出来。${c.context ? `${c.context}这个数我确实没有。` : ''}要不我帮你想想别的路子？`,
+      brief: `${c.name}，这次手头真紧，借不了，抱歉。`
+    })
+  },
+  {
+    id: 'collect_debt', label: '催还/提醒', hint: '给具体时间点，语气平和，别让人下不来台',
+    build: (c) => ({
+      stable: `${c.name}，最近整理账本看到之前${c.context ? c.context : '那笔钱'}，想跟您确认一下大概什么时候方便？我这边最近也有点安排，不着急，您方便时回我就行。`,
+      close: `${c.name}，最近手头有点紧，之前${c.context ? c.context : '那笔钱'}你看这周方便先还一部分吗？剩下的咱们再商量。`,
+      brief: `${c.name}，之前那笔钱最近方便还吗？我这边有点急用。`
+    })
+  },
+  {
+    id: 'gift', label: '随礼/还礼', hint: '金额之外，一句得体的话更重要',
+    build: (c) => ({
+      stable: `${c.name}，${c.context ? c.context : '您的好日子'}我记着呢。一点心意，不成敬意，祝您一切顺遂。`,
+      close: `${c.name}，${c.context ? c.context : '你的事'}就是我的事。红包收下，别跟我客气，改天再聚。`,
+      brief: `${c.name}，一点心意，祝好。`
+    })
+  },
+  {
+    id: 'toast', label: '敬酒/饭局', hint: '先给对方面子，再表达自己，最后留余地',
+    build: (c) => ({
+      stable: `${c.name}，这杯我敬您。${c.context ? `${c.context}，` : ''}平时多承您照顾，很多话在酒里了，您随意，我干了。`,
+      close: `${c.name}，这杯必须敬你。${c.context ? `${c.context}，` : ''}别的先不说，都在酒里。`,
+      brief: `${c.name}，这杯敬您，我干了。`
+    })
+  },
+  {
+    id: 'visit_sick', label: '探病/慰问', hint: '少讲大道理，多给具体帮助',
+    build: (c) => ({
+      stable: `${c.name}，听说您最近身体不太舒服，一直惦记着。${c.context ? `${c.context}` : ''}您先安心养着，有什么需要跑腿的随时招呼我。等我过两天去看您。`,
+      close: `${c.name}，听说你住院了，别硬扛。${c.context ? `${c.context}` : ''}需要啥给我发消息，别客气。`,
+      brief: `${c.name}，听说您身体不适，多保重，需要帮忙随时说。`
+    })
+  },
+  {
+    id: 'decline_invite', label: '婉拒饭局', hint: '拒绝的是这次，不是这段关系',
+    build: (c) => ({
+      stable: `${c.name}，谢谢您想着我。${c.context ? `${c.context}那天` : ''}我这边刚好有安排，实在去不了，挺遗憾的。下次有机会我来组局，咱们再聚。`,
+      close: `${c.name}，这次真去不了，${c.context ? `${c.context}那天` : ''}撞上了。你们玩得开心，下次我请。`,
+      brief: `${c.name}，那天实在去不了，抱歉，下次再聚。`
+    })
+  },
+  {
+    id: 'festival', label: '节日祝福', hint: '给重要的人单独改一句，别群发',
+    build: (c) => ({
+      stable: `${c.name}，${c.context ? c.context : '节日'}快乐。过去一年多谢您的关照，祝您和家人身体安康、诸事顺遂。`,
+      close: `${c.name}，${c.context ? c.context : '节日'}快乐呀。别的虚的不说，祝你吃好喝好，事事顺心。`,
+      brief: `${c.name}，${c.context ? c.context : '节日'}快乐，祝好。`
+    })
+  },
+  {
+    id: 'invite', label: '约饭/走动', hint: '给两个时间选项，降低对方决策成本',
+    build: (c) => ({
+      stable: `${c.name}，最近想起您，不知道这周或下周哪天方便？想请您吃个便饭，地方您定，我过去接您。`,
+      close: `${c.name}，好久没聚了，这周有空没？撸串火锅你挑，我请。`,
+      brief: `${c.name}，最近有空吗？想约您吃个饭。`
+    })
+  },
+  {
+    id: 'follow_up', label: '事后跟进', hint: '让对方知道事情有进展，关系才有下一次',
+    build: (c) => ({
+      stable: `${c.name}，上次请您帮忙的事已经有进展了${c.context ? `：${c.context}` : ''}，特意跟您说一声，也让您放心。后面有结果我再同步。`,
+      close: `${c.name}，上次那事办得差不多了${c.context ? `：${c.context}` : ''}，跟你说一声。回头请你吃饭。`,
+      brief: `${c.name}，上次的事有进展了${c.context ? `：${c.context}` : ''}，谢谢您。`
+    })
+  },
+  {
+    id: 'birthday', label: '生日祝福', hint: '别只发「生日快乐」，加一个你们之间的细节',
+    build: (c) => ({
+      stable: `${c.name}，生日快乐！祝您新的一岁身体健康、事事顺心。一点祝福，改天再当面道贺。`,
+      close: `${c.name}，生日快乐呀！又长一岁，愿你想要的都拥有，得不到的都释怀。改天聚。`,
+      brief: `${c.name}，生日快乐，祝好。`
+    })
+  },
+  {
+    id: 'anniversary', label: '纪念日问候', hint: '比生日更私密，适合关系较近的人',
+    build: (c) => ({
+      stable: `${c.name}，今天是您的重要日子，特意来道声祝福。愿往后每年今日，都有好心情。`,
+      close: `${c.name}，纪念日快乐。时间真快，改天见面聊。`,
+      brief: `${c.name}，纪念日快乐。`
+    })
+  }
+];
+
+function buildScripts(sceneId, personId, context) {
+  const sc = SCRIPT_SCENES.find(x => x.id === sceneId) || SCRIPT_SCENES[0];
+  const p = state.persons.find(x => x.id === personId) || null;
+  const evs = p ? state.events.filter(e => e.personId === p.id).sort((a, b) => b.time - a.time) : [];
+  const c = {
+    name: p ? p.name : '朋友',
+    identity: p ? (p.identity || '朋友') : '',
+    likes: p ? (p.likes || '') : '',
+    taboos: p ? (p.taboos || '') : '',
+    eventTitle: evs.length ? (evs[0].title || '') : '',
+    eventType: evs.length ? (evs[0].type || '') : '',
+    context: (context || '').trim()
+  };
+  return {
+    scene: sc,
+    person: p,
+    variants: SCRIPT_TONES.map(t => ({ tone: t.label, id: t.id, text: sc.build(c)[t.id] }))
+  };
+}
+
+/* 重要日子导出：生日/纪念日按年循环，待办按单次事件；可直接导入系统日历。 */
+function icsEscape(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+function icsDate(d) {
+  return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+}
+function nextMMDD(mmdd, from) {
+  const [m, d] = String(mmdd || '').split('-').map(Number);
+  if (!m || !d) return null;
+  const base = from || new Date();
+  const today = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  let t = new Date(base.getFullYear(), m - 1, d);
+  if (t.getMonth() !== m - 1) t = new Date(base.getFullYear(), m - 1, 28);
+  if (t.getTime() < today.getTime()) {
+    t = new Date(base.getFullYear() + 1, m - 1, d);
+    if (t.getMonth() !== m - 1) t = new Date(base.getFullYear() + 1, m - 1, 28);
+  }
+  return t;
+}
+function buildICS() {
+  const out = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EQ-Worker//CN',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:EQ-Worker 重要日子'
+  ];
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const addYearly = (uid, mmdd, summary, desc) => {
+    const d = nextMMDD(mmdd);
+    if (!d) return;
+    out.push(
+      'BEGIN:VEVENT',
+      `UID:${uid}@eq-worker`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${icsDate(d)}`,
+      'RRULE:FREQ=YEARLY',
+      `SUMMARY:${icsEscape(summary)}`,
+      `DESCRIPTION:${icsEscape(desc)}`,
+      'TRANSP:TRANSPARENT',
+      'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY',
+      `DESCRIPTION:${icsEscape(summary + ' 提醒')}`, 'END:VALARM',
+      'END:VEVENT'
+    );
+  };
+  for (const p of state.persons) {
+    if (p.birthday) addYearly('birthday-' + p.id, p.birthday, '生日 · ' + p.name, `EQ-Worker 生日提醒：${p.name}${p.likes ? '，喜欢：' + p.likes : ''}`);
+    if (p.anniversary) addYearly('anniversary-' + p.id, p.anniversary, '纪念日 · ' + p.name, `EQ-Worker 纪念日提醒：${p.name}`);
+  }
+  for (const r of state.reminders) {
+    if (r.status !== 'pending' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '')) continue;
+    const p = state.persons.find(x => x.id === r.personId);
+    out.push(
+      'BEGIN:VEVENT',
+      `UID:todo-${r.id}@eq-worker`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${r.date.replace(/-/g, '')}`,
+      `SUMMARY:${icsEscape(r.content)}`,
+      `DESCRIPTION:${icsEscape('EQ-Worker 待办' + (p ? ' · ' + p.name : ''))}`,
+      'BEGIN:VALARM', 'TRIGGER:-P0DT9H', 'ACTION:DISPLAY',
+      `DESCRIPTION:${icsEscape(r.content)}`, 'END:VALARM',
+      'END:VEVENT'
+    );
+  }
+  out.push('END:VCALENDAR');
+  /* 简单折行：日历解析器对 75 字符限制并不严格，但折一下兼容性更稳。 */
+  return out.map(line => {
+    if (line.length <= 74) return line;
+    let s = line, chunks = [];
+    while (s.length > 74) { chunks.push(s.slice(0, 74)); s = ' ' + s.slice(74); }
+    chunks.push(s);
+    return chunks.join('\r\n');
+  }).join('\r\n');
+}
+function exportICS() {
+  const blob = new Blob([buildICS()], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `EQ-Worker-重要日子-${todayStr()}.ics`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
 /* ---------------- 5. 状态与全局 ---------------- */
 const state = {
-  tab: 'radar',
+  tab: 'assistant',
   persons: [], events: [], reminders: [], progress: {},
+  settings: { giftTier: 'standard', cityTier: '二线' },
   filter: '', identity: 'all', sortBy: 'heat', trainDiff: '全部',
+  ledgerFilter: 'all',
   lastEventId: null,
   evType: 'meal', evPersonId: null,
   streak: { n: 0, last: '' }
 };
-const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '其他'];
+const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '同学', '邻居', '其他'];
 let chartInstances = [];
 
 /* 自定义确认弹层（替代原生 confirm，保持日记本文风） */
@@ -776,6 +1343,7 @@ function render() {
   disposeCharts();
   const v = $('#view');
   switch (state.tab) {
+    case 'assistant': v.innerHTML = viewAssistant(); break;
     case 'radar': v.innerHTML = viewRadar(); break;
     case 'persons': v.innerHTML = viewPersons(); break;
     case 'record': v.innerHTML = viewRecord(); break;
@@ -912,6 +1480,327 @@ function openIndexInfo() {
   `, true);
 }
 
+/* ---------- 助手首页 ---------- */
+function todayLabel() {
+  const d = new Date();
+  return `${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${'日一二三四五六'[d.getDay()]}`;
+}
+function fmtMoney(n) {
+  return '¥' + Math.round(Number(n) || 0).toLocaleString('zh-CN');
+}
+function ledgerNetShort(net) {
+  const n = Number(net) || 0;
+  return n === 0 ? '两清' : (n > 0 ? '欠 ' : '应收 ') + fmtMoney(Math.abs(n));
+}
+function ledgerNetLabel(net) {
+  const n = Number(net) || 0;
+  return n === 0 ? '两清' : (n > 0 ? '我欠 ' : '对方欠 ') + fmtMoney(Math.abs(n));
+}
+function upcomingDates(days) {
+  const lim = days || 30;
+  const out = [];
+  for (const p of state.persons) {
+    if (p.birthday) {
+      const d = daysUntil(p.birthday);
+      if (d >= 0 && d <= lim) out.push({ kind: '生日', name: p.name, days: d, personId: p.id, date: p.birthday });
+    }
+    if (p.anniversary) {
+      const d = daysUntil(p.anniversary);
+      if (d >= 0 && d <= lim) out.push({ kind: '纪念日', name: p.name, days: d, personId: p.id, date: p.anniversary });
+    }
+  }
+  for (const r of state.reminders) {
+    if (r.status !== 'pending' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '')) continue;
+    const t = new Date(r.date + 'T00:00:00').getTime();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = Math.round((t - today.getTime()) / DAY);
+    if (d >= 0 && d <= lim) {
+      const p = state.persons.find(x => x.id === r.personId);
+      out.push({ kind: '待办', name: r.content, days: d, personId: r.personId, date: r.date, extra: p ? p.name : '' });
+    }
+  }
+  return out.sort((a, b) => a.days - b.days);
+}
+function actionIcon(kind) {
+  return {
+    bday: '<path d="M4 9h16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9V5m8 4V5"/><path d="M6 15v4m12-4v4"/>',
+    debt: '<path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/>',
+    stale: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    money: '<circle cx="12" cy="12" r="8.5"/><path d="M9 9.5c.5-1 1.8-1.6 3.2-1.6 2 0 3.3 1 3.3 2.4 0 3.4-6.5 1.6-6.5 4.8 0 1.4 1.3 2.4 3.3 2.4 1.4 0 2.7-.6 3.2-1.6"/><path d="M12 6.5v11"/>',
+    thanks: '<path d="M4 12l5-5v3h8v4H9v3z"/><path d="M17 8l3 4-3 4"/>',
+    key: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M17 8l4 4-4 4"/>',
+    todo: '<path d="M4 6h16v12H4z"/><path d="M8 4v4m8-4v4"/><path d="M8 12l3 3 5-5"/>',
+    fest: '<path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/>'
+  }[kind] || '<circle cx="12" cy="12" r="9"/>';
+}
+function actionCard(a) {
+  return `<div class="actitem">
+    <div class="actic tone-${a.tone}"><svg viewBox="0 0 24 24">${actionIcon(a.icon)}</svg></div>
+    <div class="actmain">
+      <div class="acttitle">${esc(a.title)}</div>
+      <div class="actreason">${esc(a.reason)}</div>
+      <div class="actbtns">
+        <button class="btn sm primary" data-act="${a.primary.act}" data-arg="${esc(a.primary.arg || '')}">${esc(a.primary.label)}</button>
+        ${a.secondary ? `<button class="btn sm ghost" data-act="${a.secondary.act}" data-arg="${esc(a.secondary.arg || '')}">${esc(a.secondary.label)}</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+function viewAssistant() {
+  const actions = buildActions(6);
+  const lt = ledgerTotals();
+  const dates = upcomingDates(30).slice(0, 3);
+  const nBirthday = upcomingDates(7).filter(x => x.kind === '生日').length;
+  if (!state.persons.length) {
+    return `
+      <div class="sec-t"><h2>助手</h2><span class="sub">${todayLabel()}</span></div>
+      <div class="card hero-card">
+        <div class="hero-kicker">EQ-Worker · 人情世故助手</div>
+        <h3 class="hero-title">把人情顾好，不用靠记性</h3>
+        <div class="sub" style="margin-top:8px;line-height:1.8">先添加几位重要的人，或者载入演示数据看看。之后每天打开，这里会告诉你：今天该联系谁、该还谁的人情、该准备多少礼。</div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn primary" data-act="personForm">添加第一份人脉</button>
+          <button class="btn" data-act="demo">载入演示数据</button>
+          <button class="btn" data-act="scriptModal" data-arg="reconnect|">先学一句破冰话术</button>
+        </div>
+      </div>
+      <div class="card"><h3>助手能做什么</h3>
+        <div class="toolgrid">
+          <div class="tool"><b>今日行动</b><span>按紧急度排好今天该做的事</span></div>
+          <div class="tool"><b>人情账本</b><span>送出、收到、谁欠谁，一笔一笔算清</span></div>
+          <div class="tool"><b>随礼参谋</b><span>按关系、场合、城市给出礼金区间</span></div>
+          <div class="tool"><b>话术参谋</b><span>拒绝、催还、道歉、敬酒，都有得体说法</span></div>
+        </div>
+      </div>`;
+  }
+  const heroLine = actions.length
+    ? `今天有 ${actions.length} 件事值得上心。先处理「${actions[0].title}」，其余的按节奏来。`
+    : '今天没有紧急的人情事。可以顺手记一笔最近的走动，或者给久未联系的人发句问候。';
+  const balances = state.persons.map(p => ({ p, l: personLedger(p.id) }))
+    .filter(x => x.l.net !== 0)
+    .sort((a, b) => Math.abs(b.l.net) - Math.abs(a.l.net)).slice(0, 3);
+  const balRows = balances.map(x => {
+    const st = LEDGER_STATUS[x.l.status];
+    return `<div class="balrow" data-act="openPerson" data-arg="${x.p.id}">
+      <div class="avatar" style="width:34px;height:34px;font-size:13px">${esc(initials(x.p.name))}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(x.p.name)} <span class="chip ${st.cls}">${st.label}</span></div>
+      <div class="sub" style="font-size:11px">送出 ${fmtMoney(x.l.given)} · 收到 ${fmtMoney(x.l.received)}</div></div>
+      <div class="balnum ${x.l.net > 0 ? 'neg' : 'pos'}">${ledgerNetShort(x.l.net)}</div>
+    </div>`;
+  }).join('');
+  const dateRows = dates.map(x => `<div class="daterow" ${x.personId ? `data-act="openPerson" data-arg="${x.personId}"` : ''}>
+    <div class="datebadge">${x.days === 0 ? '今天' : x.days + '天'}</div>
+    <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(x.kind)} · ${esc(x.name)}</div>
+    <div class="sub" style="font-size:11px">${esc(x.date)}${x.extra ? ' · ' + esc(x.extra) : ''}</div></div>
+    <span style="color:var(--dim);font-size:12px">›</span>
+  </div>`).join('');
+  const quickScenes = ['reconnect', 'thanks', 'apology', 'refuse_loan', 'collect_debt', 'decline'];
+  const sceneChips = quickScenes.map(id => {
+    const sc = SCRIPT_SCENES.find(x => x.id === id);
+    return `<button class="fchip" data-act="scriptModal" data-arg="${id}|">${sc.label}</button>`;
+  }).join('');
+  return `
+    <div class="sec-t"><h2>助手</h2><span class="sub">${todayLabel()}</span></div>
+    <div class="card hero-card">
+      <div class="hero-kicker">今日人情简报</div>
+      <h3 class="hero-title">${actions.length ? '把该走动的关系，今天走一步' : '今天可以慢一点'}</h3>
+      <div class="sub" style="margin-top:8px;line-height:1.8">${esc(heroLine)}</div>
+      <div class="hero-stats">
+        <div><b>${state.persons.length}</b><span>人脉</span></div>
+        <div><b>${lt.oweCount}</b><span>待还人情</span></div>
+        <div><b>${nBirthday}</b><span>7天内生日</span></div>
+        <div><b>${fmtMoney(lt.owe)}</b><span>账本净欠</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn primary" style="flex:1" data-act="go" data-arg="record">记一笔往来</button>
+        <button class="btn" style="flex:1" data-act="scriptModal" data-arg="reconnect|">不知道怎么说？</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>今日行动 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">${actions.length} 件</span></h3>
+      <div class="actlist">${actions.map(actionCard).join('') || '<div class="sub" style="margin-top:8px">今天没有需要紧急处理的事。保持节奏就好。</div>'}</div>
+    </div>
+    <div class="card">
+      <h3>人情账本 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">只记金额，不影响人情分</span></h3>
+      <div class="lg-mini">
+        <div><span>送出</span><b>${fmtMoney(lt.given)}</b></div>
+        <div><span>收到</span><b>${fmtMoney(lt.received)}</b></div>
+        <div><span>净额</span><b class="${lt.net > 0 ? 'neg' : lt.net < 0 ? 'pos' : ''}">${ledgerNetShort(lt.net)}</b></div>
+      </div>
+      <div class="sub" style="margin-top:8px">${lt.oweCount} 人你欠着，${lt.dueCount} 人欠你。${balances.length ? '金额最大的 3 位：' : '记一笔送礼/收礼时填上金额，这里会自动汇总。'}</div>
+      ${balRows}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn sm" data-act="ledgerModal">查看完整账本</button>
+        <button class="btn sm primary" data-act="giftModal" data-arg="">随礼参谋</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>重要日子 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">未来 30 天</span></h3>
+      <div style="margin-top:8px">${dateRows || '<div class="sub">未来 30 天没有生日、纪念日或待办。可以给人脉补上生日，助手会提前提醒你。</div>'}</div>
+      <button class="btn sm" style="margin-top:10px" data-act="exportICS">导出到日历 (.ics)</button>
+    </div>
+    <div class="card">
+      <h3>话术参谋 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">不会说，就先找一句</span></h3>
+      <div class="sub" style="margin-top:6px">选一个场景，助手会结合对方身份、最近往来，给出稳妥、亲近、简短三个版本。</div>
+      <div class="fchips" style="margin-top:10px">${sceneChips}</div>
+      <button class="btn sm" style="margin-top:2px" data-act="scriptModal" data-arg="reconnect|">打开完整话术库</button>
+    </div>`;
+}
+
+/* ---------- 人情账本弹层 ---------- */
+function ledgerBody() {
+  const lt = ledgerTotals();
+  const filter = state.ledgerFilter || 'all';
+  let rows = state.persons.map(p => ({ p, l: personLedger(p.id) }));
+  if (filter === 'owe') rows = rows.filter(x => x.l.net > 0);
+  if (filter === 'due') rows = rows.filter(x => x.l.net < 0);
+  if (filter === 'clear') rows = rows.filter(x => x.l.net === 0);
+  rows.sort((a, b) => Math.abs(b.l.net) - Math.abs(a.l.net) || a.p.name.localeCompare(b.p.name, 'zh'));
+  const chips = [['all', '全部'], ['owe', '我欠的'], ['due', '欠我的'], ['clear', '两清']].map(([k, lab]) =>
+    `<button class="fchip ${filter === k ? 'on' : ''}" data-act="ledgerFilter" data-arg="${k}">${lab}</button>`).join('');
+  const list = rows.map(x => {
+    const st = LEDGER_STATUS[x.l.status];
+    return `<div class="balrow" data-act="openPerson" data-arg="${x.p.id}">
+      <div class="avatar" style="width:34px;height:34px;font-size:13px">${esc(initials(x.p.name))}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(x.p.name)} <span class="chip ${st.cls}">${st.label}</span></div>
+        <div class="sub" style="font-size:11px">送出 ${fmtMoney(x.l.given)} · 收到 ${fmtMoney(x.l.received)}</div>
+      </div>
+      <div class="balnum ${x.l.net > 0 ? 'neg' : x.l.net < 0 ? 'pos' : ''}">${ledgerNetShort(x.l.net)}</div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="lg-totals">
+      <div><span>累计送出</span><b>${fmtMoney(lt.given)}</b></div>
+      <div><span>累计收到</span><b>${fmtMoney(lt.received)}</b></div>
+      <div><span>净额</span><b class="${lt.net > 0 ? 'neg' : lt.net < 0 ? 'pos' : ''}">${ledgerNetShort(lt.net)}</b></div>
+    </div>
+    <div class="sub" style="margin:10px 0 4px">只统计填了金额的往来；人情分（热度/信任/人情债）不受金额影响。</div>
+    <div class="fchips">${chips}</div>
+    <div class="balancelist">${list || '<div class="sub" style="padding:14px 4px">这一栏还没有记录。</div>'}</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" style="flex:1" data-act="exportCsv">导出账本 CSV</button>
+      <button class="btn primary" style="flex:1" data-act="giftModal" data-arg="">随礼参谋</button>
+    </div>`;
+}
+function openLedger() { openSheet('人情账本', ledgerBody(), false); }
+
+/* ---------- 随礼参谋 ---------- */
+function giftModal(personId) {
+  if (!state.persons.length) {
+    openSheet('随礼参谋', `<div class="sub">先添加一位人脉，参谋才能结合你们的关系给建议。</div>
+      <button class="btn primary block" style="margin-top:12px" data-act="personForm">去添加人脉</button>`, true);
+    return;
+  }
+  const st = state.settings || {};
+  const selected = personId || (state.persons[0] && state.persons[0].id) || '';
+  const personOpts = state.persons.map(p => `<option value="${p.id}" ${p.id === selected ? 'selected' : ''}>${esc(p.name)} · ${esc(p.identity || '朋友')}</option>`).join('');
+  const occOpts = OCCASIONS.map(o => `<option value="${o}" ${o === '婚礼' ? 'selected' : ''}>${o}</option>`).join('');
+  const tierOpts = Object.keys(GIFT_TIERS).map(k => `<option value="${k}" ${k === (st.giftTier || 'standard') ? 'selected' : ''}>${GIFT_TIERS[k].label}</option>`).join('');
+  const cityOpts = Object.keys(CITY_TIERS).map(k => `<option value="${k}" ${k === (st.cityTier || '二线') ? 'selected' : ''}>${k}</option>`).join('');
+  openSheet('随礼参谋', `
+    <div class="field"><label>给谁</label><select class="inp" id="gfPerson" data-change="giftCalc">${personOpts}</select></div>
+    <div class="field"><label>场合</label><select class="inp" id="gfOccasion" data-change="giftCalc">${occOpts}</select></div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1"><label>档位</label><select class="inp" id="gfTier" data-change="giftCalc">${tierOpts}</select></div>
+      <div class="field" style="flex:1"><label>城市</label><select class="inp" id="gfCity" data-change="giftCalc">${cityOpts}</select></div>
+    </div>
+    <div id="giftResult"></div>
+  `, false);
+  window.__gift = { personId: selected, occasion: '婚礼', tier: st.giftTier || 'standard', city: st.cityTier || '二线' };
+  renderGiftResult();
+}
+function renderGiftResult() {
+  const box = document.getElementById('giftResult');
+  if (!box || !window.__gift) return;
+  const g = window.__gift;
+  const advice = giftAdvice(g.personId, g.occasion, { tier: g.tier, city: g.city });
+  const p = state.persons.find(x => x.id === g.personId);
+  const st = LEDGER_STATUS[advice.ledger.status];
+  const reasons = advice.reasons.map(r => `<div class="reasonline">· ${esc(r)}</div>`).join('');
+  box.innerHTML = `
+    <div class="gift-range">
+      <div class="gift-opt"><span>从简</span><b>¥${advice.low}</b></div>
+      <div class="gift-opt main"><span>建议</span><b>¥${advice.mid}</b></div>
+      <div class="gift-opt"><span>重视</span><b>¥${advice.high}</b></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px">
+      ${p ? `<span class="chip">${esc(p.identity || '朋友')}</span>` : ''}
+      <span class="chip ${st.cls}">${ledgerNetLabel(advice.ledger.net)}</span>
+      <span class="chip">${esc(advice.tier)}档 · ${esc(advice.city)}</span>
+    </div>
+    ${p && (p.likes || p.taboos) ? `<div class="sub" style="margin-top:8px">${p.likes ? `喜欢：${esc(p.likes)}` : ''}${p.likes && p.taboos ? ' · ' : ''}${p.taboos ? `避开：${esc(p.taboos)}` : ''}</div>` : ''}
+    <div class="actbtns" style="margin-top:12px">
+      <button class="btn sm primary" data-act="giftToEvent">按建议记一笔</button>
+      <button class="btn sm" data-act="giftScript">配一句礼话</button>
+      <button class="btn sm ghost" data-act="ledgerModal">看账本</button>
+    </div>
+    <div class="gift-reasons" style="margin-top:10px">${reasons}</div>
+    <div class="sub" style="margin-top:10px;font-size:11px;line-height:1.7;opacity:.8">${esc(advice.note)}</div>`;
+  window.__gift.advice = advice;
+}
+function giftToEvent() {
+  const g = window.__gift;
+  if (!g || !g.advice) return;
+  window.__prefill = {
+    personId: g.personId, type: 'gift_give', amount: g.advice.mid,
+    occasion: g.occasion, title: `${g.occasion}送礼`
+  };
+  closeModal();
+  eventModal(g.personId);
+}
+
+/* ---------- 话术参谋 ---------- */
+function scriptModal(sceneId, personId) {
+  const sc = SCRIPT_SCENES.find(x => x.id === sceneId) || SCRIPT_SCENES[0];
+  const personOpts = `<option value="">不指定（通用话术）</option>` + state.persons.map(p =>
+    `<option value="${p.id}" ${p.id === personId ? 'selected' : ''}>${esc(p.name)} · ${esc(p.identity || '朋友')}</option>`).join('');
+  const sceneOpts = SCRIPT_SCENES.map(x => `<option value="${x.id}" ${x.id === sc.id ? 'selected' : ''}>${x.label}</option>`).join('');
+  openSheet('话术参谋', `
+    <div class="field"><label>场景</label><select class="inp" id="sfScene" data-change="scriptCalc">${sceneOpts}</select></div>
+    <div class="field"><label>对谁说（可选）</label><select class="inp" id="sfPerson" data-change="scriptCalc">${personOpts}</select></div>
+    <div class="field"><label>补充一点背景（可选）</label><input class="inp" id="sfContext" data-change="scriptCalc" data-input="scriptInput" placeholder="${esc(sc.hint)}"></div>
+    <div id="scriptResults"></div>
+    <div class="sub" style="margin-top:10px;font-size:11px;opacity:.75">话术是起点，不是标准答案。发之前按你们真实的说话方式改一两个字，会更自然。</div>
+  `, false);
+  window.__script = { sceneId: sc.id, personId: personId || '', context: '' };
+  renderScriptResults();
+}
+function renderScriptResults() {
+  const box = document.getElementById('scriptResults');
+  if (!box || !window.__script) return;
+  const s = window.__script;
+  const r = buildScripts(s.sceneId, s.personId, s.context);
+  window.__scriptVariants = r.variants.map(v => v.text);
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin:12px 0 4px">
+      <span class="chip teal">${esc(r.scene.label)}</span>
+      <span class="sub" style="font-size:11px">${esc(r.scene.hint)}</span>
+    </div>
+    <div class="scriptlist">${r.variants.map((v, i) => `
+      <div class="scriptcard">
+        <div class="scripthead"><span>${v.tone}</span><button class="btn sm ghost" data-act="copyScript" data-arg="${i}">复制</button></div>
+        <div class="scripttext">${esc(v.text)}</div>
+      </div>`).join('')}</div>`;
+}
+function copyText(text) {
+  const t = String(text || '');
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    toast(ok ? '已复制，去粘贴吧' : '复制失败，请长按文字手动选择');
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(() => toast('已复制，去粘贴吧')).catch(fallback);
+  } else fallback();
+}
+
 /* ---------- 首页：雷达 ---------- */
 function viewRadar() {
   const m = overallMetrics();
@@ -980,13 +1869,15 @@ function viewRadar() {
 /* ---------- 人脉列表 ---------- */
 function viewPersons() {
   const kw = state.filter.trim().toLowerCase();
+  /* 最后往来时间一次遍历建表：旧实现在排序比较器里对每个人做全量 events.filter，
+     复杂度 O(人 × log人 × 事件)，人一多列表就明显卡顿。 */
+  const lastTsMap = {};
+  for (const ev of state.events) {
+    if (!lastTsMap[ev.personId] || ev.time > lastTsMap[ev.personId]) lastTsMap[ev.personId] = ev.time;
+  }
   let list = state.persons.slice();
   if (state.sortBy === 'last') {
-    list.sort((a, b) => {
-      const la = state.events.filter(e => e.personId === a.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-      const lb = state.events.filter(e => e.personId === b.id).reduce((mx, e) => Math.max(mx, e.time), 0);
-      return lb - la;
-    });
+    list.sort((a, b) => (lastTsMap[b.id] || 0) - (lastTsMap[a.id] || 0));
   } else if (state.sortBy === 'debt') {
     list.sort((a, b) => computedFor(b.id).debt - computedFor(a.id).debt);
   } else {
@@ -1014,7 +1905,7 @@ function viewPersons() {
           <div class="track"><div class="fill" style="width:${m.heat}%"></div></div>
           <span class="val">${Math.round(m.heat)}</span></div>
       </div>
-      <div class="pc-right">${m.lastDays === null ? '尚无往来' : timeAgo(state.events.filter(e => e.personId === p.id).reduce((mx, e) => Math.max(mx, e.time), 0))}<br>${m.eventCount} 笔记录</div>
+      <div class="pc-right">${m.lastDays === null ? '尚无往来' : timeAgo(lastTsMap[p.id])}<br>${m.eventCount} 笔记录</div>
     </div>`;
   }).join('');
   const matchInfo = kw ? `<div style="padding:0 14px 6px;font-size:12px;color:var(--dim)">匹配 ${list.length} / ${totalBefore} 人</div>` : '';
@@ -1043,7 +1934,7 @@ function viewRecord() {
     const canUndo = i === 0 && e.id === state.lastEventId;
     return `<div class="tlitem ${e.weight < 0 ? 'neg' : ''}">
       <div class="th">${esc(p ? p.name : '未知')}<span class="chip">${t.label}</span><span class="w ${e.weight < 0 ? 'neg' : ''}">${e.weight > 0 ? '+' : ''}${e.weight}</span><button class="delbtn" data-act="delEvent" data-arg="${e.id}">删</button></div>
-      <div class="tm">${esc(e.title)} · ${timeAgo(e.time)}${canUndo ? `<span style="margin-left:8px;color:var(--amber)" data-act="undoLast">↺ 撤销</span>` : ''}</div>
+      <div class="tm">${esc(e.title)}${e.amount > 0 ? ` · ${eventDir(e) === 'in' ? '收到' : '送出'} ${fmtMoney(e.amount)}` : ''} · ${timeAgo(e.time)}${canUndo ? `<span style="margin-left:8px;color:var(--amber)" data-act="undoLast">↺ 撤销</span>` : ''}</div>
     </div>`;
   }).join('');
   const typeChips = Object.keys(EVENT_TYPES).map(k => {
@@ -1072,6 +1963,11 @@ function viewRecord() {
           <div class="stepper"><button data-act="wstep" data-arg="-1">−</button><span id="fWeight">${EVENT_TYPES[state.evType].dHeat}</span><button data-act="wstep" data-arg="1">＋</button></div>
         </div>
       </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>金额（元，可选）</label><input class="inp" id="fAmount" type="number" min="0" step="50" placeholder="送礼/收礼/借款填这里"></div>
+        <div class="field" style="flex:1"><label>资金方向</label><select class="inp" id="fDir">${dirOptions(defaultDir(state.evType))}</select></div>
+      </div>
+      <div class="field"><label>场合</label><select class="inp" id="fOccasion">${occOptions('日常')}</select></div>
       <div class="field"><label>备注（可选）</label><textarea class="inp" id="fNote" placeholder="补充细节，比如谁介绍的、聊了什么…"></textarea></div>
       <button class="btn primary block" data-act="eventSubmit" ${persons.length ? '' : 'disabled'}>保存这笔往来</button>
       ${persons.length ? '' : '<div class="sub" style="margin-top:8px;text-align:center">还没有人脉，先添加一位再记录。</div>'}
@@ -1242,7 +2138,7 @@ function exportAnnualPng() {
     html2canvas(el, { backgroundColor: '#fffdf7', scale: 2, logging: false, useCORS: true }).then(canvas => {
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
-      a.href = url; a.download = '人情世故雷达-年报.png';
+      a.href = url; a.download = 'EQ-Worker-年报.png';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       toast('已下载年度报告图片');
     }).catch(() => toast('请截图分享：双击电源键+音量上'));
@@ -1274,9 +2170,10 @@ function drawNetwork(canvas) {
   const heats = persons.map(p => Math.round(computedFor(p.id).heat));
   const maxH = Math.max(...heats, 1);
   const cx = W / 2, cy = H / 2, radius = Math.min(W, H) / 2 - 40;
-  /* 连线：两人共同事件数 */
-  const evByP = {};
-  for (const p of persons) evByP[p.id] = state.events.filter(e => e.personId === p.id).length;
+  /* 连线：数据模型里事件只挂在单人身上，没有「两人共同事件」这种字段，
+     所以关联度用「共同标签数」表示（同好、同圈子才连线），旧注释的说法与实现不符。 */
+  const tagSet = {};
+  for (const p of persons) tagSet[p.id] = new Set(p.tags || []);
   /* 环形布局：第一人在中心，其余均匀分布圆周 */
   const nodes = persons.map((p, i) => {
     if (i === 0) return { x: cx, y: cy, p, heat: heats[0] };
@@ -1288,7 +2185,8 @@ function drawNetwork(canvas) {
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i], b = nodes[j];
-      const shared = Math.min(evByP[a.p.id] || 0, evByP[b.p.id] || 0);
+      let shared = 0;
+      for (const t of tagSet[a.p.id]) if (tagSet[b.p.id].has(t)) shared++;
       if (shared > 0) {
         const lw = Math.min(1 + shared * 0.5, 5);
         ctx.strokeStyle = 'rgba(185,164,128,' + Math.min(0.15 + shared * 0.05, 0.5) + ')';
@@ -1321,9 +2219,9 @@ function drawNetwork(canvas) {
 /* 剪贴板：无后端环境下的数据搬运 */
 function backupText() {
   return JSON.stringify({
-    app: '人情世故雷达', version: 2, exportedAt: Date.now(),
+    app: 'EQ-Worker', version: 3, exportedAt: Date.now(),
     persons: state.persons, events: state.events, reminders: state.reminders,
-    progress: state.progress, streak: state.streak
+    progress: state.progress, streak: state.streak, settings: state.settings
   }, null, 1);
 }
 function openClipboard() {
@@ -1348,7 +2246,7 @@ function openAllEvents() {
     const t = EVENT_TYPES[e.type] || EVENT_TYPES.other;
     return `<div class="tlitem ${e.weight < 0 ? 'neg' : ''}">
       <div class="th">${esc(p ? p.name : '未知')}<span class="chip">${t.label}</span><span class="w ${e.weight < 0 ? 'neg' : ''}">${e.weight > 0 ? '+' : ''}${e.weight}</span><button class="delbtn" data-act="delEvent" data-arg="${e.id}">删</button></div>
-      <div class="tm">${esc(e.title)} · ${fmtDate(e.time)} · ${timeAgo(e.time)}${e.note ? ' · ' + esc(e.note) : ''}</div>
+      <div class="tm">${esc(e.title)}${e.amount > 0 ? ` · ${eventDir(e) === 'in' ? '收到' : '送出'} ${fmtMoney(e.amount)}` : ''} · ${fmtDate(e.time)} · ${timeAgo(e.time)}${e.note ? ' · ' + esc(e.note) : ''}</div>
     </div>`;
   }).join('');
   openSheet(`全部往来 <span style="font-size:12px;color:var(--sub)">${state.events.length} 笔</span>`, `
@@ -1503,16 +2401,26 @@ function viewMe() {
     </div>
     <div id="relation-network" class="card">
       <h3>关系网络</h3>
-      <div class="sub" style="margin-top:4px">点击节点可查看人脉详情</div>
+      <div class="sub" style="margin-top:4px">点击节点可查看人脉详情；节点越大热度越高，连线表示两人有共同标签</div>
       <canvas id="network-canvas" style="width:100%;display:block;margin-top:10px"></canvas>
     </div>
     ${achievementsHtml()}
+    <div class="card">
+      <h3>人情工具</h3>
+      <div class="sub" style="margin:6px 0 10px">账本、随礼、话术、日历，都在这里。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" data-act="ledgerModal">人情账本</button>
+        <button class="btn sm" data-act="giftModal" data-arg="">随礼参谋</button>
+        <button class="btn sm" data-act="scriptModal" data-arg="reconnect|">话术参谋</button>
+        <button class="btn sm" data-act="exportICS">导出重要日子 (.ics)</button>
+      </div>
+    </div>
     <div class="card">
       <h3>数据管理</h3>
       <div class="sub" style="margin:8px 0 12px">所有数据只保存在本机浏览器，不上传任何服务器。换设备前记得导出备份，或用剪贴板把数据搬到新设备。</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" data-act="export">导出备份</button>
-        <button class="btn" data-act="exportCsv">导出人脉清单(CSV)</button>
+        <button class="btn" data-act="exportCsv">导出人脉+账本(CSV)</button>
         <button class="btn" data-act="import">导入备份</button>
         <button class="btn" data-act="copyBackup">复制备份</button>
         <button class="btn" data-act="pasteImport">粘贴导入</button>
@@ -1523,16 +2431,17 @@ function viewMe() {
     ${installCardHtml}
     <div class="card">
       <div class="brandcard">${LOGO_SVG}
-        <div class="bn">人情世故雷达</div>
+        <div class="bn">EQ-Worker</div>
         <div class="bs">${BRAND.slogan}</div>
         <div class="bv">${BRAND.version} · 本地优先 · 数据只存本机<br>${BRAND.en}</div>
       </div>
       <div class="sub" style="text-align:center">
-        以「记录往来 → 自动画像 → 智能提醒 → 情景修炼 → 年度报告」为主线，
-        帮你把人情账记明白、把关系经营成细水长流。<br><br>
+        以「今日行动 → 人情账本 → 随礼参谋 → 话术参谋 → 关系体检」为主线，
+        帮你把人情顾好、把关系经营成细水长流。<br><br>
+        · 所有建议由本地规则生成，不调用外部 AI、不上传通讯录<br>
         · 雷达图由开源可视化库 ECharts 绘制，全程无手写 Canvas<br>
         · 数据存储使用浏览器本地存储，隐私安全<br>
-        · 情景均为常见中国式社交场景，答案与点评供参考，人情没有唯一解
+        · 礼金与话术仅供参考，人情没有唯一解，最终以你的真实关系和当地习惯为准
       </div>
     </div>`;
 }
@@ -1573,6 +2482,9 @@ function openPerson(id) {
   if (!p) return;
   window.__curPerson = id;
   const m = computedFor(p.id);
+  const health = personHealth(p);
+  const lg = personLedger(p.id);
+  const lstat = LEDGER_STATUS[lg.status];
   const t = (p.tags || []).map(x => `<span class="chip teal">${esc(x)}</span>`).join(' ');
   const dims = [
     ['热度', m.heat, '近期往来与事件加权的综合温度', true],
@@ -1593,7 +2505,7 @@ function openPerson(id) {
     const tt = EVENT_TYPES[e.type] || EVENT_TYPES.other;
     return `<div class="tlitem ${e.weight < 0 ? 'neg' : ''}">
       <div class="th">${esc(e.title) || tt.label}<span class="chip">${tt.label}</span><span class="w ${e.weight < 0 ? 'neg' : ''}">${e.weight > 0 ? '+' : ''}${e.weight}</span><button class="delbtn" data-act="delEvent" data-arg="${e.id}">删</button></div>
-      <div class="tm">${fmtDate(e.time)} · ${timeAgo(e.time)}${e.note ? ' · ' + esc(e.note) : ''}</div>
+      <div class="tm">${fmtDate(e.time)} · ${timeAgo(e.time)}${e.amount > 0 ? ` · ${eventDir(e) === 'in' ? '收到' : '送出'} ${fmtMoney(e.amount)}` : ''}${e.note ? ' · ' + esc(e.note) : ''}</div>
     </div>`;
   }).join('');
   const rms = state.reminders.filter(r => r.personId === id);
@@ -1606,12 +2518,22 @@ function openPerson(id) {
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
       <div class="avatar" style="width:52px;height:52px;font-size:19px">${esc(initials(p.name))}</div>
       <div style="flex:1">
-        <div style="font-size:15px;font-weight:700">${esc(p.name)}${p.birthday ? ` <span class="chip">生日 ${esc(p.birthday)}</span>` : ''}</div>
+        <div style="font-size:15px;font-weight:700">${esc(p.name)}${p.birthday ? ` <span class="chip">生日 ${esc(p.birthday)}</span>` : ''}${p.anniversary ? ` <span class="chip">纪念日 ${esc(p.anniversary)}</span>` : ''}</div>
         <div style="margin-top:5px">${t || '<span class="chip">暂无标签</span>'}</div>
+        ${p.likes || p.taboos ? `<div class="sub" style="margin-top:5px;font-size:11px">${p.likes ? `喜欢：${esc(p.likes)}` : ''}${p.likes && p.taboos ? ' · ' : ''}${p.taboos ? `避开：${esc(p.taboos)}` : ''}</div>` : ''}
         ${p.note ? `<div class="sub" style="margin-top:5px">${esc(p.note)}</div>` : ''}
       </div>
     </div>
     <div style="margin:0 0 12px;padding:10px 12px;background:rgba(127,174,131,.08);border:1px dashed rgba(127,174,131,.35);border-radius:10px;font-size:13px;line-height:1.65;color:var(--text)">${relationRead(p)}</div>
+    <div class="card healthcard" style="margin:0 0 12px;padding:12px 14px">
+      <div style="display:flex;align-items:flex-end;gap:10px">
+        <div><div class="sub" style="font-size:11px">关系健康度</div>
+          <div class="healthscore">${health.score}<span>/100</span></div></div>
+        <span class="chip ${health.cls}" style="margin-left:auto">${health.level}</span>
+      </div>
+      <div class="track" style="margin-top:8px"><div class="fill" style="width:${health.score}%;background:linear-gradient(90deg,var(--teal2),var(--teal))"></div></div>
+      <div class="sub" style="margin-top:8px;line-height:1.7">${health.tips.map(x => '· ' + esc(x)).join('<br>')}</div>
+    </div>
     <div id="personChart" class="chart" style="height:230px"></div>
     <div class="card" style="margin:0 0 12px;padding:12px 14px">
       ${dimRows}
@@ -1624,9 +2546,26 @@ function openPerson(id) {
         <span class="chip" style="margin-left:auto">当前热度 ${Math.round(m.heat)}${p.adjust ? `（含手动 ±${esc(p.adjust)}）` : ''}</span>
       </div>
     </div>
+    <div class="card" style="margin:0 0 12px;padding:12px 14px">
+      <h3>人情账本 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">只记金额，不影响人情分</span></h3>
+      <div class="lg-mini" style="margin-top:10px">
+        <div><span>送出</span><b>${fmtMoney(lg.given)}</b></div>
+        <div><span>收到</span><b>${fmtMoney(lg.received)}</b></div>
+        <div><span>净额</span><b class="${lg.net > 0 ? 'neg' : lg.net < 0 ? 'pos' : ''}">${ledgerNetShort(lg.net)}</b></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <span class="chip ${lstat.cls}">${ledgerNetLabel(lg.net)}</span>
+        ${lg.lastAmount ? `<span class="chip">最近一笔 ${lg.lastDir === 'in' ? '收' : '送'} ${fmtMoney(lg.lastAmount)}</span>` : '<span class="sub" style="font-size:11px">还没有金额记录</span>'}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn sm" data-act="giftModal" data-arg="${id}">随礼参谋</button>
+        <button class="btn sm" data-act="ledgerModal">看总账</button>
+      </div>
+    </div>
     <div class="card" style="border-color:rgba(127,174,131,.4)">
       <h3>走动建议</h3>
       <div class="sub" style="margin-top:6px">${getSuggestion(p)}</div>
+      <button class="btn sm" style="margin-top:10px" data-act="scriptModal" data-arg="reconnect|${id}">按建议生成话术</button>
     </div>
     <div class="card">
       <h3>往来时间线 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">${evs.length} 笔</span></h3>
@@ -1655,29 +2594,59 @@ function personForm(id) {
       <select class="inp" id="pfIdentity">${IDENTITIES.map(i => `<option ${p && p.identity === i ? 'selected' : ''}>${i}</option>`).join('')}</select></div>
     <div class="field"><label>标签（逗号分隔）</label><input class="inp" id="pfTags" value="${esc(p ? (p.tags || []).join('，') : '')}" placeholder="如：大学死党，球友"></div>
     <div class="field"><label>生日（用于生日提醒，可选）</label><input class="inp" id="pfBirth" type="date" value="${p && p.birthday ? esc(toDateInput(p.birthday)) : ''}"></div>
+    <div class="field"><label>重要纪念日（可选，如相识/结婚纪念日）</label><input class="inp" id="pfAnniversary" type="date" value="${p && p.anniversary ? esc(toDateInput(p.anniversary)) : ''}"></div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1"><label>喜好</label><input class="inp" id="pfLikes" value="${esc(p ? p.likes || '' : '')}" placeholder="如：喝茶、跑步"></div>
+      <div class="field" style="flex:1"><label>忌讳</label><input class="inp" id="pfTaboos" value="${esc(p ? p.taboos || '' : '')}" placeholder="如：不喝酒、忌辣"></div>
+    </div>
     <div class="field"><label>备注</label><textarea class="inp" id="pfNote" placeholder="重要细节、忌讳、最近在忙什么…">${esc(p ? p.note || '' : '')}</textarea></div>
     <button class="btn primary block" data-act="personSubmit" data-arg="${p ? p.id : ''}">保存</button>
   `, true);
 }
 
 /* ---------- 事件表单 ---------- */
+const DIR_OPTIONS = [['none', '不涉及金额'], ['in', '对方给我'], ['out', '我给对方']];
+function defaultDir(type) {
+  if (type === 'gift_get') return 'in';
+  if (type === 'gift_give') return 'out';
+  if (type === 'money') return 'in';
+  return 'none';
+}
+function dirOptions(sel) {
+  return DIR_OPTIONS.map(([v, l]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${l}</option>`).join('');
+}
+function occOptions(sel) {
+  return OCCASIONS.map(o => `<option value="${o}" ${o === sel ? 'selected' : ''}>${o}</option>`).join('');
+}
 function eventModal(personId) {
-  const opts = state.persons.map(x => `<option value="${x.id}" ${x.id === personId ? 'selected' : ''}>${esc(x.name)} · ${esc(x.identity || '')}</option>`).join('');
+  const pre = window.__prefill || {};
+  window.__prefill = null;
+  const opts = state.persons.map(x => `<option value="${x.id}" ${x.id === (pre.personId || personId) ? 'selected' : ''}>${esc(x.name)} · ${esc(x.identity || '')}</option>`).join('');
+  const initType = pre.type || 'meal';
+  const initDir = defaultDir(initType);
+  const initOcc = pre.occasion || '日常';
+  window.__modalType = initType;
+  window.__modalWeight = EVENT_TYPES[initType].dHeat;
   openSheet('记一笔往来', `
     <div class="field"><label>关联人</label><select class="inp" id="efPerson"><option value="">— 选择人脉 —</option>${opts}</select></div>
     <div class="field"><label>事件类型</label><div class="typegrid" id="efTypes">${Object.keys(EVENT_TYPES).map(k =>
-      `<button class="typecell" data-act="modalType" data-arg="${k}"><svg viewBox="0 0 24 24">${typeIcon(k)}</svg>${EVENT_TYPES[k].label}</button>`).join('')}</div></div>
-    <div class="field"><label>一句话</label><input class="inp" id="efTitle" placeholder="例如：帮我协调了跨部门资源"></div>
+      `<button class="typecell ${k === initType ? 'on' : ''}" data-act="modalType" data-arg="${k}"><svg viewBox="0 0 24 24">${typeIcon(k)}</svg>${EVENT_TYPES[k].label}</button>`).join('')}</div></div>
+    <div class="field"><label>一句话</label><input class="inp" id="efTitle" value="${esc(pre.title || '')}" placeholder="例如：帮我协调了跨部门资源"></div>
     <div style="display:flex;gap:10px">
       <div class="field" style="flex:1"><label>时间</label><input class="inp" id="efTime" type="date" value="${todayStr()}" max="${todayStr()}"></div>
       <div class="field"><label>人情值</label>
-        <div class="stepper"><button data-act="wstep2" data-arg="-1">−</button><span id="efWeight">${EVENT_TYPES.meal.dHeat}</span><button data-act="wstep2" data-arg="1">＋</button></div>
+        <div class="stepper"><button data-act="wstep2" data-arg="-1">−</button><span id="efWeight">${window.__modalWeight}</span><button data-act="wstep2" data-arg="1">＋</button></div>
       </div>
     </div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1"><label>金额（元，可选）</label><input class="inp" id="efAmount" type="number" min="0" step="50" value="${pre.amount != null ? esc(pre.amount) : ''}" placeholder="仅送礼/收礼/借款计入账本"></div>
+      <div class="field" style="flex:1"><label>资金方向</label><select class="inp" id="efDir">${dirOptions(initDir)}</select></div>
+    </div>
+    <div class="field"><label>场合</label><select class="inp" id="efOccasion">${occOptions(initOcc)}</select></div>
     <div class="field"><label>备注（可选）</label><textarea class="inp" id="efNote"></textarea></div>
     <button class="btn primary block" data-act="eventSubmitModal">保存</button>
   `, true);
-  window.__modalType = 'meal'; window.__modalWeight = EVENT_TYPES.meal.dHeat;
+  window.__modalDir = initDir;
 }
 
 /* ---------- 提醒表单 ---------- */
@@ -1746,16 +2715,19 @@ function showResult(sc, i, nextId) {
 /* ---------------- 9. 演示数据 ---------------- */
 function loadDemo() {
   const now = Date.now();
-  const mk = (name, identity, tags, birthday, note, adjust) => ({ id: uid(), name, identity, tags, birthday, note, adjust, createdAt: now - Math.random() * 90 * DAY });
+  const mk = (name, identity, tags, birthday, note, adjust, likes, taboos, anniversary) => ({ id: uid(), name, identity, tags, birthday, note, adjust, likes: likes || '', taboos: taboos || '', anniversary: anniversary || '', createdAt: now - Math.random() * 90 * DAY });
   const p = {
-    wang: mk('王总', '领导', ['直属领导', '关键人脉'], '03-15', '年底评审、明年晋升的关键人物', 0),
-    zhang: mk('老张', '朋友', ['大学死党', '球友'], '07-22', '从大学好到现在，无话不谈', 5),
-    chen: mk('陈姐', '客户', ['合作三年', '大客户'], '10-08', '项目负责人，续约前多走动', -3),
-    li: mk('李叔', '邻居', ['热心肠'], '', '上次帮我搬过家，得找机会还人情', 0),
-    ming: mk('阿明', '同学', ['老同学'], '', '借了钱一直没还，见面尴尬', 0),
-    dad: mk('老爸', '家人', [], '05-01', '', 0)
+    wang: mk('王总', '领导', ['直属领导', '关键人脉'], '03-15', '年底评审、明年晋升的关键人物', 0, '喝茶、书法', '不喝酒'),
+    zhang: mk('老张', '朋友', ['大学死党', '球友'], '07-22', '从大学好到现在，无话不谈', 5, '精酿、球赛', '海鲜过敏', '09-01'),
+    chen: mk('陈姐', '客户', ['合作三年', '大客户'], '10-08', '项目负责人，续约前多走动', -3, '咖啡、园艺', '不吃辣'),
+    li: mk('李叔', '邻居', ['热心肠'], '', '上次帮我搬过家，得找机会还人情', 0, '下棋', ''),
+    ming: mk('阿明', '同学', ['老同学'], '', '我借了他 5000，一直没还，见面尴尬', 0, '游戏', ''),
+    dad: mk('老爸', '家人', [], '05-01', '', 0, '钓鱼', '高糖')
   };
-  const ev = (personId, type, title, days, weight, note) => ({ id: uid(), personId, type, title, time: now - days * DAY, weight, note: note || '' });
+  const ev = (personId, type, title, days, weight, note, amount, dir, occasion) => ({
+    id: uid(), personId, type, title, time: now - days * DAY, weight, note: note || '',
+    amount: amount || 0, dir: amount ? (dir || defaultDir(type)) : 'none', occasion: occasion || '日常'
+  });
   state.persons = [p.wang, p.zhang, p.chen, p.li, p.ming, p.dad];
   state.events = [
     ev(p.wang.id, 'meal', '部门团建饭局', 10, 7, ''),
@@ -1764,24 +2736,32 @@ function loadDemo() {
     ev(p.zhang.id, 'meal', '周五撸串', 3, 7, '聊到半夜'),
     ev(p.zhang.id, 'talk', '深夜谈心', 15, 5, ''),
     ev(p.zhang.id, 'help_them', '借车给我用了一周', 40, 8, ''),
-    ev(p.zhang.id, 'gift_give', '他生日我送了机械键盘', 60, 4, ''),
+    ev(p.zhang.id, 'gift_give', '他生日我送了机械键盘', 60, 4, '', 800, 'out', '生日'),
     ev(p.chen.id, 'meal', '项目庆功宴', 20, 7, ''),
-    ev(p.chen.id, 'gift_get', '收到中秋礼盒', 55, 4, ''),
+    ev(p.chen.id, 'gift_get', '收到中秋礼盒', 55, 4, '', 500, 'in', '节日'),
     ev(p.chen.id, 'help_them', '介绍了一个靠谱供应商', 70, 6, ''),
     ev(p.li.id, 'help_them', '借了他家车位用了一周', 5, 8, ''),
     ev(p.li.id, 'help_me', '我帮他搬了家', 45, 6, ''),
     ev(p.ming.id, 'greeting', '去年春节拜年', 220, 3, ''),
-    ev(p.ming.id, 'money', '借了5000还没还', 150, 8, '一直拖着，见面尴尬'),
+    ev(p.ming.id, 'money', '借了他 5000 还没还', 150, 8, '一直拖着，见面尴尬', 5000, 'in', '其他'),
     ev(p.dad.id, 'meal', '周末回家吃饭', 7, 7, ''),
     ev(p.dad.id, 'greeting', '打电话问候', 12, 3, ''),
-    ev(p.dad.id, 'gift_give', '给他买了按摩仪', 35, 4, '')
+    ev(p.dad.id, 'gift_give', '给他买了按摩仪', 35, 4, '', 600, 'out', '生日')
   ];
   state.reminders = [
     { id: uid(), personId: p.zhang.id, content: '请老张吃顿饭，还上次借车的人情', date: fmtDate(now + 3 * DAY), status: 'pending' },
     { id: uid(), personId: p.wang.id, content: '王总生日，发条祝福', date: fmtDate(now + 6 * DAY), status: 'pending' }
   ];
-  // 修炼进度：演示数据带一点处世智慧，五维雷达不再缺一角（35 分 = 「人情通达」段位）
-  state.progress = { wedding: { best: 40, times: 2 } };
+  /* 修炼进度：智慧值按「全部情景满分」归一化，单题满分只有个位数分值。
+     这里给 10 道题打满（4 入门 + 5 进阶 + 1 高手），落地约 64 分，
+     演示数据维持在「人情大师」段位，五维雷达不缺一角。 */
+  state.progress = {
+    wedding: { best: 100, times: 2 }, paybill: { best: 100, times: 1 },
+    redpacket: { best: 100, times: 1 }, praise: { best: 100, times: 1 },
+    toast: { best: 100, times: 1 }, gossip: { best: 100, times: 1 },
+    thanks: { best: 100, times: 1 }, borrow: { best: 100, times: 1 },
+    gift: { best: 100, times: 1 }, weekend: { best: 100, times: 1 }
+  };
   state.streak = { n: 2, last: fmtDate(now) };
   invalidateCache(); store.save(); render();
   toast('已载入 6 位人脉演示数据，可在「我的」里清空重建');
@@ -1795,18 +2775,42 @@ function onClick(e) {
   switch (act) {
     case 'go': {
       state.tab = arg; render();
-      try { localStorage.setItem('rqsg_tab', arg); } catch (e) {}
+      try { localStorage.setItem('eqworker_tab', arg); } catch (e) {}
       break;
     }
 
     case 'openPerson': openPerson(arg); break;
+    case 'ledgerModal': openLedger(); break;
+    case 'ledgerFilter': state.ledgerFilter = arg; openLedger(); break;
+    case 'giftModal': giftModal(arg || ''); break;
+    case 'giftToEvent': giftToEvent(); break;
+    case 'giftScript': {
+      const g = window.__gift;
+      closeModal();
+      if (g) scriptModal('gift', g.personId);
+      break;
+    }
+    case 'scriptModal': {
+      const [sid, pid] = String(arg || '').split('|');
+      scriptModal(sid || 'reconnect', pid || '');
+      break;
+    }
+    case 'copyScript': {
+      const t = (window.__scriptVariants || [])[parseInt(arg, 10)];
+      if (t) copyText(t);
+      break;
+    }
+    case 'exportICS': exportICS(); toast('日历文件已导出，可导入系统日历'); break;
     case 'personForm': personForm(arg || ''); break;
     case 'personSubmit': {
       const name = $('#pfName').value.trim();
       if (!name) { toast('请填写姓名'); break; }
       const tags = $('#pfTags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
       const birth = toMMDD($('#pfBirth').value);
-      const data = { name, identity: $('#pfIdentity').value, tags, birthday: birth, note: $('#pfNote').value.trim() };
+      const anniversary = toMMDD($('#pfAnniversary').value);
+      const likes = $('#pfLikes').value.trim();
+      const taboos = $('#pfTaboos').value.trim();
+      const data = { name, identity: $('#pfIdentity').value, tags, birthday: birth, anniversary, likes, taboos, note: $('#pfNote').value.trim() };
       if (arg) {
         const p = state.persons.find(x => x.id === arg);
         if (p) Object.assign(p, data, { updatedAt: Date.now() });
@@ -1855,6 +2859,7 @@ function onClick(e) {
       state.evType = arg;
       $$('#view .typecell').forEach(c => c.classList.toggle('on', c.dataset.arg === arg));
       const w = $('#fWeight'); if (w) w.textContent = EVENT_TYPES[arg].dHeat;
+      const d = $('#fDir'); if (d) d.value = defaultDir(arg);
       const ph = $('#fTitle'); if (ph) ph.placeholder = EVENT_TYPES[arg].label + '，例如：' + (PLACEHOLDERS[arg] || '');
       break;
     }
@@ -1868,10 +2873,11 @@ function onClick(e) {
       const title = $('#fTitle').value.trim() || EVENT_TYPES[state.evType].label;
       const dtv = $('#fTime').value;
       const t = Math.min(dtv ? new Date(dtv + 'T00:00:00').getTime() : Date.now(), Date.now()); // 日期留空按今天
-      const ev = { id: uid(), personId: pid, type: state.evType, title, time: t, weight: parseInt($('#fWeight').textContent, 10), note: $('#fNote').value.trim() };
+      const ev = { id: uid(), personId: pid, type: state.evType, title, time: t, weight: parseInt($('#fWeight').textContent, 10), note: $('#fNote').value.trim(), amount: clamp(parseFloat($('#fAmount').value) || 0, 0, 10000000), dir: 'none', occasion: $('#fOccasion').value || '日常' };
+      if (ev.amount > 0) ev.dir = $('#fDir').value;
       state.events.push(ev); state.lastEventId = ev.id; state.evPersonId = pid;
-      invalidateCache(); store.save(); $('#fTitle').value = ''; $('#fNote').value = '';
-      toast('已记录一笔「' + EVENT_TYPES[state.evType].label + '」');
+      invalidateCache(); store.save(); $('#fTitle').value = ''; $('#fNote').value = ''; $('#fAmount').value = '';
+      toast('已记录一笔「' + EVENT_TYPES[state.evType].label + '」' + (ev.amount > 0 ? `，金额 ${fmtMoney(ev.amount)}` : ''));
       render();
       break;
     }
@@ -1890,7 +2896,9 @@ function onClick(e) {
     case 'allEvents': openAllEvents(); break;
     case 'modalType': {
       window.__modalType = arg; window.__modalWeight = EVENT_TYPES[arg].dHeat;
+      window.__modalDir = defaultDir(arg);
       const w = document.getElementById('efWeight'); if (w) w.textContent = window.__modalWeight;
+      const d = document.getElementById('efDir'); if (d) d.value = window.__modalDir;
       $$('#efTypes .typecell').forEach(c => c.classList.toggle('on', c.dataset.arg === arg));
       break;
     }
@@ -1905,14 +2913,17 @@ function onClick(e) {
       const title = $('#efTitle').value.trim() || EVENT_TYPES[window.__modalType].label;
       const dtv = $('#efTime').value;
       const t = Math.min(dtv ? new Date(dtv + 'T00:00:00').getTime() : Date.now(), Date.now()); // 日期留空按今天
-      const ev = { id: uid(), personId: pid, type: window.__modalType, title, time: t, weight: window.__modalWeight || 6, note: $('#efNote').value.trim() };
+      const amount = clamp(parseFloat($('#efAmount').value) || 0, 0, 10000000);
+      const dir = amount > 0 ? $('#efDir').value : 'none';
+      const occasion = $('#efOccasion').value || '日常';
+      const ev = { id: uid(), personId: pid, type: window.__modalType, title, time: t, weight: window.__modalWeight || 6, note: $('#efNote').value.trim(), amount, dir, occasion };
       state.events.push(ev); state.lastEventId = ev.id; state.evPersonId = pid;
       invalidateCache(); store.save();
       const fromDetail = window.__curPerson;
       closeModal(); render();
       if (fromDetail) openPerson(fromDetail);
       const wgt = ev.weight;
-      toast('已记录，人情值 ' + (wgt > 0 ? '+' : '') + wgt);
+      toast('已记录，人情值 ' + (wgt > 0 ? '+' : '') + wgt + (amount > 0 ? `，金额 ${fmtMoney(amount)}` : ''));
       break;
     }
 
@@ -1966,7 +2977,7 @@ function onClick(e) {
       }
       break;
     }
-    case 'iosHintClose': lsSet('rqsg_ios_hint', '1'); render(); break;
+    case 'iosHintClose': lsSet('eqworker_ios_hint', '1'); render(); break;
 
     case 'scenario': scenarioModal(arg); break;
     case 'choice': {
@@ -2012,10 +3023,13 @@ function onClick(e) {
       try {
         const d = JSON.parse(raw);
         if (!d || !Array.isArray(d.persons)) throw new Error('bad');
+        /* 与文件导入走同一条清洗链：剪贴板内容同样是外部输入，
+           直接 applyImport 会把 progress.best='oops' 之类的脏值带进 state。 */
+        const clean = sanitizeImport(d);
         if (state.persons.length) {
-          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(d), true);
+          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(clean), true);
         } else {
-          store.applyImport(d);
+          store.applyImport(clean);
         }
       } catch (e) { toast('导入失败：内容格式不对'); }
       break;
@@ -2030,8 +3044,8 @@ function onClick(e) {
         const backupStreak = Object.assign({}, state.streak);
         state.persons = []; state.events = []; state.reminders = []; state.progress = {};
         state.streak = { n: 0, last: '' }; state.lastEventId = null;
-        state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部'; state.tab = 'radar';
-        try { localStorage.setItem('rqsg_tab', 'radar'); } catch (e) {}
+        state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部'; state.tab = 'assistant';
+        try { localStorage.setItem('eqworker_tab', 'assistant'); } catch (e) {}
         invalidateCache(); store.save(); closeModal(); render();
         toastUndo('数据已清空', () => {
           state.persons = backupPersons; state.events = backupEvents; state.reminders = backupReminders;
@@ -2059,8 +3073,8 @@ function onClick(e) {
       break;
     }
     case 'demo': loadDemo(); break;
-    case 'welcomeDemo': { try { localStorage.setItem('rqsg_welcomed', '1'); } catch (e) {} closeModal(); loadDemo(); break; }
-    case 'welcomeGo': { try { localStorage.setItem('rqsg_welcomed', '1'); } catch (e) {} closeModal(); state.tab = 'persons'; render(); break; }
+    case 'welcomeDemo': { try { localStorage.setItem('eqworker_welcomed', '1'); } catch (e) {} closeModal(); loadDemo(); break; }
+    case 'welcomeGo': { try { localStorage.setItem('eqworker_welcomed', '1'); } catch (e) {} closeModal(); state.tab = 'persons'; render(); break; }
     case 'closeModal': closeModal(); break;
     case 'confirmOk': confirmOk(); break;
     case 'confirmCancel': confirmCancel(); break;
@@ -2080,6 +3094,31 @@ function onChange(e) {
   const act = el.dataset.change;
   if (act === 'evPerson') state.evPersonId = el.value;
   else if (act === 'importFile') { if (el.files && el.files[0]) store.import(el.files[0]); el.value = ''; }
+  else if (act === 'giftCalc') {
+    const gp = document.getElementById('gfPerson');
+    const go = document.getElementById('gfOccasion');
+    const gt = document.getElementById('gfTier');
+    const gc = document.getElementById('gfCity');
+    if (!window.__gift) return;
+    if (gp) window.__gift.personId = gp.value;
+    if (go) window.__gift.occasion = go.value;
+    if (gt) window.__gift.tier = gt.value;
+    if (gc) window.__gift.city = gc.value;
+    state.settings.giftTier = window.__gift.tier;
+    state.settings.cityTier = window.__gift.city;
+    store.save();
+    renderGiftResult();
+  }
+  else if (act === 'scriptCalc') {
+    const ss = document.getElementById('sfScene');
+    const sp = document.getElementById('sfPerson');
+    const scx = document.getElementById('sfContext');
+    if (!window.__script) return;
+    if (ss) window.__script.sceneId = ss.value;
+    if (sp) window.__script.personId = sp.value;
+    if (scx) window.__script.context = scx.value;
+    renderScriptResults();
+  }
 }
 /* 搜索：input 实时筛选，保持焦点（IME 组合期间不重建） */
 /* 搜索防抖定时器（见下方 onInput 的 search 分支） */
@@ -2099,6 +3138,11 @@ function onInput(e) {
       const si = $('#fSearch');
       if (si) { si.focus(); const v = si.value; si.setSelectionRange(v.length, v.length); }
     }, 180);
+  } else if (act === 'scriptInput') {
+    if (!window.__script) return;
+    window.__script.context = el.value;
+    clearTimeout(window.__scriptTimer);
+    window.__scriptTimer = setTimeout(() => renderScriptResults(), 160);
   }
 }
 document.addEventListener('click', onClick);
@@ -2121,7 +3165,7 @@ document.addEventListener('click', (e) => {
 
 /* 首次使用品牌欢迎（只出现一次） */
 function showWelcome() {
-  try { localStorage.setItem('rqsg_welcomed', '1'); } catch (e) {}
+  try { localStorage.setItem('eqworker_welcomed', '1'); } catch (e) {}
   openSheet(`欢迎使用 ${BRAND.name}`, `
     <div class="welcome-svg">${LOGO_SVG}</div>
     <div style="text-align:center">
@@ -2158,7 +3202,7 @@ function installCard() {
       <button class="btn primary" style="margin-top:10px" data-act="installApp">添加到主屏幕</button>
     </div>`;
   }
-  if (isIOS && lsGet('rqsg_ios_hint') !== '1') {
+  if (isIOS && lsGet('eqworker_ios_hint') !== '1') {
     return `<div class="card">
       <h3>装成 App 用</h3>
       <div class="sub" style="margin-top:6px">在 Safari 里点底部「分享」，选「添加到主屏幕」，就能像 App 一样全屏使用、离线可用。</div>
@@ -2171,10 +3215,10 @@ function installCard() {
 /* ---------------- 11. 启动 ---------------- */
 function init() {
   store.load();
-  const savedTab = lsGet('rqsg_tab');
-  if (savedTab && ['radar', 'persons', 'record', 'train', 'me'].includes(savedTab)) state.tab = savedTab;
+  const savedTab = lsGet('eqworker_tab');
+  if (savedTab && ['assistant', 'radar', 'persons', 'record', 'train', 'me'].includes(savedTab)) state.tab = savedTab;
   render();
-  if (!state.persons.length && lsGet('rqsg_welcomed') !== '1') {
+  if (!state.persons.length && lsGet('eqworker_welcomed') !== '1') {
     /* 首次打开：品牌欢迎引导 */
     showWelcome();
   }

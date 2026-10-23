@@ -1,5 +1,5 @@
-// 人情世故雷达 · 构建脚本（零依赖 ES Module）
-// 将 _app_dev.js + index.template.html → index.html + 人情世故雷达.html
+// EQ-Worker · 构建脚本（零依赖 ES Module）
+// 将 _app_dev.js + index.template.html → index.html + EQ-Worker.html
 import { readFile, writeFile, copyFile, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -37,8 +37,8 @@ async function build() {
   const indexPath = resolve(ROOT, 'index.html');
   await writeFile(indexPath, html, 'utf8');
 
-  // 5. 复制为 人情世故雷达.html
-  const cnPath = resolve(ROOT, '人情世故雷达.html');
+  // 5. 复制为 EQ-Worker.html
+  const cnPath = resolve(ROOT, 'EQ-Worker.html');
   await copyFile(indexPath, cnPath);
 
   /* 5.5 同步到原生端产物（关键！）
@@ -68,7 +68,7 @@ async function build() {
   const dt = Date.now() - t0;
   const ts = new Date().toISOString();
   console.log(`[build] OK  index.html          ${html.length.toString().padStart(10)} bytes`);
-  console.log(`[build] OK  人情世故雷达.html   ${html.length.toString().padStart(10)} bytes`);
+  console.log(`[build] OK  EQ-Worker.html   ${html.length.toString().padStart(10)} bytes`);
   if (synced.length) console.log(`[build] OK  已同步原生端产物: ${synced.join(', ')}`);
 
   /* 6.5 一致性校验：任何一份产物与 index.html 不一致就报错退出，防止再次静默漂移 */

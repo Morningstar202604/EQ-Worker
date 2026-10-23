@@ -1,5 +1,5 @@
 {
-  "description": "人情世故雷达 · 微信小程序版（复用网页版计算引擎与日记本设计系统）",
+  "description": "EQ-Worker · 微信小程序版（复用网页版计算引擎与日记本设计系统）",
   "packOptions": {
     "ignore": [],
     "include": []
@@ -37,7 +37,7 @@
   "compileType": "miniprogram",
   "libVersion": "2.30.0",
   "appid": "touristappid",
-  "projectname": "人情世故雷达",
+  "projectname": "EQ-Worker",
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",

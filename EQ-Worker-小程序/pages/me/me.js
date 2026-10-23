@@ -14,7 +14,8 @@ Page({
     showReport: false,
     showImport: false,
     importText: '',
-    version: 'v2.8',
+    picker: { show: false, options: [] },
+    version: 'v3.0.0',
     _modal: { show: false, anim: '' },
     _toast: { show: false, anim: '' }
   },
@@ -81,31 +82,40 @@ Page({
   },
   addReminder() {
     const S = engine.getState();
-    const persons = S.persons;
-    const names = persons.map(p => p.name);
-    let idx = 0;
-    wx.showActionSheet({
-      itemList: persons.length ? names : ['先添加人脉'],
-      success: (r) => {
-        if (!persons.length) return;
-        idx = r.tapIndex;
-        ui.modal(this, {
-          title: '添加待办提醒',
-          placeholder: '如：下周约' + persons[idx].name + '吃个饭',
-          editable: true,
-          confirmText: '添加',
-          confirmType: 'teal',
-          onConfirm: (val) => {
-            if (val && val.trim()) {
-              S.reminders.push({ id: engine.uid(), personId: persons[idx].id, content: val.trim(), date: '', status: 'pending' });
-              engine.save();
-              this.onShow();
-              ui.toast(this, '已添加提醒', { icon: '✓' });
-            }
-          }
-        });
+    if (!S.persons.length) { ui.toast(this, '先添加人脉', { icon: '✕' }); return; }
+    /* 用页面内的自定义选择层替代原生 wx.showActionSheet：
+       原生弹层与日记本文风不统一，且无法在真机自定义配色。 */
+    this.setData({
+      picker: {
+        show: true,
+        options: S.persons.map(p => ({ id: p.id, name: p.name, identity: p.identity || '朋友' }))
       }
     });
+  },
+  pickPerson(e) {
+    const S = engine.getState();
+    const id = e.currentTarget.dataset.id;
+    const idx = S.persons.findIndex(p => p.id === id);
+    if (idx < 0) return;
+    this.setData({ 'picker.show': false });
+    ui.modal(this, {
+      title: '添加待办提醒',
+      placeholder: '如：下周约' + S.persons[idx].name + '吃个饭',
+      editable: true,
+      confirmText: '添加',
+      confirmType: 'teal',
+      onConfirm: (val) => {
+        if (val && val.trim()) {
+          S.reminders.push({ id: engine.uid(), personId: S.persons[idx].id, content: val.trim(), date: '', status: 'pending' });
+          engine.save();
+          this.onShow();
+          ui.toast(this, '已添加提醒', { icon: '✓' });
+        }
+      }
+    });
+  },
+  closePicker() {
+    this.setData({ 'picker.show': false });
   },
   openReport() {
     const d = engine.annualData();

@@ -2,7 +2,10 @@ const engine = require('../../utils/engine');
 const ui = require('../../utils/ui');
 
 const EVENTS = engine.EVENT_TYPES;
-const TYPES = Object.keys(EVENTS).map(k => ({ key: k, label: EVENTS[k].label, w: EVENTS[k].weight, on: k === 'meal' }));
+/* 事件类型没有 weight 字段，人情基准值是 dHeat（与 Web 端一致）。
+   旧写法取 EVENTS[k].weight 恒为 undefined，按钮显示 "undefined" 且切类型不更新人情值。 */
+const TYPES = Object.keys(EVENTS).map(k => ({ key: k, label: EVENTS[k].label, w: EVENTS[k].dHeat, on: k === 'meal' }));
+const DEFAULT_WEIGHT = EVENTS.meal.dHeat;
 
 Page({
   data: {
@@ -12,7 +15,7 @@ Page({
     curType: 'meal',
     title: '',
     date: '',
-    weight: 7,
+    weight: DEFAULT_WEIGHT,
     note: '',
     recent: [],
     canUndo: false,
@@ -47,7 +50,9 @@ Page({
   tapType(e) {
     const k = e.currentTarget.dataset.k;
     const types = this.data.types.map(t => ({ ...t, on: t.key === k }));
-    this.setData({ types, curType: k });
+    /* 切换类型时同步重置人情值到该类型基准（冲突 -10、饭局 +7…），
+       否则记录冲突仍会带 +7，热度反向飙升。 */
+    this.setData({ types, curType: k, weight: (EVENTS[k] || EVENTS.other).dHeat });
   },
   onTitle(e) { this.setData({ title: e.detail.value }); },
   onDate(e) { this.setData({ date: e.detail.value }); },
@@ -76,7 +81,7 @@ Page({
     S.events.push(ev);
     S.lastEventId = ev.id;
     engine.save();
-    this.setData({ title: '', date: '', note: '', weight: 7 });
+    this.setData({ title: '', date: '', note: '', weight: (EVENTS[this.data.curType] || EVENTS.other).dHeat });
     this.refreshRecent();
     ui.toast(this, '已记录', { icon: '✓' });
   },

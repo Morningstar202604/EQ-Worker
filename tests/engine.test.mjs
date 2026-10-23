@@ -1,4 +1,4 @@
-// 人情世故雷达 · 引擎单元测试（node --test）
+// EQ-Worker · 引擎单元测试（node --test）
 // 零依赖，使用 Node.js 原生 test runner + assert/strict
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -57,14 +57,53 @@ test('computePerson: 每次调用返回独立对象引用（引擎无缓存）',
   assert.deepEqual(a, b);
 });
 
-test('computePerson: 冲突事件降低 heat', () => {
+test('computePerson: 冲突事件（人情值 -10）降低 heat', () => {
   resetState();
   const p = { id: 'p1', name: '测试', adjust: 0 };
+  /* 人情值就是这次往来对热度的实际增量：冲突的基准是 -10。
+     旧用例写 weight:1 是按「绝对值归一化」的 bug 行为写的，已随修复更正。 */
   engine.getState().events.push({
-    id: 'e1', personId: 'p1', type: 'conflict', time: Date.now(), weight: 1
+    id: 'e1', personId: 'p1', type: 'conflict', time: Date.now(), weight: -10
   });
   const m = computePerson(p);
   assert.ok(m.heat < 50, `冲突应降低 heat：${m.heat}`);
+});
+
+test('[P0 回归] 冲突事件（weight=-10）必须降低热度，不能反向升温', () => {
+  resetState();
+  const p = { id: 'p1', name: '测试', adjust: 0 };
+  engine.getState().events.push({
+    id: 'e1', personId: 'p1', type: 'conflict', time: Date.now(), weight: -10
+  });
+  const m = computePerson(p);
+  assert.ok(m.heat < 50, `冲突应降低 heat，实际 ${m.heat}`);
+});
+
+test('[P0 回归] daysUntil：生日就是今天应返回 0（不能跳到 365）', () => {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  assert.equal(engine.daysUntil(`${mm}-${dd}`), 0);
+});
+
+test('sanitizeImport：events 非数组不崩溃，progress.best 非数字被修正', () => {
+  const c = engine.sanitizeImport({
+    persons: [{ name: 'A' }],
+    events: 'not-an-array',
+    progress: { s1: { best: 'oops', times: 3 } }
+  });
+  assert.ok(Array.isArray(c.events));
+  assert.equal(c.events.length, 0);
+  assert.equal(c.progress.s1.best, 0);
+  assert.ok(Number.isFinite(c.progress.s1.best));
+});
+
+test('sanitizeImport：缺 weight 的事件按类型基准补齐（冲突为负）', () => {
+  const c = engine.sanitizeImport({
+    persons: [{ name: 'A' }],
+    events: [{ id: 'e1', personId: 'p', type: 'conflict', time: Date.now() }]
+  });
+  assert.equal(c.events[0].weight, -10);
 });
 
 // ── solarToLunar ────────────────────────────────────────────────

@@ -18,7 +18,9 @@ function loadH5() {
   src += `
 ;globalThis.__h5 = { state, computePerson, computedFor, overallMetrics, getLevel, getWisdom,
   relationRead, daysUntil, sanitizeImport, esc, clamp, uid, EVENT_TYPES, invalidateCache, store,
-  highlightKw };`;
+  highlightKw, SCENARIOS, lsSet, lsGet, personLedger, ledgerTotals, giftAdvice, personHealth,
+  buildActions, buildICS, buildScripts, SCRIPT_SCENES, SCRIPT_TONES, GIFT_TIERS, CITY_TIERS,
+  OCCASIONS, eventDir, niceAmount, upcomingDates, fmtMoney, ledgerNetShort, ledgerNetLabel };`;
 
   const el = () => ({
     innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, children: [],
@@ -72,6 +74,7 @@ function reset(persons = [], events = []) {
   H.state.events = events;
   H.state.reminders = [];
   H.state.progress = {};
+  H.state.settings = { giftTier: 'standard', cityTier: '二线' };
   H.invalidateCache();
 }
 
@@ -179,6 +182,29 @@ test('overallMetrics：有人脉时五项均在 0-100 且 index 为有限数', (
   }
 });
 
+test('[P0 回归] 本地缓存损坏时 load() 仍得到干净状态', () => {
+  H.lsSet('rqsg_radar_v2', JSON.stringify({
+    persons: [{ name: 'A' }],
+    events: [{ id: 'e1', personId: 'x', type: 'meal', time: 0 }],
+    progress: { s1: { best: 'oops', times: 1 } }
+  }));
+  assert.equal(H.store.load(), true);
+  assert.equal(H.state.events.length, 0);
+  assert.ok(Number.isFinite(H.state.progress.s1.best));
+  assert.equal(H.state.progress.s1.best, 0);
+});
+
+test('getWisdom：单题满分不会一次拉满（归一化到全部情景满分）', () => {
+  H.state.progress = { wedding: { best: 100, times: 1 } };
+  const w = H.getWisdom();
+  assert.ok(w > 0 && w < 100, `单题满分应远小于 100，实际 ${w}`);
+  // 全部情景满分才到 100
+  const all = {};
+  for (const sc of H.SCENARIOS) all[sc.id] = { best: 100, times: 1 };
+  H.state.progress = all;
+  assert.equal(H.getWisdom(), 100);
+});
+
 test('getLevel：段位边界正确', () => {
   assert.equal(H.getLevel(0).cur.name, '人情小白');
   assert.equal(H.getLevel(14).cur.name, '人情小白');
@@ -220,4 +246,161 @@ test('highlightKw：含尖括号的文本先转义再高亮，不产生注入', 
   const s = H.highlightKw('<img src=x onerror=alert(1)>', 'img');
   assert.ok(!s.includes('<img'), `原始标签必须被转义，实际 ${s}`);
   assert.ok(s.includes('&lt;'), '应转义为 &lt;');
+});
+
+/* ---------------- EQ-Worker 3.0：账本 / 参谋 / 行动 / 日历 ---------------- */
+
+test('sanitizeImport：保留金额、方向、场合与喜好忌讳', () => {
+  const c = H.sanitizeImport({
+    persons: [{ name: 'A', likes: '喝茶', taboos: '不喝酒', anniversary: '2020-05-20' }],
+    events: [
+      { personId: 'p', type: 'gift_give', time: Date.now(), amount: 600, dir: 'out', occasion: '生日' },
+      { personId: 'p', type: 'gift_get', time: Date.now(), amount: 500, occasion: '节日' },
+      { personId: 'p', type: 'meal', time: Date.now(), amount: 300 }
+    ],
+    settings: { giftTier: 'generous', cityTier: '一线' }
+  });
+  assert.equal(c.persons[0].anniversary, '05-20');
+  assert.equal(c.persons[0].likes, '喝茶');
+  assert.equal(c.events[0].amount, 600);
+  assert.equal(c.events[0].dir, 'out');
+  assert.equal(c.events[1].dir, 'in');
+  assert.equal(c.events[2].dir, 'none');
+  assert.equal(c.settings.giftTier, 'generous');
+  assert.equal(c.settings.cityTier, '一线');
+});
+
+test('personLedger：收礼 - 送礼 = 净额，正数代表我欠对方', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'gift_give', time: Date.now(), weight: 4, amount: 500, dir: 'out' },
+    { id: 'e2', personId: 'p1', type: 'gift_get', time: Date.now(), weight: 4, amount: 1200, dir: 'in' },
+    { id: 'e3', personId: 'p1', type: 'meal', time: Date.now(), weight: 7, amount: 300, dir: 'none' }
+  ]);
+  const l = H.personLedger('p1');
+  assert.equal(l.given, 500);
+  assert.equal(l.received, 1200);
+  assert.equal(l.net, 700);
+  assert.equal(l.status, 'owe');
+  const t = H.ledgerTotals();
+  assert.equal(t.owe, 700);
+  assert.equal(t.oweCount, 1);
+});
+
+test('eventDir：金额为 0 时永远不进入账本', () => {
+  assert.equal(H.eventDir({ type: 'gift_get', amount: 0 }), 'none');
+  assert.equal(H.eventDir({ type: 'gift_get', amount: 500 }), 'in');
+  assert.equal(H.eventDir({ type: 'gift_give', amount: 500 }), 'out');
+  assert.equal(H.eventDir({ type: 'meal', amount: 500 }), 'none');
+});
+
+test('niceAmount：礼金取常见整数', () => {
+  assert.equal(H.niceAmount(873), 800);
+  assert.equal(H.niceAmount(1030), 1000);
+  assert.equal(H.niceAmount(1470), 1500);
+  assert.equal(H.niceAmount(0), 0);
+});
+
+test('giftAdvice：领导婚礼得体档约 1000，三档递增', () => {
+  const p = { id: 'p1', name: '王总', identity: '领导', adjust: 0 };
+  reset([p], []);
+  const a = H.giftAdvice('p1', '婚礼', { tier: 'standard', city: '二线' });
+  assert.equal(a.mid, 1000);
+  assert.ok(a.low < a.mid && a.mid < a.high, `区间应递增：${a.low}/${a.mid}/${a.high}`);
+  assert.ok(a.reasons.length >= 2);
+});
+
+test('giftAdvice：对方曾给过 2000，还礼不低于 2000', () => {
+  const p = { id: 'p1', name: '老张', identity: '朋友', adjust: 0 };
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'gift_get', time: Date.now(), weight: 4, amount: 2000, dir: 'in', occasion: '婚礼' }
+  ]);
+  const a = H.giftAdvice('p1', '婚礼', { tier: 'simple', city: '三线' });
+  assert.ok(a.mid >= 2000, `还礼应不低于对方给过的 2000，实际 ${a.mid}`);
+  assert.ok(a.reasons.some(r => r.includes('2000')));
+});
+
+test('personHealth：分数在 0-100 且给出可执行建议', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], []);
+  const h = H.personHealth(p);
+  assert.ok(h.score >= 0 && h.score <= 100);
+  assert.ok(h.tips.length >= 1);
+});
+
+test('buildActions：生日提醒优先，且同一人只出一条', () => {
+  const t = new Date(Date.now() + DAY);
+  const mm = String(t.getMonth() + 1).padStart(2, '0');
+  const dd = String(t.getDate()).padStart(2, '0');
+  const p = { id: 'p1', name: '张三', identity: '朋友', birthday: `${mm}-${dd}`, adjust: 0 };
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'help_them', time: Date.now() - 5 * DAY, weight: 6 }
+  ]);
+  const acts = H.buildActions(6);
+  assert.ok(acts.length >= 1);
+  assert.ok(acts.some(a => a.key === 'bday:p1'));
+  assert.equal(acts.filter(a => a.personId === 'p1').length, 1);
+  assert.ok(acts[0].primary.act);
+});
+
+test('buildActions：逾期待办排在最前', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], []);
+  H.state.reminders = [{ id: 'r1', personId: 'p1', content: '还人情', date: '2000-01-01', status: 'pending' }];
+  const acts = H.buildActions(6);
+  assert.equal(acts[0].key, 'todo:r1');
+  assert.equal(acts[0].primary.act, 'quickDone');
+});
+
+test('buildScripts：三种版本都带称呼且不止一句', () => {
+  const p = { id: 'p1', name: '陈姐', identity: '客户', likes: '咖啡', adjust: 0 };
+  reset([p], [{ id: 'e1', personId: 'p1', type: 'meal', title: '项目庆功宴', time: Date.now(), weight: 7 }]);
+  for (const sc of H.SCRIPT_SCENES) {
+    const r = H.buildScripts(sc.id, 'p1', '');
+    assert.equal(r.variants.length, 3, `${sc.id} 应有三种版本`);
+    for (const v of r.variants) {
+      assert.ok(v.text.includes('陈姐'), `${sc.id} ${v.tone} 应包含称呼`);
+      assert.ok(v.text.length >= 8, `${sc.id} ${v.tone} 文案过短`);
+    }
+  }
+});
+
+test('buildICS：包含生日循环、待办与合法首尾', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', birthday: '01-02', anniversary: '05-20', adjust: 0 };
+  reset([p], []);
+  H.state.reminders = [{ id: 'r1', personId: 'p1', content: '请吃饭', date: '2026-12-01', status: 'pending' }];
+  const s = H.buildICS();
+  assert.ok(s.startsWith('BEGIN:VCALENDAR'));
+  assert.ok(s.trim().endsWith('END:VCALENDAR'));
+  assert.ok(s.includes('RRULE:FREQ=YEARLY'));
+  assert.ok(s.includes('生日 · 张三'));
+  assert.ok(s.includes('纪念日 · 张三'));
+  assert.ok(s.includes('请吃饭'));
+});
+
+test('upcomingDates：生日与待办按天数升序', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', birthday: '01-02', adjust: 0 };
+  reset([p], []);
+  H.state.reminders = [{ id: 'r1', personId: 'p1', content: '请吃饭', date: '2026-12-01', status: 'pending' }];
+  const d = H.upcomingDates(365);
+  assert.ok(d.length >= 2);
+  for (let i = 1; i < d.length; i++) assert.ok(d[i - 1].days <= d[i].days);
+});
+
+test('buildScripts：未指定对象时每个版本内部不混用您/你', () => {
+  reset([], []);
+  for (const sc of H.SCRIPT_SCENES) {
+    const r = H.buildScripts(sc.id, '', '');
+    for (const v of r.variants) {
+      const hasNin = v.text.includes('您');
+      const hasNi = v.text.includes('你');
+      assert.ok(!(hasNin && hasNi), `${sc.id} ${v.tone} 混用您/你：${v.text}`);
+    }
+  }
+});
+
+test('ledgerNetShort：欠/应收/两清方向清晰', () => {
+  assert.equal(H.ledgerNetShort(500), '欠 ¥500');
+  assert.equal(H.ledgerNetShort(-500), '应收 ¥500');
+  assert.equal(H.ledgerNetShort(0), '两清');
 });

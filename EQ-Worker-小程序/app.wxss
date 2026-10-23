@@ -1,4 +1,4 @@
-/* 人情世故雷达 · 日记本设计系统（与网页版一致） */
+/* EQ-Worker · 日记本设计系统（与网页版一致） */
 page {
   --paper: #f6f1e4;
   --card: #fffdf6;
@@ -252,3 +252,18 @@ page {
 
 /* 搜索高亮 */
 .hl-mark { background: rgba(201,168,106,0.35); color: #7a5f2a; border-radius: 4rpx; padding: 0 4rpx; }
+
+/* ─────────── 选择关联人（自定义 picker） ─────────── */
+.pick-row {
+  display: flex; align-items: center; gap: 18rpx;
+  padding: 18rpx 12rpx;
+  border-bottom: 1rpx dashed rgba(185,164,128,.3);
+  border-radius: 12rpx;
+}
+.pick-row:last-of-type { border-bottom: none; }
+.pick-avatar {
+  width: 68rpx; height: 68rpx; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #7da08f, #5f8575); color: #f6f1e4;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700;
+}

@@ -23,9 +23,9 @@ Page({
     /* 与 Web 端口径保持一致：用「 Unix 天数 % 情景数 」取模。
        旧写法用 getDate()（月内日 1-31），同一天两端会指向不同情景。 */
     const todayIdx = Math.floor(Date.now() / 86400000) % scs.length;
+    this._todayIdx = todayIdx;
     const today = scs[todayIdx];
     const td = diff[today.diff] || diff['入门'];
-    this.refreshList();
     this.setData({
       w, levelName: lv.cur.name,
       nextText: lv.nxt ? '距「' + lv.nxt.name + '」还差 ' + (lv.nxt.min - w) + ' 分' : '已达最高段位，世事洞明',
@@ -36,16 +36,21 @@ Page({
         tag: today.tag, diff: today.diff, chip: td.chip, w: td.w
       }
     });
+    this.refreshList();
   },
   refreshList() {
     const S = engine.getState();
     const diff = engine.DIFFS;
     const dk = DIFF_KEYS[this.data.diffIdx];
-    let list = engine.SCENARIOS.map(s => ({
-      id: s.id, title: s.title, scene: s.scene,
-      diff: s.diff, chip: (diff[s.diff] || diff['入门']).chip,
-      best: (S.progress[s.id] || {}).best || 0
-    }));
+    /* 今日情景已在卡片里置顶展示，情景库列表里要排除它，
+       否则同一道题会出现两次（Web 端也是这么处理的）。 */
+    let list = engine.SCENARIOS
+      .filter((_, i) => i !== this._todayIdx)
+      .map(s => ({
+        id: s.id, title: s.title, scene: s.scene,
+        diff: s.diff, chip: (diff[s.diff] || diff['入门']).chip,
+        best: (S.progress[s.id] || {}).best || 0
+      }));
     if (dk !== '全部') list = list.filter(x => x.diff === dk);
     this.setData({ list });
   },

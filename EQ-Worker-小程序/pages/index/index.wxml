@@ -1,5 +1,5 @@
 <view wx:if="{{!hasData}}" class="empty">
-  <view class="t">人情世故雷达</view>
+  <view class="t">EQ-Worker</view>
   <view class="d">把生命中重要的人记进来，雷达会自动生成为你经营人情的清单。先去「人脉」添加第一个人，或去「记录」记第一笔往来。</view>
   <button class="btn primary" bindtap="goRecord">去记一笔</button>
   <button class="btn" bindtap="goTrain">去修炼场</button>
