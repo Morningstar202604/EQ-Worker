@@ -13,6 +13,10 @@ Local-first · Zero server · No ads · No tracking
 [![Version](https://img.shields.io/badge/version-v3.0.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
+**Live demo:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
+
+**Repositories:** [GitCode](https://gitcode.com/badhope/EQ-Worker) · [Gitee](https://gitee.com/badhope/EQ-Worker) · [GitHub @badhope](https://github.com/badhope/EQ-Worker) · [GitHub @X33834](https://github.com/X33834/EQ-Worker) · [GitHub @Morningstar202604](https://github.com/Morningstar202604/EQ-Worker)
+
 </div>
 
 ---
