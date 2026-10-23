@@ -334,7 +334,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
   </nav>
 </div>
 <div id="modal-root"></div>
-<div id="toast-root"></div>
+<div id="toast-root" role="status" aria-live="polite"></div>
 <script>
 
 /*
@@ -1023,7 +1023,7 @@ function giftAdvice(personId, occasion, opts) {
   const city = CITY_TIERS[cityName];
   let mid = base * tier.mult * city;
   const reasons = [
-    `关系「${identity}」× 场合「${occ}」的基准参考约 ¥${base}（未乘档位/城市系数）`,
+    `关系「${identity}」× 场合「${occ}」的基准参考约 ${fmtMoney(base)}（未乘档位/城市系数）`,
     `档位「${tier.label}」× 城市「${cityName}」系数 ${city}`
   ];
   const l = personLedger(personId);
@@ -1035,19 +1035,20 @@ function giftAdvice(personId, occasion, opts) {
     .reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
   if (sameOcc > 0) {
     mid = Math.max(mid, sameOcc);
-    reasons.push(`对方在「${occ}」给过你 ¥${sameOcc}，还礼不低于此数才不失礼`);
+    reasons.push(`对方在「${occ}」给过你 ${fmtMoney(sameOcc)}，还礼不低于此数才不失礼`);
   } else if (occ === '还礼' && maxReceived > 0) {
     mid = Math.max(mid, maxReceived);
-    reasons.push(`对方累计给过你 ¥${maxReceived}，还礼建议不低于此数`);
+    reasons.push(`对方累计给过你 ${fmtMoney(maxReceived)}，还礼建议不低于此数`);
   } else if (l.net >= 300) {
     mid *= 1.1;
-    reasons.push(`账本上你净欠对方 ¥${l.net}，建议适度上浮 10%`);
+    reasons.push(`账本上你净欠对方 ${fmtMoney(l.net)}，建议适度上浮 10%`);
   }
   if (p && p.likes) reasons.push(`对方喜欢：${p.likes}，可优先按喜好挑礼物`);
   if (p && p.taboos) reasons.push(`需要避开：${p.taboos}`);
   const midA = niceAmount(mid);
   const low = niceAmount(midA * 0.7);
   const high = niceAmount(midA * 1.3);
+  reasons.push(`综合后中位约 ${fmtMoney(mid)}，按常见礼金数字取整为 ${fmtMoney(midA)}`);
   return {
     low, mid: midA, high, identity, occasion: occ, tier: tier.label, city: cityName,
     ledger: l, reasons,
@@ -1071,8 +1072,8 @@ function personHealth(p) {
   else if (score >= 40) { level = '可以更好'; cls = 'amber'; }
   const tips = [];
   if (m.debt >= 20) tips.push('人情债偏高，近期安排一次回礼或请饭');
-  if (l.net > 0) tips.push(`账本净欠 ¥${l.net}，找机会还上或回个等值礼`);
-  else if (l.net < 0) tips.push(`对方净欠 ¥${-l.net}，可温和提醒，也可等对方主动`);
+  if (l.net > 0) tips.push(`账本净欠 ${fmtMoney(l.net)}，找机会还上或回个等值礼`);
+  else if (l.net < 0) tips.push(`对方净欠 ${fmtMoney(-l.net)}，可温和提醒，也可等对方主动`);
   if (m.lastDays === null) tips.push('还没有往来记录，先从一次轻量问候开始');
   else if (m.lastDays >= 60) tips.push(`${m.lastDays} 天没联系，发句近况问候破冰`);
   if (conflicts) tips.push(`近一年有 ${conflicts} 次摩擦，适当降温、就事论事`);
@@ -1118,14 +1119,14 @@ function buildActions(limit) {
     });
     if (l.net >= 300) push({
       key: 'money-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'money', prio: 78,
-      title: `账本上你净欠 ${p.name} ¥${l.net}`,
+      title: `你在账本上净欠 ${p.name} ${fmtMoney(l.net)}`,
       reason: '钱和礼都要有来有往。先确认是礼金还是借款，再决定回礼还是还款。',
       primary: { label: '还礼参谋', act: 'giftModal', arg: p.id },
       secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
     });
     else if (l.net <= -300) push({
       key: 'money-due:' + p.id, personId: p.id, tone: 'blue', icon: 'money', prio: 46,
-      title: `${p.name} 还欠你 ¥${-l.net}`,
+      title: `${p.name} 还欠你 ${fmtMoney(-l.net)}`,
       reason: '如果是借款，找个轻松的由头提一句；如果是礼金，等合适场合自然回礼即可。',
       primary: { label: '催还话术', act: 'scriptModal', arg: 'collect_debt|' + p.id },
       secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
@@ -1641,7 +1642,7 @@ function toast(msg, ms) {
   const t = $('#toast-root');
   if (!t) return;
   clearTimeout(toastTimer);
-  t.innerHTML = `${esc(String(msg))} <span style="margin-left:8px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
+  t.innerHTML = `${esc(String(msg))} <span style="margin-left:8px;cursor:pointer;opacity:.6" data-act="closeToast">×</span>`;
   t.classList.add('show');
   toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2600);
 }
@@ -1650,7 +1651,7 @@ function toastUndo(msg, undoFn) {
   const t = $('#toast-root');
   if (!t) return;
   clearTimeout(toastTimer);
-  t.innerHTML = `${esc(String(msg))} <span style="color:#c9a86a;font-weight:700;margin-left:8px;cursor:pointer" data-act="toastUndo">撤销</span> <span style="margin-left:6px;cursor:pointer;opacity:.6" data-act="closeToast">✕</span>`;
+  t.innerHTML = `${esc(String(msg))} <span style="color:#c9a86a;font-weight:700;margin-left:8px;cursor:pointer" data-act="toastUndo">撤销</span> <span style="margin-left:6px;cursor:pointer;opacity:.6" data-act="closeToast">×</span>`;
   t.classList.add('show');
   window.__undoFn = undoFn;
   toastTimer = setTimeout(() => { t.classList.remove('show'); window.__undoFn = null; }, 5000);
@@ -1956,7 +1957,7 @@ function viewAssistant() {
   const actions = buildActions(6);
   const lt = ledgerTotals();
   const dates = upcomingDates(30).slice(0, 3);
-  const nBirthday = upcomingDates(7).filter(x => x.kind === '生日').length;
+  const nBirthday = upcomingDates(7).filter(x => x.kind === '生日' || (x.kind === '待办' && /生日/.test(x.name))).length;
   if (!state.persons.length) {
     return `
       <div class="sec-t"><h2>助手</h2><span class="sub">${todayLabel()}</span></div>
@@ -2015,7 +2016,7 @@ function viewAssistant() {
         <div><b>${state.persons.length}</b><span>人脉</span></div>
         <div><b>${lt.oweCount}</b><span>待还人情</span></div>
         <div><b>${nBirthday}</b><span>7天内生日</span></div>
-        <div><b>${fmtMoney(lt.owe)}</b><span>账本净欠</span></div>
+        <div><b>${fmtMoney(lt.owe)}</b><span>待还金额</span></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn primary" style="flex:1" data-act="go" data-arg="record">记一笔往来</button>
@@ -2126,9 +2127,9 @@ function renderGiftResult() {
   const reasons = advice.reasons.map(r => `<div class="reasonline">· ${esc(r)}</div>`).join('');
   box.innerHTML = `
     <div class="gift-range">
-      <div class="gift-opt"><span>从简</span><b>¥${advice.low}</b></div>
-      <div class="gift-opt main"><span>建议</span><b>¥${advice.mid}</b></div>
-      <div class="gift-opt"><span>重视</span><b>¥${advice.high}</b></div>
+      <div class="gift-opt"><span>从简</span><b>${fmtMoney(advice.low)}</b></div>
+      <div class="gift-opt main"><span>建议</span><b>${fmtMoney(advice.mid)}</b></div>
+      <div class="gift-opt"><span>重视</span><b>${fmtMoney(advice.high)}</b></div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px">
       ${p ? `<span class="chip">${esc(p.identity || '朋友')}</span>` : ''}
@@ -2856,13 +2857,15 @@ function viewMe() {
 function openSheet(title, body, center) {
   $('#modal-root').innerHTML = `
     <div class="mask ${center ? 'center' : ''}">
-      <div class="sheet ${center ? 'center' : ''}">
-        <div class="shead"><h2>${title}</h2><button class="sclose" data-act="closeModal">✕</button></div>
+      <div class="sheet ${center ? 'center' : ''}" role="dialog" aria-modal="true">
+        <div class="shead"><h2>${title}</h2><button class="sclose" data-act="closeModal" aria-label="关闭">×</button></div>
         <div class="sbody">${body}</div>
       </div>
     </div>`;
   document.body.style.overflow = 'hidden';
   disposeCharts();
+  /* 打开弹层后把焦点交给关闭按钮，键盘用户不会还停留在背后的页面上。 */
+  setTimeout(() => { const b = $('.sclose'); if (b && b.focus) b.focus(); }, 0);
 }
 function refreshHomeChart() {
   if (state.tab !== 'radar') return;
@@ -3091,7 +3094,7 @@ function showResult(sc, i, nextId) {
   $('#modal-root').innerHTML = `
     <div class="mask center">
       <div class="sheet center">
-        <div class="shead"><h2>${sc.tag} · ${sc.title}</h2><button class="sclose" data-act="closeModal">✕</button></div>
+        <div class="shead"><h2>${sc.tag} · ${sc.title}</h2><button class="sclose" data-act="closeModal">×</button></div>
         <div class="sbody">
           <div class="sub" style="margin-bottom:12px">${sc.scene}</div>
           <div class="card" style="margin:0 0 12px;padding:12px 14px">
@@ -3556,7 +3559,7 @@ document.addEventListener('change', onChange);
 document.addEventListener('input', onInput);
 document.addEventListener('compositionstart', (e) => { if (e.target && e.target.setAttribute) e.target.setAttribute('data-ime', '1'); });
 document.addEventListener('compositionend', (e) => { if (e.target && e.target.removeAttribute) e.target.removeAttribute('data-ime'); });
-/* ESC 关闭弹层：此前完全没有键盘处理，弹层只能靠鼠标点 ✕ 关闭，
+/* ESC 关闭弹层：此前完全没有键盘处理，弹层只能靠鼠标点 × 关闭，
    键盘用户会被卡住（删除确认这类危险弹层尤其难受）。 */
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' && e.key !== 'Esc') return;

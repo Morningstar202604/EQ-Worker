@@ -31,7 +31,7 @@ Page({
   refresh() {
     const S = engine.getState();
     const p = S.persons.find(x => x.id === this.data.id);
-    if (!p) { ui.toast(this, '该人脉不存在', { icon: '✕' }); setTimeout(() => wx.navigateBack(), 600); return; }
+    if (!p) { ui.toast(this, '该人脉不存在', { icon: '×' }); setTimeout(() => wx.navigateBack(), 600); return; }
     const m = engine.computePerson(p);
     const labels = ['热度', '亲密度', '信任度', '活跃度', '人情债'];
     const vals = [Math.round(m.heat), Math.round(m.intimacy), Math.round(m.trust), m.activity, Math.round(m.debt)];
@@ -114,7 +114,7 @@ Page({
   savePerson() {
     const f = this.data.form;
     const name = f.name.trim();
-    if (!name) { ui.toast(this, '名字不能为空', { icon: '✕' }); return; }
+    if (!name) { ui.toast(this, '名字不能为空', { icon: '×' }); return; }
     const S = engine.getState();
     const tags = f.tags.split(/[、,，\s]+/).filter(Boolean).slice(0, 6);
     if (this.data.mode === 'add') {
