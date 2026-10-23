@@ -62,13 +62,18 @@ Page({
     const sortKey = ['heat', 'intimacy', 'trust', 'activity', 'lastTime'][this.data.sortIdx];
     const sortName = SORTS[this.data.sortIdx];
 
+    /* 事件按人分组一次遍历：原来每个人都要 filter 一遍全量事件，
+       人脉多时列表会卡（Web 端同样问题已一并修掉）。 */
+    const evByPerson = {};
+    for (const e of S.events) (evByPerson[e.personId] || (evByPerson[e.personId] = [])).push(e);
+
     let list = S.persons.map(p => {
       const m = engine.computePerson(p);
-      const events = S.events.filter(e => e.personId === p.id);
+      const events = evByPerson[p.id] || [];
       const lastTime = events.reduce((mx, e) => Math.max(mx, e.time), 0);
       return {
         id: p.id, name: p.name, identity: p.identity || '朋友',
-        tags: p.tags || [], heat: Math.round(m.heat),
+        tags: p.tags || [], note: p.note || '', heat: Math.round(m.heat),
         eventCount: events.length, lastText: lastTime ? engine.timeAgo(lastTime) : '尚无往来',
         debt: Math.round(m.debt),
         _heat: m.heat, _intimacy: m.intimacy, _trust: m.trust,

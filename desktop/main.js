@@ -1,4 +1,4 @@
-// 人情世故雷达 · Windows 桌面壳（Electron）
+// EQ-Worker · Windows 桌面壳（Electron）
 // 设计原则：
 //  1. 网页版本身是零依赖单文件，壳只负责开窗、给 localStorage 一个安全的用户数据目录；
 //  2. 不开 nodeIntegration、不加载远程内容，外链一律交给系统浏览器；
@@ -12,7 +12,7 @@ function createWindow() {
     height: 880,
     minWidth: 960,
     minHeight: 640,
-    title: '人情世故雷达',
+    title: 'EQ-Worker',
     backgroundColor: '#f6f1e4',
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,

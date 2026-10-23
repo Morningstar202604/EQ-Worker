@@ -1,186 +1,190 @@
 <div align="center">
 
-# 人情世故雷达
+# EQ-Worker
 
-**RENQING · RADAR — 把人情账记明白，把关系经营成细水长流。**
+**人情世故助手 — 把人情顾好，不用靠记性。**
 
-人脉经营 · 人情账本 · 社交修炼 — 轻量、**本地优先**、隐私至上。
+今日行动 · 人情账本 · 随礼参谋 · 话术参谋 · 关系体检
+
+本地优先 · 零服务器 · 无广告 · 无埋点
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![平台](https://img.shields.io/badge/平台-网页%20PWA%20%2B%20微信小程序-2da44e)](https://gitcode.com/badhope/chushi-radar)
-[![版本](https://img.shields.io/badge/版本-v2.8.1-orange)](https://gitcode.com/badhope/chushi-radar)
+[![版本](https://img.shields.io/badge/版本-v3.0.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![许可](https://img.shields.io/badge/许可-CC%20BY--NC%204.0-red)](LICENSE)
-
-**多平台镜像：** [GitHub @badhope](https://github.com/badhope/chushi-radar) · [GitHub @x33834](https://github.com/x33834/chushi-radar) · [GitHub @Morningstar202604](https://github.com/Morningstar202604/chushi-radar) · [GitCode](https://gitcode.com/badhope/chushi-radar) · [Gitee](https://gitee.com/badhope/chushi-radar)
 
 </div>
 
 ---
 
-## ✨ 在线体验
+## 这是什么
 
-| 渠道 | 链接 |
-|---|---|
-| **网页（GitHub Pages，即推即部署）** | <https://morningstar202604.github.io/chushi-radar/> |
-| **镜像（GitHub @x33834）** | <https://x33834.github.io/chushi-radar/> |
-| **镜像（GitHub @badhope）** | <https://badhope.github.io/chushi-radar/> |
-| **品牌官网** | <https://morningstar202604.github.io/chushi-radar/%E5%AE%98%E7%BD%91/%E4%BA%BA%E6%83%85%E4%B8%96%E6%95%85%E9%9B%B7%E8%BE%BE%E5%AE%98%E7%BD%91.html> |
+大多数人不是不会处关系，而是**记不住、算不清、开不了口**：
 
-> **完全没网？** 下载 `人情世故雷达.html` 用浏览器直接打开，离线运行，功能完全一致。
+- 谁帮过你、你欠谁一顿饭，散场就忘；
+- 婚礼、满月、乔迁、探病，到底随多少才不失礼；
+- 想拒绝借钱、想催还、想道歉，话到嘴边又咽回去。
 
----
+EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打开先告诉你「今天该做什么」，再给你账本、礼金区间和能直接复制的话术。
 
-## 📸 截图预览
-
-| 雷达总览 | 人脉管理 | 快速记录 |
-| --- | --- | --- |
-| ![雷达总览](docs/screenshots/01-radar.png) | ![人脉管理](docs/screenshots/02-persons.png) | ![快速记录](docs/screenshots/03-record.png) |
-
-| 修炼场 | 我的数据中心 | 搜索高亮 |
-| --- | --- | --- |
-| ![修炼场](docs/screenshots/04-scenario.png) | ![我的](docs/screenshots/05-me.png) | ![搜索高亮](docs/screenshots/06-search.png) |
-
-![人脉详情](docs/screenshots/07-detail.png)
-*五维雷达图 + 热度指标 + 往来时间线 + 关系解读*
+> 它不是一个更复杂的通讯录，而是一个**替你把人情想到前面**的助手。
 
 ---
 
-## 🎯 这是什么
+## 核心功能
 
-**人情世故雷达**是一款**人脉经营工具**，不是答题测评。
+### 1. 今日行动（助手首页）
 
-> 「人情」是润滑人际关系的那笔账 — 饭局、随礼、帮忙、关心，还有还不清的人情债。
+把生日、纪念日、待办、断联、欠人情、账本净额、该道谢、关键关系维护合成一份按紧急度排序的清单。
 
-旧版「处世 Radar」是 81 道题的社交智力测验；v2 起彻底重构为**经营型玩法**：
+每条行动都带两个按钮，例如：
 
-1. **花 10 秒**，在饭局散场后记录一笔往来
-2. **雷达做剩下的** — 自动画像、计算人情热度、提醒你该走动、该还人情、该送祝福
+- 「还礼参谋」→ 直接给出礼金区间；
+- 「破冰话术」→ 给出三种语气的现成说法；
+- 「记一笔」→ 10 秒把这次走动记进账本。
 
-### 适合谁
+### 2. 人情账本
 
-- 经常参加饭局/婚礼/聚会，想管好「人情账本」的人
-- 常常忘记生日、错过节日问候、或不知不觉欠了人情的人
-- 想修炼中国式社交场景的新手 — 内置 15 个情景修炼（分难度段位）
+- 送礼 / 收礼 / 借款 / 还款分别记「金额 + 方向 + 场合」；
+- 单人净额：**我欠对方** / **对方欠我** / **两清**；
+- 总账：累计送出、累计收到、净额、待还人数、待收人数；
+- 支持筛选、CSV 导出；
+- **金额只进账本，不影响热度/信任/人情债等人情分**，两套账互不污染。
+
+### 3. 随礼参谋
+
+按「关系 × 场合 × 档位 × 城市」给出 **从简 / 建议 / 重视** 三档金额，并说明依据：
+
+- 关系与场合的基准参考；
+- 对方过去在同类场合给过你多少（还礼不低于此数）；
+- 账本净欠时适度上浮；
+- 对方的喜好与忌讳（礼物选择提示）。
+
+> 礼金受地区、亲疏、当地风俗影响很大，建议只是参谋，最终以你的真实关系和当地习惯为准。
+
+### 4. 话术参谋
+
+内置 16 个高频场景：破冰、道谢、道歉、请托、婉拒、拒绝借钱、催还、随礼、敬酒、探病、婉拒饭局、节日祝福、约饭、事后跟进、生日、纪念日。
+
+每个场景给出 **稳妥版 / 亲近版 / 简短版**，并自动带入对方称呼、身份、最近一次往来，支持一键复制。
+
+### 5. 关系体检
+
+把热度、信任、亲密度、活跃度、账本互惠度、近一年冲突次数合成 0–100 的健康度，并给出可执行建议。
+
+### 6. 重要日子与日历
+
+生日、纪念日按年循环，待办按单次事件，一键导出 `.ics` 到系统日历。
+
+### 7. 原有能力保留
+
+- 人脉画像：热度 / 亲密度 / 信任度 / 活跃度 / 人情债；
+- 快速记录与撤销、搜索高亮、身份筛选、三种排序；
+- 15 个中国式社交情景修炼与段位；
+- 月度洞察、年度报告、关系网络图；
+- 成就徽章、PWA 离线、备份/剪贴板/CSV 迁移。
 
 ---
 
-## 🔁 核心玩法（五模块闭环）
+## 截图
 
-```
-记录往来 → 自动画像 → 智能提醒 → 情景修炼 → 年度报告
-```
-
-| 模块 | 作用 |
+| 助手首页 | 人情账本 |
 | --- | --- |
-| **雷达总览** | 五维画像（人脉规模/人情热度/往来频率/人情信用/处世智慧）+ 人情指数 + 智能提醒（节日/欠人情/久未往来/生日/待办，按紧急度配色） |
-| **人脉管理** | 每人一张雷达卡，热度 = 事件加权 + 90 天半衰期衰减，可手动微调；搜索 / 身份筛选 / 三种排序 |
-| **快速记录** | 10 类事件自动带人情值（饭局/互助/送礼/借钱/深聊…），支持撤销 |
-| **修炼场** | 15 个中国式社交情景（随礼/挡酒/借钱/救场/圆场…），难度分级，练完涨处世智慧与段位 |
-| **我的数据中心** | 月度洞察、近 6 月趋势、年度人情报告、待办管理、备份迁移（剪贴板/文件/CSV） |
+| ![助手](docs/screenshots/v3/01-assistant.png) | ![账本](docs/screenshots/v3/02-ledger.png) |
 
----
-
-## 📱 四端同构，数据结构互通
-
-| 端 | 说明 |
+| 随礼参谋 | 话术参谋 |
 | --- | --- |
-| **网页版（PWA）** | 单文件自包含 HTML（约 1.4MB，零构建），离线可用，可添加到主屏幕当 App 用；内置 ECharts 开源可视化 |
-| **安卓 App（APK）** | 原生 WebView 壳，仅 **1.4MB**；`android/` 一键构建，正式签名可长期更新 |
-| **Windows 桌面版** | Electron 免安装包，解压即用（不写注册表）；`desktop/` 一键构建 |
-| **微信小程序** | 完整小程序工程（`人情世故雷达-小程序/`），Canvas 手绘雷达零依赖；网页↔小程序数据结构互通（SCHEMA_VERSION） |
+| ![随礼](docs/screenshots/v3/03-gift.png) | ![话术](docs/screenshots/v3/04-script.png) |
 
-> 四端共用同一份 `index.html` 与同一套数据结构，备份文件（JSON / CSV / 剪贴板文本）跨端可直接导入。
-> 构建与发布见 [`docs/双端构建与发布.md`](docs/双端构建与发布.md)，品牌规范见 [`brand/BRAND.md`](brand/BRAND.md)。
-
-### 小程序视觉亮点
-
-- **自定义 UI 组件** — 统一模态框 / Toast 动效系统（替代全部原生 wx 模态框）
-- **搜索高亮** — 实时黄色高亮匹配字符（姓名/身份/标签）+ 匹配计数
-- **按压反馈** — 所有交互卡片加入缩放按压动效
-- **紧急脉冲** — 逾期提醒红色光晕脉冲
-- **内置农历** — 支持 1900–2100 年节日换算
+| 快速记录 | 移动端 |
+| --- | --- |
+| ![记录](docs/screenshots/v3/05-record.png) | ![移动端](docs/screenshots/v3/06-mobile.png) |
 
 ---
 
-## 🔐 数据与隐私
+## 四端说明
 
-- **零服务器** — 所有数据仅存本机（浏览器 localStorage / 小程序本地缓存）
-- **无广告、无埋点、无需注册** — 你才是用户，不是商品
-- **无缝迁移** — 导出备份 → 复制剪贴板 → 新设备粘贴导入；网页↔小程序格式互通
-- 内置农历节日提醒（1900–2100）
+| 端 | 状态 | 说明 |
+| --- | --- | --- |
+| **网页版（PWA）** | 完整功能 | 单文件自包含 HTML，离线可用，可添加到主屏幕 |
+| **安卓 App** | 完整功能 | 原生 WebView 壳，内嵌同一份 `index.html` |
+| **Windows 桌面版** | 完整功能 | Electron 免安装包，解压即用 |
+| **微信小程序** | 轻量版 | 保留雷达、人脉、记录、修炼、我的；数据与 Web v4 结构兼容，但不含新版助手/参谋 UI |
 
----
-
-## 🆕 v2.8.1 新特性
-
-- **统一 UI 组件** — 全部 7 个页面的模态框 / Toast 替换为自定义动效组件
-- **搜索高亮** → 字符级黄色高亮 + 匹配计数
-- **关系网络图** → Canvas 环形布局（网页端）
-- **年度报告 PNG 导出** → html2canvas 一键图片分享（网页端）
-- **性能优化** → computePerson 全局缓存 + 事件版本号失效
-- **PWA 支持** → Service Worker Cache First 离线访问
-- **构建系统** → 零依赖 ESM 构建脚本（`build.js`）
-- **单元测试** → 26 个测试通过 `node --test`（覆盖 H5 引擎边界、导入清洗、段位与半衰期）
+> 网页、安卓、桌面三端共用同一份构建产物与同一套数据；小程序作为轻量随身端保留。
 
 ---
 
-## 🛠 技术栈
+## 数据与隐私
+
+- **零服务器**：所有数据只存本机（localStorage / wx.storage）；
+- **无注册、无广告、无埋点**；
+- 备份格式为普通 JSON，网页 ↔ 小程序可互相导入；
+- 旧版 `rqsg_radar_v2` 数据会自动迁移到 `eqworker_db_v1`，不丢历史记录。
+
+---
+
+## 快速开始
+
+### 网页
+
+直接打开 `EQ-Worker.html`，或启动本地静态服务：
+
+```bash
+python3 -m http.server 8000
+# 打开 http://localhost:8000/
+```
+
+### 构建与测试
+
+```bash
+npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html，并同步安卓与桌面产物
+npm test        # 49 个单元测试
+npm run verify  # 构建 + 全部测试
+```
+
+### 安卓 / Windows
+
+见 [`docs/双端构建与发布.md`](docs/双端构建与发布.md)。
+
+### 微信小程序
+
+用微信开发者工具导入 `EQ-Worker-小程序/`。
+
+---
+
+## 技术栈
 
 | 层面 | 选型 |
 | --- | --- |
 | 语言 | 原生 JavaScript（零框架） |
 | 图表 | ECharts 5（内联）/ Canvas 2D（小程序） |
 | 存储 | localStorage / wx.storage（纯本地） |
-| PWA | Service Worker + Cache First |
 | 构建 | `build.js` — ESM，零依赖 |
-| 测试 | `node --test` 内置运行器 |
+| 测试 | `node --test`，49 个用例 |
+| 建议引擎 | 本地规则 + 可解释权重，不调用外部 AI |
 
 ---
 
-## 📦 快速开始
+## v3.0.0 更新
 
-- **网页版**：直接打开 `人情世故雷达.html`（建议 Chrome / Safari / 微信内置浏览器）
-- **小程序**：微信开发者工具导入 `人情世故雷达-小程序/` 预览
-
----
-
-## 🧪 五端体检验证（v2.8.1）
-
-每个版本都跨 **5 端** 体检：网页（本地 + GitHub Pages）、安卓 APK、Windows 桌面版、微信小程序、品牌官网。下方截图由自动化 Playwright 真实浏览器实跑截得（JS 真实执行），`debt=0` 关系解读误报的修复已在公开 Pages 站点复测通过。
-
-| 端 | 跳转 / 响应 | 模型计算 | 可视化 | 发布 |
-| --- | --- | --- | --- | --- |
-| **网页**（本地 + Pages） | ✓ 控制台/页面 0 报错，五 Tab 全通 | ✓ 人情指数=70，段位「人情大师」 | ✓ 雷达图 + 趋势 + 饼图 + 关系网 | Pages 已上线（3 镜像） |
-| **安卓 APK** | ✓ WebView 壳 | ✓ 内嵌修复 | ✓ html2canvas 内联 | Release v2.8.1 |
-| **Windows EXE** | ✓ Electron 启动 | ✓ 内嵌修复 | ✓ html2canvas 内联 | Release v2.8.1 |
-| **微信小程序** | ✓ 7 页路由 | 独立引擎 | 原生组件 | 工程校验通过 |
-| **品牌官网** | ✓ 双端下载链接可达 | — | — | 已上线 |
-
-**线上 Pages（真实浏览器实跑）：**
-
-| 雷达总览 | 我的数据中心 |
-| --- | --- |
-| ![live radar](docs/screenshots/verification/live-pages-radar.png) | ![live me](docs/screenshots/verification/live-pages-me.png) |
-
-**网页桌面端（GitHub Pages）与移动端：**
-
-| 桌面雷达 | 桌面我的 | 桌面年度报告 | 移动雷达 |
-| --- | --- | --- | --- |
-| ![d-radar](docs/screenshots/verification/web-pages-desktop-radar.png) | ![d-me](docs/screenshots/verification/web-pages-desktop-me.png) | ![d-annual](docs/screenshots/verification/web-pages-desktop-annual.png) | ![m-radar](docs/screenshots/verification/web-mobile-radar.png) |
-
-> 五个 Git 镜像（GitHub @badhope / @x33834 / @Morningstar202604、GitCode、Gitee）均已同步至标签 **v2.8.1**（`e87b9fd`）。完整报告见 `五端体检/体检报告.html`。
+- 品牌升级：人情世故雷达 → **EQ-Worker 人情世故助手**；
+- 新增 **助手首页 / 今日行动**，从「记录工具」变成「每天能用的助手」；
+- 新增 **人情账本**（金额、方向、场合、净额、筛选、CSV）；
+- 新增 **随礼参谋**（关系 × 场合 × 档位 × 城市 + 历史往来锚点）；
+- 新增 **话术参谋**（16 场景 × 3 语气，自动带入称呼与最近往来）；
+- 新增 **关系体检** 与人物详情账本；
+- 新增 **重要日子 .ics 导出**；
+- 数据结构升级到 v4，旧数据自动迁移；
+- 49 个单元测试全部通过，浏览器控制台零报错。
 
 ---
 
-## 📄 许可
+## 许可
 
-Creative Commons Attribution-NonCommercial 4.0 International（CC BY-NC 4.0），详见 `LICENSE`。
-
----
+Creative Commons Attribution-NonCommercial 4.0 International（CC BY-NC 4.0），详见 [`LICENSE`](LICENSE)。
 
 <div align="center">
 
-⭐ **觉得有用就给个 Star** · 🍴 **Fork 改造你自己的** · 🐛 **Issue 欢迎来提**
-
+**人情不是算计，是把别人放在心上。**
 </div>

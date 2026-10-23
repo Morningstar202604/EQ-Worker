@@ -1,7 +1,7 @@
-// 人情世故雷达 · 小程序版 v2.8 纯逻辑引擎
-let S = { persons: [], events: [], reminders: [], progress: {}, streak: { n: 0, last: '' }, lastEventId: null };
+// EQ-Worker · 小程序轻量版 v3.0.0 纯逻辑引擎（数据与 Web 端 v4 结构兼容）
+let S = { persons: [], events: [], reminders: [], progress: {}, streak: { n: 0, last: '' }, lastEventId: null, settings: { giftTier: 'standard', cityTier: '二线' } };
 const DAY = 86400000;
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const state = S; // 网页版计算函数引用全局 state，这里恒等指向 S
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -42,13 +42,16 @@ function daysUntil(birthday) { // 'MM-DD' → 距下次生日的天数
   const now = new Date();
   const [m, d] = bd.split('-').map(Number);
   if (!m || !d) return 1e9;
+  /* 必须归一化到当天 0 点再比较：否则「生日就是今天」时 t(00:00) < now(含时分)
+     会被判成已过，跳到下一年，导致当天永远显示 365 天、提醒永不触发。 */
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let t = new Date(now.getFullYear(), m - 1, d);
   if (t.getMonth() !== m - 1) t = new Date(now.getFullYear(), m - 1, 28); // 2/29 非闰年按 2/28 算
-  if (t.getTime() < now.getTime()) {
+  if (t.getTime() < today.getTime()) {
     t = new Date(now.getFullYear() + 1, m - 1, d);
     if (t.getMonth() !== m - 1) t = new Date(now.getFullYear() + 1, m - 1, 28);
   }
-  return Math.ceil((t - now) / DAY);
+  return Math.round((t - today) / DAY);
 }
 function initials(name) { return (name || '?').slice(0, 1); }
 
@@ -140,7 +143,10 @@ function computePerson(p) {
     const days = (now - ev.time) / DAY;
     const ratio = Math.pow(0.5, days / 90);           // 90 天半衰期
     const t = EVENT_TYPES[ev.type] || EVENT_TYPES.other;
-    const w = ev.weight / (t.dHeat === 0 ? 1 : Math.abs(t.dHeat) || 1); // 归一化到类型基准
+    /* 归一化到类型基准：必须保留 dHeat 的符号（与 Web 端一致），
+       否则 conflict（dHeat<0）会反向升温。无基准或权重非法时按 1 倍计。 */
+    const denom = Number.isFinite(t.dHeat) && t.dHeat !== 0 ? t.dHeat : 1;
+    const w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
     heat += t.dHeat * ratio * w;
     trust += t.dTrust * ratio * w;
     intim += t.dIntimacy * ratio * w;
@@ -187,12 +193,19 @@ function overallMetrics() {
   return { scale, heatAvg, freq, credit, wisdom, index };
 }
 
-/* 处世智慧：情景修炼累计（按难度加成，封顶 100） */
+/* 处世智慧：情景修炼按难度加权后归一化到 0-100（与 Web 端同一算法）。
+   满分为「全部情景都拿到 100 分」的加权总分，单题满分不会一次拉满段位。 */
 const DIFFS = {
   入门: { w: 1, chip: 'chip teal' },
   进阶: { w: 1.25, chip: 'chip amber' },
   高手: { w: 1.5, chip: 'chip red' }
 };
+/* SCENARIOS 在下方声明，满分只能懒计算，避免模块初始化时 TDZ。 */
+let _wisdomFull = 0;
+function wisdomFull() {
+  if (!_wisdomFull) _wisdomFull = SCENARIOS.reduce((sum, sc) => sum + 100 * DIFFS[sc.diff].w, 0);
+  return _wisdomFull;
+}
 function getWisdom() {
   let s = 0;
   for (const k in state.progress) {
@@ -200,7 +213,9 @@ function getWisdom() {
     const w = DIFFS[sc ? sc.diff : '入门'].w;
     s += state.progress[k].best * w;
   }
-  return clamp(Math.round(s), 0, 100);
+  const full = wisdomFull();
+  if (!(full > 0)) return 0;
+  return clamp(Math.round(s / full * 100), 0, 100);
 }
 const LEVELS = [
   { min: 0, name: '人情小白', desc: '刚入门，多留心身边人的感受' },
@@ -442,16 +457,106 @@ const SCENARIOS = [
 
 
 /* ---------------- 存储层（wx 本地缓存） ---------------- */
-const DB_KEY = 'rqsg_radar_v2';
-function _empty() { S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' }; S.lastEventId = null; }
+const DB_KEY = 'eqworker_mp_v1';
+const LEGACY_DB_KEY = 'rqsg_radar_v2';
+function _empty() { S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' }; S.lastEventId = null; S.settings = { giftTier: 'standard', cityTier: '二线' }; }
+
+/* 导入/本地缓存清洗（与 Web 端 sanitizeImport 同源逻辑）：
+   外部 JSON 一律视为不可信，逐字段校验。不清洗的后果都是真实可触发的：
+   events 不是数组 → filter 抛错；progress.best 非数字 → 段位与百分比 NaN → 页面白屏。 */
+function sanitizeImport(d) {
+  const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+  const num = (x, def) => (typeof x === 'number' && isFinite(x)) ? x : def;
+  const str = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+  const mmdd = (x) => {
+    const s = str(x, 10);
+    const m = s.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
+    return m ? m[1] + '-' + m[2] : '';
+  };
+  /* 事件人情值：缺省取类型基准；负向事件（dHeat<0）强制为负，
+     修复旧版记录冲突时 weight 恒为 +7 的历史数据。 */
+  const fixWeight = (type, w) => {
+    const t = EVENT_TYPES[type] || EVENT_TYPES.other;
+    let n = num(w, t.dHeat);
+    if (t.dHeat < 0 && n > 0) n = -n;
+    return n;
+  };
+  const fixDir = (type, dir, amount) => {
+    if (!(amount > 0)) return 'none';
+    if (dir === 'in' || dir === 'out') return dir;
+    if (type === 'gift_get') return 'in';
+    if (type === 'gift_give') return 'out';
+    if (type === 'money') return 'in';
+    return 'none';
+  };
+  const persons = (Array.isArray(d.persons) ? d.persons : [])
+    .filter(p => isObj(p) && typeof p.name === 'string' && p.name.trim())
+    .map(p => ({
+      id: typeof p.id === 'string' && p.id ? p.id : uid(),
+      name: str(p.name, 60),
+      identity: str(p.identity, 40),
+      tags: Array.isArray(p.tags) ? p.tags.filter(t => typeof t === 'string').map(t => t.slice(0, 20)).slice(0, 10) : [],
+      birthday: mmdd(p.birthday),
+      anniversary: mmdd(p.anniversary),
+      likes: str(p.likes, 200),
+      taboos: str(p.taboos, 200),
+      note: str(p.note, 500),
+      adjust: num(p.adjust, 0),
+      createdAt: num(p.createdAt, Date.now())
+    }));
+  const events = (Array.isArray(d.events) ? d.events : [])
+    .filter(e => isObj(e) && typeof e.type === 'string' && num(e.time, 0) > 0)
+    .map(e => {
+      const amount = Math.max(0, Math.min(10000000, num(e.amount, 0)));
+      return {
+        id: typeof e.id === 'string' && e.id ? e.id : uid(),
+        personId: str(e.personId, 40),
+        type: e.type,
+        title: str(e.title, 80),
+        time: num(e.time, Date.now()),
+        weight: fixWeight(e.type, e.weight),
+        note: str(e.note, 500),
+        amount,
+        dir: fixDir(e.type, e.dir, amount),
+        occasion: str(e.occasion, 20)
+      };
+    });
+  const reminders = Array.isArray(d.reminders)
+    ? d.reminders.filter(r => isObj(r)).map(r => ({
+        id: typeof r.id === 'string' && r.id ? r.id : uid(),
+        personId: str(r.personId, 40),
+        content: str(r.content, 200),
+        date: str(r.date, 20),
+        status: r.status === 'done' ? 'done' : 'pending'
+      }))
+    : [];
+  const rawProg = isObj(d.progress) ? d.progress : {};
+  const progress = {};
+  for (const k of Object.keys(rawProg)) {
+    const v = rawProg[k];
+    if (isObj(v)) progress[k] = { best: num(v.best, 0), times: num(v.times, 0) };
+  }
+  const st = isObj(d.streak) ? d.streak : {};
+  const streak = { n: num(st.n, 0), last: str(st.last, 20) };
+  const rawSet = isObj(d.settings) ? d.settings : {};
+  const settings = {
+    giftTier: ['simple', 'standard', 'generous'].indexOf(rawSet.giftTier) >= 0 ? rawSet.giftTier : 'standard',
+    cityTier: ['三线', '二线', '一线'].indexOf(rawSet.cityTier) >= 0 ? rawSet.cityTier : '二线'
+  };
+  return { persons, events, reminders, progress, streak, settings };
+}
+
 function load() {
   try {
-    const raw = wx.getStorageSync(DB_KEY);
+    let raw = wx.getStorageSync(DB_KEY);
+    if (!raw) raw = wx.getStorageSync(LEGACY_DB_KEY);
     if (!raw) { _empty(); invalidateCache(); return S; }
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (!d || !Array.isArray(d.persons) || !Array.isArray(d.events)) { _empty(); invalidateCache(); return S; }
-    S.persons = d.persons || []; S.events = d.events || []; S.reminders = d.reminders || [];
-    S.progress = d.progress || {}; S.streak = d.streak || { n: 0, last: '' }; S.lastEventId = d.lastEventId || null;
+    if (!d || !Array.isArray(d.persons)) { _empty(); invalidateCache(); return S; }
+    const clean = sanitizeImport(d);
+    S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
+    S.progress = clean.progress; S.streak = clean.streak; S.settings = clean.settings;
+    S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
     invalidateCache();
     return S;
   } catch (e) { _empty(); invalidateCache(); return S; }
@@ -461,12 +566,14 @@ function save() {
   invalidateCache();
 }
 function getState() { return S; }
-function backupText() { return JSON.stringify({ app: '人情世故雷达', version: 2, exportedAt: Date.now(), persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak }, null, 1); }
+function backupText() { return JSON.stringify({ app: 'EQ-Worker', version: 3, exportedAt: Date.now(), persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak, settings: S.settings }, null, 1); }
 function restoreText(txt) {
   const d = JSON.parse(txt);
-  if (!d || !Array.isArray(d.persons) || !Array.isArray(d.events)) throw new Error('bad');
-  S.persons = d.persons || []; S.events = d.events || []; S.reminders = d.reminders || [];
-  S.progress = d.progress || {}; S.streak = d.streak || { n: 0, last: '' }; S.lastEventId = d.lastEventId || null;
+  if (!d || !Array.isArray(d.persons)) throw new Error('bad');
+  const clean = sanitizeImport(d);
+  S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
+  S.progress = clean.progress; S.streak = clean.streak; S.settings = clean.settings;
+  S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
   save();
   invalidateCache();
   return S;
@@ -545,7 +652,7 @@ function annualData() {
 }
 module.exports = {
   load, save, getState, backupText, restoreText,
-  uid, DAY, todayStr, fmtDate, timeAgo, toMMDD, toDateInput, daysUntil, initials,
+  uid, DAY, todayStr, fmtDate, timeAgo, toMMDD, toDateInput, daysUntil, initials, sanitizeImport,
   solarToLunar, upcomingFestival,
   EVENT_TYPES, PLACEHOLDERS, IDENTITIES: ['领导', '同事', '客户', '朋友', '家人', '长辈', '其他'],
   SCHEMA_VERSION, computePerson, computedFor, invalidateCache,

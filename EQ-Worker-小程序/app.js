@@ -1,4 +1,4 @@
-// 人情世故雷达 · 小程序入口
+// EQ-Worker · 小程序入口
 const engine = require('./utils/engine');
 
 App({

@@ -25,9 +25,9 @@ jobs:
       - name: 产物必须与源码同步（防止「改了 _app_dev.js 却忘了重新构建」）
         run: |
           node build.js
-          if ! git diff --quiet -- index.html 人情世故雷达.html android/app/src/main/assets/index.html desktop/index.html; then
+          if ! git diff --quiet -- index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html; then
             echo "::error::构建产物与源码不同步，请本地执行 node build.js 后一并提交"
-            git diff --stat -- index.html 人情世故雷达.html android/app/src/main/assets/index.html desktop/index.html
+            git diff --stat -- index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html
             exit 1
           fi
 
@@ -36,7 +36,7 @@ jobs:
           python3 - <<'PY'
           import json, glob, sys
           bad = []
-          for f in glob.glob('人情世故雷达-小程序/**/*.json', recursive=True):
+          for f in glob.glob('EQ-Worker-小程序/**/*.json', recursive=True):
               if 'node_modules' in f: continue
               try:
                   json.load(open(f, encoding='utf-8'))

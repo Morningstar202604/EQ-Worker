@@ -1,8 +1,9 @@
-// 人情世故雷达 · PWA Service Worker
-const CACHE_NAME = 'rqsg-radar-v2.8.1';
+// EQ-Worker · PWA Service Worker
+/* 每次发版必须更新缓存名：Cache First 策略下，名字不变会让老用户永远拿到旧 HTML。 */
+const CACHE_NAME = 'eqworker-v3.0.0-r1';
 const PRECACHE_URLS = [
   './index.html',
-  './人情世故雷达.html'
+  './EQ-Worker.html'
 ];
 
 // 安装：预缓存核心资源
