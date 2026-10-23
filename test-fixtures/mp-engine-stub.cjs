@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-const enginePath = path.resolve(__dirname, '../人情世故雷达-小程序/utils/engine.js');
+const enginePath = path.resolve(__dirname, '../EQ-Worker-小程序/utils/engine.js');
 const code = fs.readFileSync(enginePath, 'utf8');
 
 // 模拟 wx 全局（引擎的 load/save 依赖）

@@ -1,4 +1,4 @@
-# 人情世故雷达 · 品牌规范（BRAND GUIDELINES）
+# EQ-Worker · 品牌规范（BRAND GUIDELINES）
 
 > 版本 1.0 ｜ 2026-10-18 ｜ 适用：安卓 / Windows / 网页 / 小程序 / 官网 / 宣传物料
 
@@ -6,8 +6,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 中文名 | **人情世故雷达** |
-| 英文标识 | **RENQING · RADAR** |
+| 中文名 | **EQ-Worker** |
+| 英文标识 | **EQ · WORKER** |
 | Slogan | 把人情账记明白，把关系经营成细水长流 |
 | 定位 | 人脉经营工具（不是答题测评）：记录往来 → 自动画像 → 智能提醒 → 情景修炼 → 年度报告 |
 | 关键词 | 人情账本 · 本地优先 · 隐私至上 · 中国式社交 |
@@ -50,7 +50,7 @@
 |---|---|---|
 | 品牌字标 / 标题 | 楷书：Ma Shan Zheng → KaiTi → STKaiti | 日记本气质，需回退链 |
 | 正文 / 数据 | 衬线：Noto Serif SC → Songti SC → SimSun | 中文排版稳妥 |
-| 西文点缀 | Georgia / 衬线族 | RENQING · RADAR 用大字距（letter-spacing ≥ 0.4em） |
+| 西文点缀 | Georgia / 衬线族 | EQ · WORKER 用大字距（letter-spacing ≥ 0.4em） |
 
 ## 五、应用图标与启动页
 

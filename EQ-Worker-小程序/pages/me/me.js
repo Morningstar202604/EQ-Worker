@@ -15,7 +15,7 @@ Page({
     showImport: false,
     importText: '',
     picker: { show: false, options: [] },
-    version: 'v2.8.1',
+    version: 'v3.0.0',
     _modal: { show: false, anim: '' },
     _toast: { show: false, anim: '' }
   },

@@ -1,4 +1,4 @@
-// 人情世故雷达 · 引擎单元测试（node --test）
+// EQ-Worker · 引擎单元测试（node --test）
 // 零依赖，使用 Node.js 原生 test runner + assert/strict
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

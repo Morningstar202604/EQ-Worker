@@ -1,4 +1,4 @@
-// 人情世故雷达 · 安卓壳工程
+// EQ-Worker · 安卓壳工程
 plugins {
     id 'com.android.application' version '8.13.0' apply false
 }

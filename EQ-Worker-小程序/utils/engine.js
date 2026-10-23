@@ -1,7 +1,7 @@
-// 人情世故雷达 · 小程序版 v2.8.1 纯逻辑引擎
-let S = { persons: [], events: [], reminders: [], progress: {}, streak: { n: 0, last: '' }, lastEventId: null };
+// EQ-Worker · 小程序轻量版 v3.0.0 纯逻辑引擎（数据与 Web 端 v4 结构兼容）
+let S = { persons: [], events: [], reminders: [], progress: {}, streak: { n: 0, last: '' }, lastEventId: null, settings: { giftTier: 'standard', cityTier: '二线' } };
 const DAY = 86400000;
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const state = S; // 网页版计算函数引用全局 state，这里恒等指向 S
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -457,8 +457,9 @@ const SCENARIOS = [
 
 
 /* ---------------- 存储层（wx 本地缓存） ---------------- */
-const DB_KEY = 'rqsg_radar_v2';
-function _empty() { S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' }; S.lastEventId = null; }
+const DB_KEY = 'eqworker_mp_v1';
+const LEGACY_DB_KEY = 'rqsg_radar_v2';
+function _empty() { S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' }; S.lastEventId = null; S.settings = { giftTier: 'standard', cityTier: '二线' }; }
 
 /* 导入/本地缓存清洗（与 Web 端 sanitizeImport 同源逻辑）：
    外部 JSON 一律视为不可信，逐字段校验。不清洗的后果都是真实可触发的：
@@ -467,6 +468,11 @@ function sanitizeImport(d) {
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const num = (x, def) => (typeof x === 'number' && isFinite(x)) ? x : def;
   const str = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+  const mmdd = (x) => {
+    const s = str(x, 10);
+    const m = s.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
+    return m ? m[1] + '-' + m[2] : '';
+  };
   /* 事件人情值：缺省取类型基准；负向事件（dHeat<0）强制为负，
      修复旧版记录冲突时 weight 恒为 +7 的历史数据。 */
   const fixWeight = (type, w) => {
@@ -475,6 +481,14 @@ function sanitizeImport(d) {
     if (t.dHeat < 0 && n > 0) n = -n;
     return n;
   };
+  const fixDir = (type, dir, amount) => {
+    if (!(amount > 0)) return 'none';
+    if (dir === 'in' || dir === 'out') return dir;
+    if (type === 'gift_get') return 'in';
+    if (type === 'gift_give') return 'out';
+    if (type === 'money') return 'in';
+    return 'none';
+  };
   const persons = (Array.isArray(d.persons) ? d.persons : [])
     .filter(p => isObj(p) && typeof p.name === 'string' && p.name.trim())
     .map(p => ({
@@ -482,22 +496,31 @@ function sanitizeImport(d) {
       name: str(p.name, 60),
       identity: str(p.identity, 40),
       tags: Array.isArray(p.tags) ? p.tags.filter(t => typeof t === 'string').map(t => t.slice(0, 20)).slice(0, 10) : [],
-      birthday: str(p.birthday, 10),
+      birthday: mmdd(p.birthday),
+      anniversary: mmdd(p.anniversary),
+      likes: str(p.likes, 200),
+      taboos: str(p.taboos, 200),
       note: str(p.note, 500),
       adjust: num(p.adjust, 0),
       createdAt: num(p.createdAt, Date.now())
     }));
   const events = (Array.isArray(d.events) ? d.events : [])
     .filter(e => isObj(e) && typeof e.type === 'string' && num(e.time, 0) > 0)
-    .map(e => ({
-      id: typeof e.id === 'string' && e.id ? e.id : uid(),
-      personId: str(e.personId, 40),
-      type: e.type,
-      title: str(e.title, 80),
-      time: num(e.time, Date.now()),
-      weight: fixWeight(e.type, e.weight),
-      note: str(e.note, 500)
-    }));
+    .map(e => {
+      const amount = Math.max(0, Math.min(10000000, num(e.amount, 0)));
+      return {
+        id: typeof e.id === 'string' && e.id ? e.id : uid(),
+        personId: str(e.personId, 40),
+        type: e.type,
+        title: str(e.title, 80),
+        time: num(e.time, Date.now()),
+        weight: fixWeight(e.type, e.weight),
+        note: str(e.note, 500),
+        amount,
+        dir: fixDir(e.type, e.dir, amount),
+        occasion: str(e.occasion, 20)
+      };
+    });
   const reminders = Array.isArray(d.reminders)
     ? d.reminders.filter(r => isObj(r)).map(r => ({
         id: typeof r.id === 'string' && r.id ? r.id : uid(),
@@ -515,18 +538,24 @@ function sanitizeImport(d) {
   }
   const st = isObj(d.streak) ? d.streak : {};
   const streak = { n: num(st.n, 0), last: str(st.last, 20) };
-  return { persons, events, reminders, progress, streak };
+  const rawSet = isObj(d.settings) ? d.settings : {};
+  const settings = {
+    giftTier: ['simple', 'standard', 'generous'].indexOf(rawSet.giftTier) >= 0 ? rawSet.giftTier : 'standard',
+    cityTier: ['三线', '二线', '一线'].indexOf(rawSet.cityTier) >= 0 ? rawSet.cityTier : '二线'
+  };
+  return { persons, events, reminders, progress, streak, settings };
 }
 
 function load() {
   try {
-    const raw = wx.getStorageSync(DB_KEY);
+    let raw = wx.getStorageSync(DB_KEY);
+    if (!raw) raw = wx.getStorageSync(LEGACY_DB_KEY);
     if (!raw) { _empty(); invalidateCache(); return S; }
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
     if (!d || !Array.isArray(d.persons)) { _empty(); invalidateCache(); return S; }
     const clean = sanitizeImport(d);
     S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
-    S.progress = clean.progress; S.streak = clean.streak;
+    S.progress = clean.progress; S.streak = clean.streak; S.settings = clean.settings;
     S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
     invalidateCache();
     return S;
@@ -537,13 +566,13 @@ function save() {
   invalidateCache();
 }
 function getState() { return S; }
-function backupText() { return JSON.stringify({ app: '人情世故雷达', version: 2, exportedAt: Date.now(), persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak }, null, 1); }
+function backupText() { return JSON.stringify({ app: 'EQ-Worker', version: 3, exportedAt: Date.now(), persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak, settings: S.settings }, null, 1); }
 function restoreText(txt) {
   const d = JSON.parse(txt);
   if (!d || !Array.isArray(d.persons)) throw new Error('bad');
   const clean = sanitizeImport(d);
   S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
-  S.progress = clean.progress; S.streak = clean.streak;
+  S.progress = clean.progress; S.streak = clean.streak; S.settings = clean.settings;
   S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
   save();
   invalidateCache();
