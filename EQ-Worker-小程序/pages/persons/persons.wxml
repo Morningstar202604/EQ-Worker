@@ -5,7 +5,7 @@
 <view style="display:flex;align-items:center;gap:16rpx;padding:20rpx 20rpx 4rpx">
   <view style="flex:1;position:relative">
     <input class="input" style="flex:1" placeholder="搜索姓名 / 身份 / 标签 / 备注…" value="{{q}}" bindinput="onInput" />
-    <text wx:if="{{q}}" style="position:absolute;right:16rpx;top:50%;transform:translateY(-50%);font-size:22rpx;color:#a89b88;padding:0 4rpx" bindtap="clearQ">✕</text>
+    <text wx:if="{{q}}" style="position:absolute;right:16rpx;top:50%;transform:translateY(-50%);font-size:22rpx;color:#a89b88;padding:0 4rpx" bindtap="clearQ">×</text>
   </view>
   <button class="btn primary sm" bindtap="addPerson">＋ 添加</button>
 </view>

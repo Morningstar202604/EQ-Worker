@@ -70,7 +70,7 @@ Page({
   submit() {
     const S = engine.getState();
     const p = this.data.persons[this.data.personIdx];
-    if (!p) { ui.toast(this, '先添加人脉', { icon: '✕' }); return; }
+    if (!p) { ui.toast(this, '先添加人脉', { icon: '×' }); return; }
     const ev = {
       id: engine.uid(), personId: p.id, type: this.data.curType,
       title: (this.data.title || EVENTS[this.data.curType].label).trim(),
