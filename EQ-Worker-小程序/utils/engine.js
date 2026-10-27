@@ -1,4 +1,4 @@
-// EQ-Worker · 小程序轻量版 v3.0.0 纯逻辑引擎（数据与 Web 端 v4 结构兼容）
+// EQ-Worker · 小程序轻量版 v3.1.0 纯逻辑引擎（数据与 Web 端 v4 结构兼容）
 let S = { persons: [], events: [], reminders: [], progress: {}, streak: { n: 0, last: '' }, lastEventId: null, settings: { giftTier: 'standard', cityTier: '二线' } };
 const DAY = 86400000;
 const SCHEMA_VERSION = 4;

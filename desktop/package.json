@@ -1,7 +1,7 @@
 {
   "name": "eq-worker-desktop",
   "productName": "EQ-Worker",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "EQ-Worker · Windows 桌面版（Electron 壳 + 单文件网页应用）",
   "main": "main.js",
   "private": true,
