@@ -10,7 +10,7 @@ Local-first · Zero server · No ads · No tracking
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![Version](https://img.shields.io/badge/version-v3.0.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![Version](https://img.shields.io/badge/version-v3.1.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 **Live demo:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
@@ -52,6 +52,8 @@ Every action carries two buttons, for example:
 - Record gift / received gift / loan / repayment with amount, direction, and occasion;
 - Per-person net position: **I owe them** / **they owe me** / **settled**;
 - Totals: given, received, net, people owed, people owing;
+- **One-click settlement**: turn the net position into a repayment / return-gift / collection record, with partial settlement supported;
+- **Ledger insights**: this month's given/received, average per gift, and the occasion that costs the most;
 - Filters and CSV export;
 - **Money only affects the ledger, never the heat / trust / favor-debt scores.**
 
@@ -74,7 +76,7 @@ Each scene offers **steady / close / brief** versions, automatically using the p
 
 ### 5. Relationship health
 
-Combines heat, trust, intimacy, activity, ledger reciprocity, and conflicts in the past year into a 0–100 score with concrete next steps.
+Combines heat, trust, intimacy, activity, ledger reciprocity, and conflicts in the past year into a 0–100 score with concrete next steps. A **global health list** sorts everyone from lowest to highest, so you fix the relationship that needs it most first.
 
 ### 6. Important dates and calendar
 
@@ -103,6 +105,14 @@ Birthdays and anniversaries recur yearly; reminders are one-off events. Export e
 | Quick record | Mobile |
 | --- | --- |
 | ![record](docs/screenshots/v3/05-record.png) | ![mobile](docs/screenshots/v3/06-mobile.png) |
+
+| Ledger insights | One-click settlement |
+| --- | --- |
+| ![insights](docs/screenshots/v3/07-ledger-insights.png) | ![settlement](docs/screenshots/v3/08-settlement.png) |
+
+| Settlement record | Relationship health |
+| --- | --- |
+| ![record](docs/screenshots/v3/09-settlement-record.png) | ![health](docs/screenshots/v3/10-health.png) |
 
 ---
 
@@ -139,7 +149,7 @@ Build and test:
 
 ```bash
 npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html, sync Android and desktop assets
-npm test        # 49 unit tests
+npm test        # 54 unit tests
 npm run verify  # build + all tests
 ```
 
@@ -157,10 +167,18 @@ WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
 | Charts | ECharts 5 (inline) / Canvas 2D (mini program) |
 | Storage | localStorage / wx.storage |
 | Build | `build.js` — ESM, zero dependencies |
-| Tests | `node --test`, 49 cases |
+| Tests | `node --test`, 54 cases |
 | Advisor | Local explainable rules, no external AI calls |
 
 ---
+
+## v3.1.0
+
+- New **one-click settlement** for repayment / return gifts / collections, including partial settlement;
+- New **ledger insights**: monthly given/received, average per gift, top occasion;
+- New **global relationship health list** sorted from lowest score;
+- Modal keyboard focus trap and focus restoration;
+- 54 tests passing, zero browser console errors.
 
 ## v3.0.0
 
@@ -171,8 +189,7 @@ WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
 - New **conversation scripts** (16 scenes × 3 tones);
 - New **relationship health** and per-person ledger;
 - New **.ics export**;
-- Data schema v4 with automatic migration;
-- 49 tests passing, zero browser console errors.
+- Data schema v4 with automatic migration.
 
 ---
 

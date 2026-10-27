@@ -293,6 +293,24 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
 .scripttext{font-size:13px;line-height:1.8;color:var(--text);margin-top:6px;user-select:text}
 .healthscore{font-size:28px;font-weight:700;color:var(--teal);font-family:var(--kaiti);line-height:1.2}
 .healthscore span{font-size:11px;color:var(--dim);font-weight:400;margin-left:2px}
+.lg-insight{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.lg-insight>div{background:rgba(250,246,236,.9);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.lg-insight span{font-size:10px;color:var(--dim)}
+.lg-insight b{font-size:13px;color:var(--inkdeep);font-weight:700}
+.settle-net{font-size:26px;font-weight:700;font-family:var(--kaiti);margin:4px 0 2px}
+.settle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.settle-opt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--card2);border:1px solid var(--line2);border-radius:12px;padding:14px 12px;cursor:pointer;font-family:var(--serif);color:var(--text);min-height:86px;transition:transform .06s}
+.settle-opt:active{transform:scale(.98)}
+.settle-opt b{font-size:15px;color:var(--inkdeep)}
+.settle-opt span{font-size:11px;color:var(--sub);line-height:1.6}
+.healthlist{margin-top:2px}
+.healthrow{display:flex;gap:10px;padding:11px 2px;border-bottom:1px dashed var(--line2);cursor:pointer}
+.healthrow:last-child{border-bottom:none}
+.healthmain{flex:1;min-width:0}
+.healthhead{display:flex;align-items:center;gap:6px}
+.healthhead b{font-size:13.5px;color:var(--inkdeep)}
+.healthnum{margin-left:auto;font-size:17px;font-weight:700;color:var(--teal);font-family:var(--kaiti)}
+.healthnum span{font-size:10px;color:var(--dim);font-weight:400}
 @media(max-width:380px){
   .hero-stats{grid-template-columns:repeat(2,1fr)}
   .tab{padding:8px 0 7px;font-size:10px}
@@ -306,7 +324,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
   <header class="topbar">
     <div class="brand">
       <svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>
-      <span>EQ-Worker<span class="slogan">人情世故助手</span></span><span class="ver">v3.0.0</span>
+      <span>EQ-Worker<span class="slogan">人情世故助手</span></span><span class="ver">v3.1.0</span>
     </div>
     <div class="scorebox">
       <div class="lab">人情指数</div>
@@ -421,7 +439,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 /* 品牌（Logo / 名称 / Slogan 统一出口） */
 const LOGO_SVG = `<svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>`;
-const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: 'v3.0.0' };
+const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: 'v3.1.0' };
 
 function timeAgo(ts) {
   const s = (Date.now() - ts) / 1000;
@@ -1001,6 +1019,62 @@ function ledgerTotals() {
   return { given, received, net: received - given, owe, due, oweCount, dueCount };
 }
 
+/* 账本洞察：本月收支、累计平均、最花心思的场合。 */
+function ledgerInsights() {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  let monthGiven = 0, monthReceived = 0, monthCount = 0;
+  let totalGiven = 0, givenCount = 0, maxGift = 0;
+  const byOcc = {};
+  for (const e of state.events) {
+    const amt = Number(e.amount) || 0;
+    if (amt <= 0) continue;
+    const dir = eventDir(e);
+    if (dir === 'none') continue;
+    if (fmtDate(e.time).startsWith(ym)) {
+      monthCount++;
+      if (dir === 'out') monthGiven += amt;
+      else monthReceived += amt;
+    }
+    if (dir === 'out') {
+      totalGiven += amt;
+      givenCount++;
+      maxGift = Math.max(maxGift, amt);
+      const occ = e.occasion || '其他';
+      byOcc[occ] = (byOcc[occ] || 0) + amt;
+    }
+  }
+  const top = Object.entries(byOcc).sort((a, b) => b[1] - a[1])[0] || null;
+  return {
+    ym, monthGiven, monthReceived, monthCount,
+    avgGiven: givenCount ? Math.round(totalGiven / givenCount) : 0,
+    givenCount, maxGift,
+    topOccasion: top ? top[0] : '',
+    topOccasionAmount: top ? top[1] : 0
+  };
+}
+
+/* 结清预填：把账本净额变成一笔可保存的还款/回礼记录。 */
+function settlePrefill(personId, kind) {
+  const p = state.persons.find(x => x.id === personId);
+  if (!p) return null;
+  const l = personLedger(personId);
+  if (!l.net) return null;
+  const owe = l.net > 0;
+  const amount = Math.abs(l.net);
+  const isLoan = kind === 'loan';
+  return {
+    personId,
+    type: isLoan ? 'money' : (owe ? 'gift_give' : 'gift_get'),
+    dir: owe ? 'out' : 'in',
+    amount,
+    occasion: isLoan ? '其他' : '还礼',
+    title: isLoan ? (owe ? '还款' : '收回借款') : (owe ? '回礼' : '收到回礼'),
+    net: l.net,
+    owe
+  };
+}
+
 /* 把一个金额修成常见的礼金数字，避免「¥873」这种不自然的数。 */
 const NICE_AMOUNTS = [0, 50, 100, 200, 300, 500, 600, 800, 1000, 1200, 1500, 1600, 2000, 3000, 5000, 8000, 10000];
 function niceAmount(n) {
@@ -1079,6 +1153,13 @@ function personHealth(p) {
   if (conflicts) tips.push(`近一年有 ${conflicts} 次摩擦，适当降温、就事论事`);
   if (!tips.length) tips.push('保持当前节奏，偶尔分享近况就能维系');
   return { score, level, cls, tips, reciprocity: Math.round(reciprocity), conflicts };
+}
+
+/* 关系体检总览：按健康度从低到高排，先修最需要经营的关系。 */
+function healthRanking() {
+  return state.persons
+    .map(p => ({ p, h: personHealth(p), l: personLedger(p.id) }))
+    .sort((a, b) => a.h.score - b.h.score || a.p.name.localeCompare(b.p.name, 'zh'));
 }
 
 /* 今日行动：把提醒、生日、账本、断联、道谢、关键关系合成一份能直接执行的清单。
@@ -1615,9 +1696,23 @@ const state = {
 };
 const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '同学', '邻居', '其他'];
 let chartInstances = [];
+let _lastFocus = null;
+let _lastFocusKey = null;
+let _lastTrigger = null;
+function captureFocus() {
+  const active = document.activeElement;
+  const el = (active && active !== document.body && active !== document.documentElement)
+    ? active
+    : _lastTrigger;
+  _lastFocus = el;
+  _lastFocusKey = el && el.dataset && el.dataset.act
+    ? el.dataset.act + '|' + (el.dataset.arg || '')
+    : null;
+}
 
 /* 自定义确认弹层（替代原生 confirm，保持日记本文风） */
 function confirmModal(message, onConfirm, danger) {
+  captureFocus();
   $('#modal-root').innerHTML = `
     <div class="mask center" role="dialog" aria-modal="true">
       <div class="sheet center" style="max-width:340px">
@@ -2036,8 +2131,9 @@ function viewAssistant() {
       </div>
       <div class="sub" style="margin-top:8px">${lt.oweCount} 人你欠着，${lt.dueCount} 人欠你。${balances.length ? '金额最大的 3 位：' : '记一笔送礼/收礼时填上金额，这里会自动汇总。'}</div>
       ${balRows}
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn sm" data-act="ledgerModal">查看完整账本</button>
+        <button class="btn sm" data-act="healthCheck">关系体检</button>
         <button class="btn sm primary" data-act="giftModal" data-arg="">随礼参谋</button>
       </div>
     </div>
@@ -2057,6 +2153,7 @@ function viewAssistant() {
 /* ---------- 人情账本弹层 ---------- */
 function ledgerBody() {
   const lt = ledgerTotals();
+  const ins = ledgerInsights();
   const filter = state.ledgerFilter || 'all';
   let rows = state.persons.map(p => ({ p, l: personLedger(p.id) }));
   if (filter === 'owe') rows = rows.filter(x => x.l.net > 0);
@@ -2074,6 +2171,7 @@ function ledgerBody() {
         <div class="sub" style="font-size:11px">送出 ${fmtMoney(x.l.given)} · 收到 ${fmtMoney(x.l.received)}</div>
       </div>
       <div class="balnum ${x.l.net > 0 ? 'neg' : x.l.net < 0 ? 'pos' : ''}">${ledgerNetShort(x.l.net)}</div>
+      ${x.l.net ? `<button class="btn sm ghost" data-act="settleModal" data-arg="${x.p.id}" style="flex:none">结清</button>` : ''}
     </div>`;
   }).join('');
   return `
@@ -2082,15 +2180,82 @@ function ledgerBody() {
       <div><span>累计收到</span><b>${fmtMoney(lt.received)}</b></div>
       <div><span>净额</span><b class="${lt.net > 0 ? 'neg' : lt.net < 0 ? 'pos' : ''}">${ledgerNetShort(lt.net)}</b></div>
     </div>
+    <div class="lg-insight">
+      <div><span>本月送出</span><b>${fmtMoney(ins.monthGiven)}</b></div>
+      <div><span>本月收到</span><b>${fmtMoney(ins.monthReceived)}</b></div>
+      <div><span>平均每笔送出</span><b>${fmtMoney(ins.avgGiven)}</b></div>
+      <div><span>最花心思的场合</span><b>${ins.topOccasion ? esc(ins.topOccasion) + ' ' + fmtMoney(ins.topOccasionAmount) : '暂无'}</b></div>
+    </div>
     <div class="sub" style="margin:10px 0 4px">只统计填了金额的往来；人情分（热度/信任/人情债）不受金额影响。</div>
     <div class="fchips">${chips}</div>
     <div class="balancelist">${list || '<div class="sub" style="padding:14px 4px">这一栏还没有记录。</div>'}</div>
-    <div style="display:flex;gap:8px;margin-top:14px">
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <button class="btn" style="flex:1" data-act="exportCsv">导出账本 CSV</button>
+      <button class="btn" style="flex:1" data-act="healthCheck">关系体检</button>
       <button class="btn primary" style="flex:1" data-act="giftModal" data-arg="">随礼参谋</button>
     </div>`;
 }
 function openLedger() { openSheet('人情账本', ledgerBody(), false); }
+
+/* ---------- 结清与关系体检 ---------- */
+function settleModal(personId) {
+  const p = state.persons.find(x => x.id === personId);
+  if (!p) return;
+  const l = personLedger(personId);
+  if (!l.net) { toast('这笔账已经两清了'); return; }
+  openSheet(`和 ${esc(p.name)} 结清`, `
+    <div class="card" style="margin:0 0 12px;padding:14px">
+      <div class="sub">当前账本</div>
+      <div class="settle-net ${l.net > 0 ? 'neg' : 'pos'}">${ledgerNetLabel(l.net)}</div>
+      <div class="sub" style="margin-top:4px">累计送出 ${fmtMoney(l.given)} · 累计收到 ${fmtMoney(l.received)}</div>
+    </div>
+    <div class="settle-grid">
+      <button class="settle-opt" data-act="settleGo" data-arg="${personId}|loan">
+        <b>${l.net > 0 ? '还款' : '记收款'}</b>
+        <span>${l.net > 0 ? `转给对方 ${fmtMoney(l.net)}` : `对方转给你 ${fmtMoney(-l.net)}`}</span>
+      </button>
+      <button class="settle-opt" data-act="settleGo" data-arg="${personId}|gift">
+        <b>${l.net > 0 ? '回礼' : '对方回礼'}</b>
+        <span>按礼金往来结清</span>
+      </button>
+    </div>
+    <div class="sub" style="margin-top:10px;line-height:1.7">保存前可以把金额改小，只结一部分；金额只进账本，不影响人情分。</div>
+  `, true);
+}
+function settleGo(arg) {
+  const [pid, kind] = String(arg || '').split('|');
+  const pre = settlePrefill(pid, kind === 'gift' ? 'gift' : 'loan');
+  if (!pre) { toast('这笔账已经两清了'); closeModal(); return; }
+  window.__prefill = pre;
+  closeModal();
+  eventModal(pid);
+}
+function openHealthCheck() {
+  const rows = healthRanking();
+  if (!rows.length) {
+    openSheet('关系体检', `<div class="sub">先添加人脉并记录往来，体检才有数据。</div>
+      <button class="btn primary block" style="margin-top:12px" data-act="personForm">添加人脉</button>`, true);
+    return;
+  }
+  const list = rows.map(({ p, h, l }) => `
+    <div class="healthrow" data-act="openPerson" data-arg="${p.id}">
+      <div class="avatar" style="width:36px;height:36px;font-size:13px;flex:none">${esc(initials(p.name))}</div>
+      <div class="healthmain">
+        <div class="healthhead">
+          <b>${esc(p.name)}</b>
+          <span class="chip ${h.cls}">${h.level}</span>
+          <span class="healthnum">${h.score}<span>/100</span></span>
+        </div>
+        <div class="track" style="margin-top:5px"><div class="fill" style="width:${h.score}%;background:linear-gradient(90deg,var(--teal2),var(--teal))"></div></div>
+        <div class="sub" style="margin-top:4px;font-size:11px">${esc(h.tips[0])}${l.net ? ' · ' + ledgerNetShort(l.net) : ''}</div>
+      </div>
+    </div>`).join('');
+  openSheet('关系体检', `
+    <div class="sub" style="margin-bottom:10px">按健康度从低到高排序，先修最需要经营的关系。点一行看详情。</div>
+    <div class="healthlist">${list}</div>
+    <div class="sub" style="margin-top:12px;font-size:11px;opacity:.8">健康度 = 热度、信任、亲密度、活跃度、账本互惠度、近一年冲突次数的加权结果，仅作经营参考。</div>
+  `, false);
+}
 
 /* ---------- 随礼参谋 ---------- */
 function giftModal(personId) {
@@ -2817,6 +2982,7 @@ function viewMe() {
       <div class="sub" style="margin:6px 0 10px">账本、随礼、话术、日历，都在这里。</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn sm" data-act="ledgerModal">人情账本</button>
+        <button class="btn sm" data-act="healthCheck">关系体检</button>
         <button class="btn sm" data-act="giftModal" data-arg="">随礼参谋</button>
         <button class="btn sm" data-act="scriptModal" data-arg="reconnect|">话术参谋</button>
         <button class="btn sm" data-act="exportICS">导出重要日子 (.ics)</button>
@@ -2855,6 +3021,7 @@ function viewMe() {
 
 /* ---------------- 8. 弹层 ---------------- */
 function openSheet(title, body, center) {
+  captureFocus();
   $('#modal-root').innerHTML = `
     <div class="mask ${center ? 'center' : ''}">
       <div class="sheet ${center ? 'center' : ''}" role="dialog" aria-modal="true">
@@ -2865,7 +3032,8 @@ function openSheet(title, body, center) {
   document.body.style.overflow = 'hidden';
   disposeCharts();
   /* 打开弹层后把焦点交给关闭按钮，键盘用户不会还停留在背后的页面上。 */
-  setTimeout(() => { const b = $('.sclose'); if (b && b.focus) b.focus(); }, 0);
+  const closeBtn = document.querySelector('#modal-root .sclose');
+  if (closeBtn) closeBtn.focus();
 }
 function refreshHomeChart() {
   if (state.tab !== 'radar') return;
@@ -2874,6 +3042,11 @@ function refreshHomeChart() {
     [m.scale, Math.round(m.heatAvg), m.freq, Math.round(m.credit), m.wisdom]), onHomeChartClick);
 }
 function closeModal() {
+  const restore = _lastFocus;
+  const key = _lastFocusKey;
+  _lastFocus = null;
+  _lastFocusKey = null;
+  _lastTrigger = null;
   $('#modal-root').innerHTML = '';
   window.__curPerson = null;
   window.__confirmCb = null;
@@ -2883,6 +3056,15 @@ function closeModal() {
   /* 仅在 radar 页立即恢复图表；其他页在 render 时由 afterRender 重建 */
   if (state.tab === 'radar') refreshHomeChart();
   render();
+  /* render() 会重建当前页，原按钮可能已不在 DOM；优先按 data-act/data-arg 找回新按钮。 */
+  let target = null;
+  if (key) {
+    const [act, arg] = key.split('|');
+    const btns = Array.from(document.querySelectorAll('[data-act="' + act + '"]'));
+    target = btns.find(b => (b.dataset.arg || '') === arg) || btns[0] || null;
+  }
+  if (!target && restore && document.contains(restore)) target = restore;
+  if (target && target.focus) target.focus();
 }
 
 /* ---------- 人物详情 ---------- */
@@ -2966,8 +3148,9 @@ function openPerson(id) {
         <span class="chip ${lstat.cls}">${ledgerNetLabel(lg.net)}</span>
         ${lg.lastAmount ? `<span class="chip">最近一笔 ${lg.lastDir === 'in' ? '收' : '送'} ${fmtMoney(lg.lastAmount)}</span>` : '<span class="sub" style="font-size:11px">还没有金额记录</span>'}
       </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn sm" data-act="giftModal" data-arg="${id}">随礼参谋</button>
+        ${lg.net ? `<button class="btn sm primary" data-act="settleModal" data-arg="${id}">结清这笔账</button>` : ''}
         <button class="btn sm" data-act="ledgerModal">看总账</button>
       </div>
     </div>
@@ -3032,7 +3215,7 @@ function eventModal(personId) {
   window.__prefill = null;
   const opts = state.persons.map(x => `<option value="${x.id}" ${x.id === (pre.personId || personId) ? 'selected' : ''}>${esc(x.name)} · ${esc(x.identity || '')}</option>`).join('');
   const initType = pre.type || 'meal';
-  const initDir = defaultDir(initType);
+  const initDir = pre.dir || defaultDir(initType);
   const initOcc = pre.occasion || '日常';
   window.__modalType = initType;
   window.__modalWeight = EVENT_TYPES[initType].dHeat;
@@ -3180,6 +3363,7 @@ function loadDemo() {
 function onClick(e) {
   const el = e.target.closest('[data-act]');
   if (!el) return;
+  if (el.tagName === 'BUTTON' || el.tabIndex >= 0) _lastTrigger = el;
   const act = el.dataset.act, arg = el.dataset.arg;
   switch (act) {
     case 'go': {
@@ -3191,6 +3375,9 @@ function onClick(e) {
     case 'openPerson': openPerson(arg); break;
     case 'ledgerModal': openLedger(); break;
     case 'ledgerFilter': state.ledgerFilter = arg; openLedger(); break;
+    case 'settleModal': settleModal(arg); break;
+    case 'settleGo': settleGo(arg); break;
+    case 'healthCheck': openHealthCheck(); break;
     case 'giftModal': giftModal(arg || ''); break;
     case 'giftToEvent': giftToEvent(); break;
     case 'giftScript': {
@@ -3565,6 +3752,17 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' && e.key !== 'Esc') return;
   const root = $('#modal-root');
   if (root && root.innerHTML.trim()) closeModal();
+});
+
+/* 弹层焦点圈定：不拦截 Tab 的默认行为，只在焦点试图跑到背景时把它拉回弹层。
+   这样原生 Tab 顺序仍然可用，也不会出现焦点被卡在同一个按钮上的问题。 */
+document.addEventListener('focusin', (e) => {
+  const root = $('#modal-root');
+  if (!root || !root.innerHTML.trim()) return;
+  const sheet = root.querySelector('.sheet');
+  if (!sheet || sheet.contains(e.target)) return;
+  const first = sheet.querySelector('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])');
+  if (first && first.focus) first.focus();
 });
 
 /* 弹层遮罩点击关闭 */
