@@ -10,7 +10,7 @@
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![版本](https://img.shields.io/badge/版本-v3.0.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![版本](https://img.shields.io/badge/版本-v3.1.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![许可](https://img.shields.io/badge/许可-CC%20BY--NC%204.0-red)](LICENSE)
 
 **在线体验：** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
@@ -52,6 +52,8 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 - 送礼 / 收礼 / 借款 / 还款分别记「金额 + 方向 + 场合」；
 - 单人净额：**我欠对方** / **对方欠我** / **两清**；
 - 总账：累计送出、累计收到、净额、待还人数、待收人数；
+- **一键结清**：把净额直接变成「还款 / 回礼 / 收款 / 对方回礼」记录，支持只结一部分；
+- **账本洞察**：本月送出/收到、平均每笔、最花心思的场合；
 - 支持筛选、CSV 导出；
 - **金额只进账本，不影响热度/信任/人情债等人情分**，两套账互不污染。
 
@@ -74,7 +76,7 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 
 ### 5. 关系体检
 
-把热度、信任、亲密度、活跃度、账本互惠度、近一年冲突次数合成 0–100 的健康度，并给出可执行建议。
+把热度、信任、亲密度、活跃度、账本互惠度、近一年冲突次数合成 0–100 的健康度，并给出可执行建议。支持**全局体检列表**，按健康度从低到高排序，先修最需要经营的关系。
 
 ### 6. 重要日子与日历
 
@@ -103,6 +105,14 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 | 快速记录 | 移动端 |
 | --- | --- |
 | ![记录](docs/screenshots/v3/05-record.png) | ![移动端](docs/screenshots/v3/06-mobile.png) |
+
+| 账本洞察 | 一键结清 |
+| --- | --- |
+| ![账本洞察](docs/screenshots/v3/07-ledger-insights.png) | ![结清](docs/screenshots/v3/08-settlement.png) |
+
+| 结清记录 | 关系体检 |
+| --- | --- |
+| ![结清记录](docs/screenshots/v3/09-settlement-record.png) | ![关系体检](docs/screenshots/v3/10-health.png) |
 
 ---
 
@@ -143,7 +153,7 @@ python3 -m http.server 8000
 
 ```bash
 npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html，并同步安卓与桌面产物
-npm test        # 49 个单元测试
+npm test        # 54 个单元测试
 npm run verify  # 构建 + 全部测试
 ```
 
@@ -165,12 +175,20 @@ npm run verify  # 构建 + 全部测试
 | 图表 | ECharts 5（内联）/ Canvas 2D（小程序） |
 | 存储 | localStorage / wx.storage（纯本地） |
 | 构建 | `build.js` — ESM，零依赖 |
-| 测试 | `node --test`，49 个用例 |
+| 测试 | `node --test`，54 个用例 |
 | 建议引擎 | 本地规则 + 可解释权重，不调用外部 AI |
 
 ---
 
-## v3.0.0 更新
+## v3.1.0 更新
+
+- 新增 **一键结清**：净额直接转成还款 / 回礼 / 收款记录，支持部分结清；
+- 新增 **账本洞察**：本月送出/收到、平均每笔、最花心思的场合；
+- 新增 **关系体检总览**：按健康度从低到高排，先修最需要经营的关系；
+- 弹层增加键盘焦点圈定与关闭后焦点恢复；
+- 54 个单元测试全部通过，浏览器控制台零报错。
+
+## v3.0.0
 
 - 品牌升级：人情世故雷达 → **EQ-Worker 人情世故助手**；
 - 新增 **助手首页 / 今日行动**，从「记录工具」变成「每天能用的助手」；
@@ -179,8 +197,7 @@ npm run verify  # 构建 + 全部测试
 - 新增 **话术参谋**（16 场景 × 3 语气，自动带入称呼与最近往来）；
 - 新增 **关系体检** 与人物详情账本；
 - 新增 **重要日子 .ics 导出**；
-- 数据结构升级到 v4，旧数据自动迁移；
-- 49 个单元测试全部通过，浏览器控制台零报错。
+- 数据结构升级到 v4，旧数据自动迁移。
 
 ---
 

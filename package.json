@@ -1,6 +1,6 @@
 {
   "name": "eq-worker",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "type": "module",
   "description": "EQ-Worker 人情世故助手 - 人情账本、随礼参谋、话术参谋与关系经营",
