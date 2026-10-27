@@ -20,7 +20,8 @@ function loadH5() {
   relationRead, daysUntil, sanitizeImport, esc, clamp, uid, EVENT_TYPES, invalidateCache, store,
   highlightKw, SCENARIOS, lsSet, lsGet, personLedger, ledgerTotals, giftAdvice, personHealth,
   buildActions, buildICS, buildScripts, SCRIPT_SCENES, SCRIPT_TONES, GIFT_TIERS, CITY_TIERS,
-  OCCASIONS, eventDir, niceAmount, upcomingDates, fmtMoney, ledgerNetShort, ledgerNetLabel };`;
+  OCCASIONS, eventDir, niceAmount, upcomingDates, fmtMoney, ledgerNetShort, ledgerNetLabel,
+  ledgerInsights, settlePrefill, healthRanking };`;
 
   const el = () => ({
     innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, children: [],
@@ -403,4 +404,70 @@ test('ledgerNetShort：欠/应收/两清方向清晰', () => {
   assert.equal(H.ledgerNetShort(500), '欠 ¥500');
   assert.equal(H.ledgerNetShort(-500), '应收 ¥500');
   assert.equal(H.ledgerNetShort(0), '两清');
+});
+
+test('ledgerInsights：本月收支、平均与最花心思的场合', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  const now = Date.now();
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'gift_give', time: now, weight: 4, amount: 600, dir: 'out', occasion: '生日' },
+    { id: 'e2', personId: 'p1', type: 'gift_give', time: now, weight: 4, amount: 1000, dir: 'out', occasion: '婚礼' },
+    { id: 'e3', personId: 'p1', type: 'gift_get', time: now, weight: 4, amount: 500, dir: 'in', occasion: '节日' }
+  ]);
+  const ins = H.ledgerInsights();
+  assert.equal(ins.monthGiven, 1600);
+  assert.equal(ins.monthReceived, 500);
+  assert.equal(ins.monthCount, 3);
+  assert.equal(ins.avgGiven, 800);
+  assert.equal(ins.maxGift, 1000);
+  assert.equal(ins.topOccasion, '婚礼');
+  assert.equal(ins.topOccasionAmount, 1000);
+});
+
+test('settlePrefill：我欠对方时预填还款/回礼 out', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'gift_get', time: Date.now(), weight: 4, amount: 800, dir: 'in', occasion: '生日' }
+  ]);
+  const loan = H.settlePrefill('p1', 'loan');
+  assert.equal(loan.type, 'money');
+  assert.equal(loan.dir, 'out');
+  assert.equal(loan.amount, 800);
+  assert.equal(loan.title, '还款');
+  const gift = H.settlePrefill('p1', 'gift');
+  assert.equal(gift.type, 'gift_give');
+  assert.equal(gift.occasion, '还礼');
+});
+
+test('settlePrefill：对方欠我时预填收款/回礼 in', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'gift_give', time: Date.now(), weight: 4, amount: 1200, dir: 'out', occasion: '婚礼' }
+  ]);
+  const loan = H.settlePrefill('p1', 'loan');
+  assert.equal(loan.dir, 'in');
+  assert.equal(loan.title, '收回借款');
+  const gift = H.settlePrefill('p1', 'gift');
+  assert.equal(gift.type, 'gift_get');
+  assert.equal(gift.dir, 'in');
+});
+
+test('settlePrefill：净额为 0 或人不存在返回 null', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], []);
+  assert.equal(H.settlePrefill('p1', 'loan'), null);
+  assert.equal(H.settlePrefill('nope', 'loan'), null);
+});
+
+test('healthRanking：按健康度从低到高，并带账本信息', () => {
+  const a = { id: 'a', name: '甲', identity: '朋友', adjust: 0 };
+  const b = { id: 'b', name: '乙', identity: '朋友', adjust: 0 };
+  reset([a, b], [
+    { id: 'e1', personId: 'b', type: 'meal', time: Date.now(), weight: 7 },
+    { id: 'e2', personId: 'b', type: 'talk', time: Date.now(), weight: 5 }
+  ]);
+  const r = H.healthRanking();
+  assert.equal(r.length, 2);
+  assert.ok(r[0].h.score <= r[1].h.score);
+  assert.ok('l' in r[0]);
 });
