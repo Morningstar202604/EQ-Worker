@@ -16,3 +16,8 @@ desktop/index.html
 desktop/icon.png
 brand/dist/
 android/build/
+
+# S1 Vite smoke workspace
+node_modules/
+dist-vite/
+.aqg/

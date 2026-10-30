@@ -152,10 +152,12 @@ python3 -m http.server 8000
 ### 构建与测试
 
 ```bash
-npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html，并同步安卓与桌面产物
-npm test        # 54 个单元测试
-npm run verify  # 构建 + 全部测试
+pnpm install
+pnpm run test    # 旧版 Node.js 测试 + Vitest TypeScript smoke 测试
+pnpm run verify  # 旧版构建/测试 + TypeScript 类型检查 + Vitest + Vite 构建
 ```
+
+默认 test 和 verify 门禁同时覆盖旧版 JavaScript 链路与 Vite/TypeScript/Vitest 链路。
 
 ### 安卓 / Windows
 
@@ -171,11 +173,11 @@ npm run verify  # 构建 + 全部测试
 
 | 层面 | 选型 |
 | --- | --- |
-| 语言 | 原生 JavaScript（零框架） |
+| 语言 | 原生 JavaScript + TypeScript smoke 入口 |
 | 图表 | ECharts 5（内联）/ Canvas 2D（小程序） |
 | 存储 | localStorage / wx.storage（纯本地） |
 | 构建 | `build.js` — ESM，零依赖 |
-| 测试 | `node --test`，54 个用例 |
+| 测试 | `node --test`（54 个旧版用例）+ Vitest（4 个 TypeScript smoke 用例） |
 | 建议引擎 | 本地规则 + 可解释权重，不调用外部 AI |
 
 ---

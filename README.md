@@ -148,10 +148,12 @@ python3 -m http.server 8000
 Build and test:
 
 ```bash
-npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html, sync Android and desktop assets
-npm test        # 54 unit tests
-npm run verify  # build + all tests
+pnpm install
+pnpm run test    # legacy Node.js tests + Vitest TypeScript smoke tests
+pnpm run verify  # legacy build/tests + TypeScript typecheck + Vitest + Vite build
 ```
+
+The default test and verify gates cover both the legacy JavaScript path and the Vite/TypeScript/Vitest path.
 
 Android / Windows build instructions: [`docs/双端构建与发布.md`](docs/双端构建与发布.md).
 
@@ -163,11 +165,11 @@ WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
 
 | Layer | Choice |
 | --- | --- |
-| Language | Vanilla JavaScript (no framework) |
+| Language | Vanilla JavaScript + TypeScript smoke entry |
 | Charts | ECharts 5 (inline) / Canvas 2D (mini program) |
 | Storage | localStorage / wx.storage |
 | Build | `build.js` — ESM, zero dependencies |
-| Tests | `node --test`, 54 cases |
+| Tests | `node --test` (54 legacy cases) + Vitest (4 TypeScript smoke cases) |
 | Advisor | Local explainable rules, no external AI calls |
 
 ---
