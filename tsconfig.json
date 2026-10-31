@@ -9,8 +9,11 @@
   },
   "include": [
     "src/**/*.ts",
+    "packages/**/*.ts",
+    "apps/**/*.ts",
     "tests/**/*.test.ts",
     "vite.config.ts",
+    "vite.studio.config.ts",
     "vitest.config.ts"
   ]
 }
