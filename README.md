@@ -6,7 +6,7 @@
 
 Daily actions · Favor ledger · Gift advisor · Conversation scripts · Relationship health
 
-Local-first · Zero server · No ads · No tracking
+Local-first · Optional user-configured AI · No ads · No tracking
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
@@ -127,7 +127,7 @@ The repository has two build chains and three reusable packages:
 | `packages/ai` | Local-first AI orchestration skeleton: disabled by default, direct-from-device calls, user-supplied key, preview before send |
 | `apps/studio` | New UI built by `vite.studio.config.ts` into `dist-studio/` |
 
-- **Legacy chain (unchanged):** `node build.js` compiles `_app_dev.js` + `index.template.html` into `index.html` / `EQ-Worker.html`, force-syncs Android assets and `desktop/`, then verifies consistency.
+- **Legacy chain (unchanged):** `node build.js` compiles `_app_dev.js` + `index.template.html` into `index.html` / `EQ-Worker.html`, force-syncs Android assets and `desktop/`, then verifies consistency. These legacy releases do not include the separately built Studio.
 - **TypeScript chain:** `pnpm run typecheck`, `pnpm run test:vite`, `pnpm run build:vite`, `pnpm run build:studio`.
 - **Mini program:** `node scripts/build-mini-core.mjs` bundles `packages/core` into `EQ-Worker-小程序/utils/core.bundle.js`; `utils/engine.js` re-exports it instead of holding a duplicate engine.
 - **AI is off by default:** no key, no outbound call, no telemetry. Rule-based advisors stay the default path.
@@ -147,7 +147,7 @@ The repository has two build chains and three reusable packages:
 
 ## Data and privacy
 
-- **Zero server**: data stays in local storage;
+- **Local-first**: data is stored locally by default; AI is off by default. If the user enables AI and confirms an external request, the selected context is sent to their configured provider;
 - No account, no ads, no analytics;
 - Backups are plain JSON and can move between web and mini program;
 - Legacy `rqsg_radar_v2` data migrates automatically to `eqworker_db_v1`.
@@ -188,7 +188,7 @@ WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
 | Storage | localStorage / wx.storage |
 | Build | `build.js` — ESM, zero dependencies |
 | Tests | `node --test` (59 legacy cases, incl. mini-core parity) + Vitest (core / viz / ai / smoke) |
-| Advisor | Local explainable rules, no external AI calls |
+| Advisor | Local explainable rules by default; optional AI uses a user-configured provider |
 
 ---
 

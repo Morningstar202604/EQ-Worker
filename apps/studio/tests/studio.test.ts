@@ -294,25 +294,144 @@ describe('AI red lines', () => {
     expect(preview.masked).toBe(0);
   });
 
+  it('previews the personal input sent in every provider request', async () => {
+    const store = makeStore();
+    store.loadDemo();
+    const settings = { ...defaultAISettings(), enabled: true };
+    const requests: string[] = [];
+    const systems: string[] = [];
+    const replies = [
+      { sceneId: 'dynamic-model-output-sentinel' },
+      { variants: { stable: 'a', close: 'b', brief: 'c' } },
+      { low: 1, mid: 2, high: 3, reasons: [] },
+      { tips: ['a', 'b', 'c'] }
+    ];
+    const fetchImpl: FetchLike = async (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as { messages: Array<{ role: string; content: string }> };
+      requests.push(body.messages.find((message) => message.role === 'user')?.content ?? '');
+      systems.push(body.messages.find((message) => message.role === 'system')?.content ?? '');
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(replies[requests.length - 1]) } }] }), { status: 200 });
+    };
+    const person = store.getState().persons[0];
+    const form = { kind: 'openai' as const, baseUrl: 'https://api.example.com/v1', model: 'test', apiKey: 'test-key', mock: false };
+    const preview = previewAssistantContext(store.getState(), person, settings, { scene: '特殊场合', note: '私人的补充说明' }, NOW, form);
+    const result = await runAssistant({ app: store.getState(), settings, form, personId: person.id, scene: '特殊场合', note: '私人的补充说明', approved: true, approvedPreview: preview, fetchImpl, now: NOW });
+    expect(result.status).toBe('ok');
+    expect(preview.user).toContain('私人的补充说明');
+    expect(preview.user).toContain('特殊场合');
+    expect(requests).toHaveLength(4);
+    for (const [index, request] of requests.entries()) {
+      expect(request).toContain('私人的补充说明');
+      expect(request).toContain('特殊场合');
+      expect(request).toContain(preview.user);
+      expect(systems[index]).toContain(preview.system);
+      expect(request).not.toContain('dynamic-model-output-sentinel');
+    }
+    expect(result.preview).toEqual(preview);
+  });
+
+  it('does not send secret-shaped input that the preview masks', async () => {
+    const store = makeStore();
+    store.loadDemo();
+    const settings = { ...defaultAISettings(), enabled: true };
+    const person = store.getState().persons[0];
+    const note = 'token=private-value';
+    const form = { kind: 'openai' as const, baseUrl: 'https://api.example.com/v1', model: 'test', apiKey: 'test-key', mock: false };
+    const preview = previewAssistantContext(store.getState(), person, settings, { scene: '日常', note }, NOW, form);
+    const bodies: string[] = [];
+    const fetchImpl: FetchLike = async (_url, init) => {
+      bodies.push(String(init?.body));
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ sceneId: 'thanks' }) } }] }), { status: 200 });
+    };
+    await runAssistant({ app: store.getState(), settings, form, personId: person.id, scene: '日常', note, approved: true, approvedPreview: preview, fetchImpl, now: NOW });
+    expect(preview.user).toContain('[REDACTED]');
+    expect(bodies.length).toBeGreaterThan(0);
+    expect(bodies.every((body) => !body.includes(note) && body.includes('[REDACTED]'))).toBe(true);
+  });
+
+  it('requires a fresh preview when the underlying person changes', async () => {
+    let calls = 0;
+    const store = new StudioStore({ adapter: createMemoryAdapter(), now: () => NOW, sessionKeyStore: null, fetchImpl: async () => { calls += 1; return new Response('{}'); } });
+    store.loadDemo();
+    store.enableAI();
+    store.updateAIForm({ mock: false, apiKey: 'test-key' });
+    store.togglePolicy('notes', true);
+    store.previewAI();
+    store.getState().persons[0].note = '预览后改变的隐私';
+    const result = await store.runAI();
+    expect(result.status).toBe('preview');
+    expect(result.preview?.user).toContain('预览后改变的隐私');
+    expect(calls).toBe(0);
+  });
+
+  it('rejects approval without a matching preview and provider destination', async () => {
+    const store = makeStore();
+    store.loadDemo();
+    const settings = { ...defaultAISettings(), enabled: true };
+    const form = { kind: 'openai' as const, baseUrl: 'https://api.example.com/v1', model: 'original', apiKey: 'test-key', mock: false };
+    let calls = 0;
+    const fetchImpl: FetchLike = async () => { calls += 1; return new Response('{}'); };
+    const options = { app: store.getState(), settings, form, scene: '生日', note: '隐私', fetchImpl, now: NOW };
+    const missing = await runAssistant({ ...options, approved: true });
+    expect(missing.status).toBe('preview');
+    expect(calls).toBe(0);
+    const changed = await runAssistant({ ...options, form: { ...form, model: 'other' }, approved: true, approvedPreview: missing.preview! });
+    expect(changed.status).toBe('preview');
+    const moved = await runAssistant({ ...options, form: { ...form, baseUrl: 'https://other.example.com/v1' }, approved: true, approvedPreview: missing.preview! });
+    expect(moved.status).toBe('preview');
+    expect(calls).toBe(0);
+  });
+
+  it('normalizes scene whitespace consistently before preview and send', async () => {
+    const store = makeStore();
+    store.loadDemo();
+    store.enableAI();
+    store.updateAIForm({ mock: true });
+    store.setAIScene('   ');
+    store.previewAI();
+    expect((await store.runAI()).status).toBe('ok');
+  });
+
+  it.each(['disable', 'switch', 'change'] as const)('aborts pending provider on %s and prevents later steps', async (action) => {
+    let release: ((value: Response) => void) | undefined;
+    let signal: AbortSignal | null | undefined;
+    let calls = 0;
+    const fetchImpl: FetchLike = async (_url, init) => {
+      calls += 1;
+      signal = init?.signal;
+      return new Promise<Response>((resolve) => { release = resolve; });
+    };
+    const store = new StudioStore({ adapter: createMemoryAdapter(), now: () => NOW, sessionKeyStore: null, fetchImpl });
+    store.loadDemo();
+    store.enableAI();
+    store.updateAIForm({ mock: false, apiKey: 'test-key' });
+    store.previewAI();
+    const pending = store.runAI();
+    expect(calls).toBe(1);
+    if (action === 'disable') store.disableAI();
+    if (action === 'switch') store.selectPerson(store.getState().persons[1].id);
+    if (action === 'change') store.setAINote('changed');
+    expect(signal?.aborted).toBe(true);
+    release?.(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ sceneId: 'thanks' }) } }] }), { status: 200 }));
+    await pending;
+    expect(calls).toBe(1);
+  });
+
   it('runs offline mock provider end-to-end and marks the result as AI output', async () => {
     const store = makeStore();
     store.loadDemo();
     const settings = { ...defaultAISettings(), enabled: true };
 
+    const form = { kind: 'openai' as const, baseUrl: 'https://api.example.com/v1', model: 'mock', apiKey: '', mock: true };
     const result = await runAssistant({
       app: store.getState(),
       settings,
-      form: {
-        kind: 'openai',
-        baseUrl: 'https://api.example.com/v1',
-        model: 'mock',
-        apiKey: '',
-        mock: true
-      },
+      form,
       personId: store.getState().persons[0]?.id,
       scene: '生日',
       note: '想送一本书',
       approved: true,
+      approvedPreview: previewAssistantContext(store.getState(), store.getState().persons[0], settings, { scene: '生日', note: '想送一本书' }, NOW, form),
       now: NOW
     });
 
@@ -327,20 +446,16 @@ describe('AI red lines', () => {
     store.loadDemo();
     const settings = { ...defaultAISettings(), enabled: true };
 
+    const form = { kind: 'openai' as const, baseUrl: 'https://api.example.com/v1', model: 'gpt-4o-mini', apiKey: '', mock: false };
     const result = await runAssistant({
       app: store.getState(),
       settings,
-      form: {
-        kind: 'openai',
-        baseUrl: 'https://api.example.com/v1',
-        model: 'gpt-4o-mini',
-        apiKey: '',
-        mock: false
-      },
+      form,
       personId: store.getState().persons[0]?.id,
       scene: '生日',
       note: '',
       approved: true,
+      approvedPreview: previewAssistantContext(store.getState(), store.getState().persons[0], settings, { scene: '生日', note: '' }, NOW, form),
       now: NOW
     });
 

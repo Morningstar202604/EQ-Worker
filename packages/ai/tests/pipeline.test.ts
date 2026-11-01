@@ -78,6 +78,53 @@ describe('runPipeline with the builtin four steps', () => {
     expect(provider.calls).toHaveLength(4);
   });
 
+  it('previews and binds builtin input to the requests despite later mutation', async () => {
+    const context = makeContext();
+    const provider = fullProvider();
+    const first = await runPipeline(builtinPipeline, context, { provider, settings: { ...enabled, previewBeforeSend: true } });
+    expect(first.preview?.user).toContain('老同学下月结婚');
+    expect(first.preview?.user).toContain('婚礼');
+    context.approved = true;
+    context.input.text = '修改后内容';
+    const rejected = await runPipeline(builtinPipeline, context, { provider, settings: { ...enabled, previewBeforeSend: true }, approvedPreview: first.preview });
+    expect(rejected.reason).toBe('approval_required');
+    expect(provider.calls).toHaveLength(0);
+    context.input.text = '老同学下月结婚';
+    const started = runPipeline(builtinPipeline, context, { provider, settings: { ...enabled, previewBeforeSend: true }, approvedPreview: first.preview });
+    context.input.text = '后续改变的私人信息';
+    const result = await started;
+    expect(result.ok).toBe(true);
+    expect(provider.calls).toHaveLength(4);
+    for (const call of provider.calls) {
+      expect(call.messages[1].content).toContain(first.preview?.user);
+      expect(call.messages[1].content).not.toContain('后续改变的私人信息');
+    }
+  });
+
+  it('rejects a different provider destination after approval', async () => {
+    const context = makeContext();
+    const original = fullProvider();
+    const changed = createMockProvider({ id: 'mock', label: 'Mock', kind: 'custom', baseUrl: 'https://other.example/v1', model: 'other' }, { responses: [sceneJson] });
+    const settings = { ...enabled, previewBeforeSend: true };
+    const initial = await runPipeline(builtinPipeline, context, { provider: original, settings });
+    expect(initial.preview?.destination).toMatchObject({ baseUrl: 'http://mock.local', model: 'mock-1' });
+    const result = await runPipeline(builtinPipeline, { ...context, approved: true }, { provider: changed, settings, approvedPreview: initial.preview });
+    expect(result.reason).toBe('approval_required');
+    expect(changed.calls).toHaveLength(0);
+    const noDestination = { id: original.id, label: original.label, kind: original.kind, chat: original.chat };
+    const unknown = await runPipeline(builtinPipeline, { ...context, approved: true }, { provider: noDestination, settings, approvedPreview: initial.preview });
+    expect(unknown.reason).toBe('approval_required');
+    expect(original.calls).toHaveLength(0);
+  });
+
+  it('does not start a builtin step when already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const provider = fullProvider();
+    await runPipeline(builtinPipeline, makeContext(), { provider, settings: enabled, signal: controller.signal });
+    expect(provider.calls).toHaveLength(0);
+  });
+
   it('accepts a PipelineDefinition directly', async () => {
     const result = await runPipeline(builtinPipeline, makeContext(), {
       provider: fullProvider(),

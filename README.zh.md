@@ -6,7 +6,7 @@
 
 今日行动 · 人情账本 · 随礼参谋 · 话术参谋 · 关系体检
 
-本地优先 · 零服务器 · 无广告 · 无埋点
+本地优先 · 可选自配置 AI · 无广告 · 无埋点
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
@@ -127,7 +127,7 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 | `packages/ai` | 本地优先 AI 编排骨架：默认关闭、端侧直连、用户自备 Key、发送前预览 |
 | `apps/studio` | 新界面，由 `vite.studio.config.ts` 构建到 `dist-studio/` |
 
-- **旧链路（保持可用）**：`node build.js` 把 `_app_dev.js` + `index.template.html` 编译成 `index.html` / `EQ-Worker.html`，强制同步 Android assets 与 `desktop/`，结尾做一致性校验。
+- **旧链路（保持可用）**：`node build.js` 把 `_app_dev.js` + `index.template.html` 编译成 `index.html` / `EQ-Worker.html`，强制同步 Android assets 与 `desktop/`，结尾做一致性校验。旧版发布包不包含单独构建的 Studio。
 - **TypeScript 链路**：`pnpm run typecheck`、`pnpm run test:vite`、`pnpm run build:vite`、`pnpm run build:studio`。
 - **小程序**：`node scripts/build-mini-core.mjs` 把 `packages/core` 打包成 `EQ-Worker-小程序/utils/core.bundle.js`，`utils/engine.js` 改为 re-export，不再保留重复引擎实现。
 - **AI 默认关闭**：无 Key、无外发请求、无埋点；规则参谋仍是默认路径。
@@ -143,13 +143,13 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 | **Windows 桌面版** | 完整功能 | Electron 免安装包，解压即用 |
 | **微信小程序** | 轻量版 | 保留雷达、人脉、记录、修炼、我的；数据与 Web v4 结构兼容，但不含新版助手/参谋 UI |
 
-> 网页、安卓、桌面三端共用同一份构建产物与同一套数据；小程序作为轻量随身端保留。
+> legacy 网页、安卓、桌面共用同一份构建产物；Studio 单独构建，小程序作为轻量随身端保留。
 
 ---
 
 ## 数据与隐私
 
-- **零服务器**：所有数据只存本机（localStorage / wx.storage）；
+- **本地优先**：数据默认存储在本机（localStorage / wx.storage）；AI 默认关闭，用户启用 AI 并确认外部请求后，所选上下文会发送至其配置的提供商；
 - **无注册、无广告、无埋点**；
 - 备份格式为普通 JSON，网页 ↔ 小程序可互相导入；
 - 旧版 `rqsg_radar_v2` 数据会自动迁移到 `eqworker_db_v1`，不丢历史记录。
@@ -196,7 +196,7 @@ pnpm run verify  # 旧版构建/测试 + TypeScript 类型检查 + Vitest + Vite
 | 存储 | localStorage / wx.storage（纯本地） |
 | 构建 | `build.js` — ESM，零依赖 |
 | 测试 | `node --test`（59 个旧版用例，含小程序 core parity）+ Vitest（core / viz / ai / smoke） |
-| 建议引擎 | 本地规则 + 可解释权重，不调用外部 AI |
+| 建议引擎 | 默认使用本地规则 + 可解释权重；可选 AI 由用户配置提供商 |
 
 ---
 
