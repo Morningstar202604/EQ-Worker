@@ -45,6 +45,7 @@ export interface AIProvider {
   readonly id: string;
   readonly label: string;
   readonly kind: ProviderKind;
+  readonly destination?: Readonly<{ baseUrl: string; model: string; mock: boolean }>;
   chat(request: AIRequest): Promise<AIResponse>;
 }
 
@@ -128,6 +129,7 @@ export interface RedactedPreview {
   fields: string[];
   redactions: string[];
   masked: number;
+  destination?: { kind: ProviderKind; baseUrl: string; model: string; mock: boolean };
 }
 
 export interface MemoryLike {
@@ -151,6 +153,7 @@ export interface PipelineContext {
   input: Record<string, unknown>;
   outputs: Record<string, unknown>;
   approved?: boolean;
+  outboundPreview?: RedactedPreview;
   policy?: ContextPolicy;
   settings?: PipelineSettings;
   memory?: MemoryLike;
@@ -163,6 +166,7 @@ export interface PipelineDeps {
   fetchImpl?: FetchLike;
   fallback?: FallbackHandler | PipelineFallback;
   requireApproval?: boolean;
+  approvedPreview?: RedactedPreview;
   signal?: AbortSignal;
   now?: () => number;
   metadata?: Record<string, unknown>;

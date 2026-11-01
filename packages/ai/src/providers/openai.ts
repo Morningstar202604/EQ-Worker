@@ -91,12 +91,14 @@ export function createOpenAIProvider(
   if (!deps.apiKey.trim()) {
     throw providerError('missing_key', 'API key is required for this provider');
   }
+  config = { ...config };
   const endpoint = joinUrl(config.baseUrl, '/chat/completions');
 
   return {
     id: config.id,
     label: config.label,
     kind: config.kind,
+    destination: Object.freeze({ baseUrl: config.baseUrl, model: config.model, mock: false }),
     async chat(request: AIRequest): Promise<AIResponse> {
       const temperature = request.temperature ?? config.temperature;
       const maxTokens = request.maxTokens ?? config.maxTokens;
@@ -113,6 +115,7 @@ export function createOpenAIProvider(
       }
 
       let response: Response;
+      let rawText: string;
       const abort = buildAbortSignal(request.timeoutMs ?? 30_000, request.signal);
       try {
         response = await deps.fetchImpl(endpoint, {
@@ -124,6 +127,7 @@ export function createOpenAIProvider(
           body: JSON.stringify(body),
           signal: abort.signal
         });
+        rawText = await response.text();
       } catch {
         const aborted = abort.signal.aborted;
         const external = request.signal?.aborted === true;
@@ -137,7 +141,6 @@ export function createOpenAIProvider(
         abort.dispose();
       }
 
-      const rawText = await response.text();
       if (!response.ok) {
         const detail = scrubSecret(extractErrorMessage(rawText), deps.apiKey);
         throw providerError(

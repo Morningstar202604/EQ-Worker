@@ -1,4 +1,5 @@
 import { redactPreview } from './context';
+import { builtinPipeline, builtinPipelinePreview } from './pipelines';
 import { AIErrorException } from './types';
 import type {
   AIError,
@@ -79,12 +80,24 @@ export async function runPipeline(
   const now = deps.now ?? (() => Date.now());
   const baseTimeout = settings?.requestTimeoutMs ?? 20_000;
 
-  const preview = redactPreview({
+  const usesBuiltin = definitionSteps.some((step) => builtinPipeline.steps.includes(step));
+  const providerDestination = deps.provider?.destination;
+  const configuredDestination = !deps.provider && settings?.provider ? settings.provider : undefined;
+  const destination = providerDestination
+    ? { kind: deps.provider!.kind, baseUrl: providerDestination.baseUrl, model: providerDestination.model, mock: providerDestination.mock }
+    : configuredDestination
+      ? { kind: configuredDestination.kind, baseUrl: configuredDestination.baseUrl, model: configuredDestination.model, mock: false }
+      : undefined;
+  const contentPreview = usesBuiltin ? builtinPipelinePreview(context) : redactPreview({
     system: context.context.system,
     user: context.context.user,
     fields: context.context.fields,
     redactions: context.context.redactions
   });
+  const preview = destination ? { ...contentPreview, destination } : contentPreview;
+  if (usesBuiltin) {
+    context = { ...context, outboundPreview: { ...preview, fields: [...preview.fields], redactions: [...preview.redactions] } };
+  }
 
   if (!settings || settings.enabled !== true) {
     return {
@@ -98,7 +111,7 @@ export async function runPipeline(
   }
 
   const approvalRequired = deps.requireApproval ?? settings.previewBeforeSend === true;
-  if (approvalRequired && context.approved !== true) {
+  if (approvalRequired && (context.approved !== true || (usesBuiltin && (!destination || JSON.stringify(deps.approvedPreview) !== JSON.stringify(preview))))) {
     return {
       ok: false,
       reason: 'approval_required',
@@ -142,6 +155,10 @@ export async function runPipeline(
   let outputs: Record<string, unknown> = { ...context.outputs };
 
   for (const step of definitionSteps) {
+    if (deps.signal?.aborted) {
+      failed = { code: 'aborted', message: 'Pipeline aborted' };
+      break;
+    }
     const startedAt = now();
     const stepContext: PipelineContext = { ...context, outputs };
 
@@ -151,6 +168,9 @@ export async function runPipeline(
         clampTimeout(step.timeoutMs, baseTimeout),
         deps.signal
       );
+      if (deps.signal?.aborted) {
+        throw new AIErrorException({ code: 'aborted', message: 'Pipeline aborted' });
+      }
       outputs = { ...outputs, [step.id]: output };
       results.push({ id: step.id, status: 'ok', output, ms: Math.max(0, now() - startedAt) });
     } catch (error) {
@@ -175,7 +195,7 @@ export async function runPipeline(
   }
 
   const degradedContext: PipelineContext = { ...context, outputs };
-  const fallbackOutput = await invokeFallback(effectiveDeps, degradedContext, failed);
+  const fallbackOutput = failed.code === 'aborted' ? undefined : await invokeFallback(effectiveDeps, degradedContext, failed);
 
   return {
     ok: false,
