@@ -6,6 +6,41 @@ const path = require('node:path');
 
 const enginePath = path.resolve(__dirname, '../EQ-Worker-小程序/utils/engine.js');
 const code = fs.readFileSync(enginePath, 'utf8');
+const { createRequire } = require('node:module');
+// engine.js 的其它 require 仍走 Node 解析；core.bundle.js 是 CJS 产物，
+// 根 package.json 的 "type": "module" 会让 Node 把它当 ESM，所以用 vm 单独加载。
+const engineRequire = createRequire(enginePath);
+const bundlePath = path.resolve(path.dirname(enginePath), 'core.bundle.js');
+let bundleCache = null;
+
+function requireForEngine(request) {
+  if (request === './core.bundle.js') {
+    if (bundleCache) return bundleCache;
+    const bundleModule = { exports: {} };
+    const bundleSandbox = {
+      module: bundleModule,
+      exports: bundleModule.exports,
+      console,
+      Date,
+      Math,
+      JSON,
+      Array,
+      Object,
+      String,
+      Number,
+      Boolean,
+      Error,
+      RegExp,
+      Map,
+      Set,
+      Promise
+    };
+    vm.runInContext(fs.readFileSync(bundlePath, 'utf8'), vm.createContext(bundleSandbox), { filename: bundlePath });
+    bundleCache = bundleModule.exports;
+    return bundleCache;
+  }
+  return engineRequire(request);
+}
 
 // 模拟 wx 全局（引擎的 load/save 依赖）
 global.wx = global.wx || {
@@ -19,7 +54,7 @@ const sandbox = {
   wx: global.wx,
   module: { exports: {} },
   exports: null,
-  require: require,
+  require: requireForEngine,
   console: console,
   Date: Date,
   Math: Math,

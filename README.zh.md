@@ -10,7 +10,7 @@
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![版本](https://img.shields.io/badge/版本-v3.1.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![版本](https://img.shields.io/badge/版本-v3.2.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![许可](https://img.shields.io/badge/许可-CC%20BY--NC%204.0-red)](LICENSE)
 
 **在线体验：** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
@@ -116,6 +116,24 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 
 ---
 
+## 新架构（v3.2.0）
+
+仓库现在有两条构建链与三个可复用包：
+
+| 路径 | 作用 |
+| --- | --- |
+| `packages/core` | TypeScript 纯逻辑引擎（类型、常量、日期、清洗、账本、健康度、行动、话术、ICS、存储），与 legacy `_app_dev.js` 逐函数 parity |
+| `packages/viz` | 零依赖确定性 SVG 图表（雷达、关系网络、趋势、流向、仪表盘） |
+| `packages/ai` | 本地优先 AI 编排骨架：默认关闭、端侧直连、用户自备 Key、发送前预览 |
+| `apps/studio` | 新界面，由 `vite.studio.config.ts` 构建到 `dist-studio/` |
+
+- **旧链路（保持可用）**：`node build.js` 把 `_app_dev.js` + `index.template.html` 编译成 `index.html` / `EQ-Worker.html`，强制同步 Android assets 与 `desktop/`，结尾做一致性校验。
+- **TypeScript 链路**：`pnpm run typecheck`、`pnpm run test:vite`、`pnpm run build:vite`、`pnpm run build:studio`。
+- **小程序**：`node scripts/build-mini-core.mjs` 把 `packages/core` 打包成 `EQ-Worker-小程序/utils/core.bundle.js`，`utils/engine.js` 改为 re-export，不再保留重复引擎实现。
+- **AI 默认关闭**：无 Key、无外发请求、无埋点；规则参谋仍是默认路径。
+
+---
+
 ## 四端说明
 
 | 端 | 状态 | 说明 |
@@ -152,10 +170,12 @@ python3 -m http.server 8000
 ### 构建与测试
 
 ```bash
-npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html，并同步安卓与桌面产物
-npm test        # 54 个单元测试
-npm run verify  # 构建 + 全部测试
+pnpm install
+pnpm run test    # 旧版 Node.js 测试 + Vitest TypeScript smoke 测试
+pnpm run verify  # 旧版构建/测试 + TypeScript 类型检查 + Vitest + Vite 构建
 ```
+
+默认 test 和 verify 门禁同时覆盖旧版 JavaScript 链路与 Vite/TypeScript/Vitest 链路。
 
 ### 安卓 / Windows
 
@@ -171,14 +191,22 @@ npm run verify  # 构建 + 全部测试
 
 | 层面 | 选型 |
 | --- | --- |
-| 语言 | 原生 JavaScript（零框架） |
+| 语言 | 原生 JavaScript + TypeScript smoke 入口 |
 | 图表 | ECharts 5（内联）/ Canvas 2D（小程序） |
 | 存储 | localStorage / wx.storage（纯本地） |
 | 构建 | `build.js` — ESM，零依赖 |
-| 测试 | `node --test`，54 个用例 |
+| 测试 | `node --test`（59 个旧版用例，含小程序 core parity）+ Vitest（core / viz / ai / smoke） |
 | 建议引擎 | 本地规则 + 可解释权重，不调用外部 AI |
 
 ---
+
+## v3.2.0 更新
+
+- 工程化地基：Vite + TypeScript + Vitest 与 legacy 链路并行；
+- 新增 `packages/core`（parity 引擎）、`packages/viz`（SVG 图表）、`packages/ai`（默认关闭）与 `apps/studio`；
+- 小程序改用 core bundle，删除重复引擎实现；
+- 安卓 debug dev-server、桌面 `EQ_DEV_URL` 开发模式；
+- 网页 / 安卓（versionCode 312）/ 桌面版本统一到 3.2.0。
 
 ## v3.1.0 更新
 

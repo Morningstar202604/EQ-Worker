@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- debug 专用：允许明文 HTTP 访问本机 Vite dev-server（如 http://10.0.2.2:5173）。
+     release 不合并此文件，仍由 main manifest 的 usesCleartextTraffic="false" 约束。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic" />
+</manifest>

@@ -1,5 +1,26 @@
 # Changelog
 
+## v3.2.0 — 2026-10-31
+
+把「能跑」推进到「可维护」：工程化地基、三包分层与多端收口。
+
+### 新增
+
+- **工程化地基**：Vite + TypeScript + Vitest 双链路，`node --test` 旧链路与 Vitest 新链路并行门禁。
+- **`packages/core`**：纯逻辑引擎（类型、常量、日期、清洗、账本、健康度、行动、话术、ICS、存储），与 legacy `_app_dev.js` 逐函数 parity。
+- **`packages/viz`**：零依赖确定性 SVG 图表（雷达、网络、趋势、流向、仪表盘）。
+- **`packages/ai`**：本地优先 AI 编排骨架，默认关闭、端侧直连、用户自备 Key、发送前预览。
+- **`apps/studio`**：基于 core / viz / ai 的新界面，由 `vite.studio.config.ts` 构建到 `dist-studio/`。
+- **小程序共用 core**：新增 `scripts/build-mini-core.mjs` 将 `packages/core` 打包为 `EQ-Worker-小程序/utils/core.bundle.js`，`utils/engine.js` 改为复用 bundle，消除双事实源；新增 `tests/mini-core-parity.test.mjs` 三组以上 fixture 对照验证。
+- **安卓 debug dev-server**：debug 包读取 `assets/dev-server.txt` 直连 Vite，release 始终走 assets；开启 WebView 数据库与 `setWebContentsDebuggingEnabled(DEBUG)`。
+- **桌面开发模式**：支持 `EQ_DEV_URL` 加载 dev-server 并自动打开 DevTools；权限请求一律拒绝，仅保留剪贴板写权限。
+
+### 改进
+
+- 版本号统一至 3.2.0（root / android versionCode 312 / desktop）。
+- `verify` 在 legacy build 后自动重建小程序 core bundle，再跑测试与双 Vite 构建。
+- README / 双端构建文档补充新架构、双链构建与 AI 默认关闭说明。
+
 ## v3.1.0 — 2026-10-28
 
 把「知道欠谁」推进到「今天就能结清」。
