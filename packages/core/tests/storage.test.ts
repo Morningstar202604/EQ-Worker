@@ -150,6 +150,38 @@ describe('store', () => {
     expect(saved.schema).toBe(5);
   });
 
+  it('导出保留关系数据但移除 AI 连接配置', () => {
+    const store = createStore(createMemoryAdapter());
+    const r = store.importObjects({
+      ...V4,
+      settings: {
+        ...V4.settings,
+        ai: {
+          enabled: true,
+          providerId: 'custom-provider',
+          model: 'private-model',
+          baseUrl: 'https://private.example/v1?token=should-not-export',
+          temperature: 1.2
+        }
+      }
+    });
+    expect(r.applied).toBe(true);
+
+    const exported = JSON.parse(store.exportJSON()) as typeof V4 & { settings: { ai: unknown } };
+    expect(exported.persons[0]?.name).toBe('张三');
+    expect(exported.events[0]?.amount).toBe(1200);
+    expect(exported.settings.ai).toEqual({
+      enabled: false,
+      providerId: '',
+      model: '',
+      baseUrl: '',
+      temperature: 0.7
+    });
+    expect(JSON.stringify(exported)).not.toContain('private-provider');
+    expect(JSON.stringify(exported)).not.toContain('private-model');
+    expect(JSON.stringify(exported)).not.toContain('should-not-export');
+  });
+
   it('AI key 独立存放，不进入导出 JSON，clearAIKey 可清除', () => {
     const adapter = createMemoryAdapter();
     const store = createStore(adapter);

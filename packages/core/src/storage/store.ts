@@ -1,4 +1,4 @@
-import { AI_KEY, DB_KEY, LEGACY_DB_KEYS, SCHEMA_VERSION } from '../constants';
+import { AI_KEY, DB_KEY, DEFAULT_AI, LEGACY_DB_KEYS, SCHEMA_VERSION } from '../constants';
 import { createEmptyState, normalizeSettings, sanitizeImport } from '../sanitize';
 import type { AppState, SanitizeResult } from '../types';
 import type { StorageAdapter } from './adapter';
@@ -105,7 +105,7 @@ export function createStore(adapter: StorageAdapter): Store {
         reminders: state.reminders,
         progress: state.progress,
         streak: state.streak,
-        settings: state.settings,
+        settings: { ...state.settings, ai: { ...DEFAULT_AI } },
         meta: state.meta
       };
     },

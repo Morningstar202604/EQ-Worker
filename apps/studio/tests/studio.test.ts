@@ -372,13 +372,38 @@ describe('AI red lines', () => {
 
     expect(store.getAISettings().enabled).toBe(true);
     expect(store.getAIPreview()).toBeNull();
+    expect(renderAI(buildAIViewData(store))).not.toContain('sk-session-only-secret');
 
     const first = await store.runAI();
     expect(first.status).toBe('preview');
     expect(store.getAIPreview()).not.toBeNull();
 
+    const firstPersonId = store.getSelectedId();
+    expect(firstPersonId).not.toBeNull();
+    expect(
+      store.addEvent({
+        personId: firstPersonId as string,
+        type: 'talk',
+        title: '预览后新增往来',
+        amount: 0,
+        dir: 'none',
+        occasion: '日常'
+      })
+    ).toBe(true);
+    expect(store.getAIPreview()).toBeNull();
+
+    const secondPerson = store.getState().persons[1];
+    expect(secondPerson).toBeDefined();
+    if (!secondPerson) throw new Error('demo data must include a second person');
+    store.selectPerson(secondPerson.id);
+    expect(store.getAIPreview()).toBeNull();
+
     const second = await store.runAI();
-    expect(second.status).toBe('ok');
+    expect(second.status).toBe('preview');
+    expect(store.getAIPreview()).not.toBeNull();
+
+    const third = await store.runAI();
+    expect(third.status).toBe('ok');
 
     expect(keyMemory.get('eqworker.studio.ai.key')).toBe('sk-session-only-secret');
     expect(localStorage.getItem('eqworker.studio.ai.key')).toBeNull();
@@ -387,6 +412,27 @@ describe('AI red lines', () => {
 });
 
 describe('Studio shell integration', () => {
+  it('keeps all navigation routes usable with an empty store', () => {
+    document.body.innerHTML = '<div id="studio"></div>';
+    const store = makeStore();
+    const unmount = mountStudio(store, document);
+
+    expect(document.querySelectorAll('[data-act="nav"]')).toHaveLength(4);
+    expect(document.querySelector('[data-act="export"]')).not.toBeNull();
+    expect(document.querySelector('[data-act="import-trigger"]')).not.toBeNull();
+
+    document.querySelector<HTMLButtonElement>('[data-view="ledger"]')?.click();
+    expect(document.querySelector('.ledger')).not.toBeNull();
+    expect(document.querySelector('.ledger')?.textContent).toContain('还没有账本记录');
+
+    document.querySelector<HTMLButtonElement>('[data-view="ai"]')?.click();
+    expect(document.querySelector('.ai')).not.toBeNull();
+    expect(document.querySelector('.ai')?.textContent).toContain('请先选择人脉');
+
+    unmount();
+    document.body.innerHTML = '';
+  });
+
   it('loads demo data through delegated data-act clicks', () => {
     document.body.innerHTML = '<div id="studio"></div>';
     const store = makeStore();

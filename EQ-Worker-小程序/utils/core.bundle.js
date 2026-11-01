@@ -1860,7 +1860,7 @@ function createStore(adapter) {
         reminders: state.reminders,
         progress: state.progress,
         streak: state.streak,
-        settings: state.settings,
+        settings: { ...state.settings, ai: { ...DEFAULT_AI } },
         meta: state.meta
       };
     },

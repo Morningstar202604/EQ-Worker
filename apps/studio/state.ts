@@ -87,6 +87,7 @@ export class StudioStore {
   private aiMessages: AIMessageView[] = [];
   private listeners = new Set<() => void>();
   private lastRun: AssistantRunResult | null = null;
+  private aiRunToken = 0;
 
   constructor(options: StudioStoreOptions = {}) {
     const adapter =
@@ -200,6 +201,18 @@ export class StudioStore {
     for (const listener of this.listeners) listener();
   }
 
+  private invalidateAIContext(message: string): void {
+    this.aiRunToken += 1;
+    this.aiPreview = null;
+    this.aiResult = null;
+    this.lastRun = null;
+    this.aiMessages = [];
+    if (this.aiStatus !== 'disabled') {
+      this.aiStatus = 'idle';
+      this.aiMessage = message;
+    }
+  }
+
   setView(view: StudioView): void {
     this.currentView = view;
     this.notify();
@@ -207,7 +220,9 @@ export class StudioStore {
 
   selectPerson(id: string): void {
     if (!this.appState.persons.some((person) => person.id === id)) return;
+    if (this.selectedId === id) return;
     this.selectedId = id;
+    this.invalidateAIContext('已切换人脉，请重新生成预览');
     this.notify();
   }
 
@@ -225,6 +240,7 @@ export class StudioStore {
     this.store.importObjects(demoPayload(this.now()));
     this.appState = this.store.getState();
     this.selectedId = this.appState.persons[0]?.id ?? null;
+    this.invalidateAIContext('数据已更新，请重新生成预览');
     this.currentView = 'overview';
     this.notify();
   }
@@ -239,6 +255,7 @@ export class StudioStore {
     const outcome = this.store.importObjects(parsed);
     this.appState = this.store.getState();
     this.selectedId = this.appState.persons[0]?.id ?? null;
+    this.invalidateAIContext('数据已导入，请重新生成预览');
     this.notify();
     return { ok: outcome.applied, warnings: outcome.warnings };
   }
@@ -268,6 +285,7 @@ export class StudioStore {
     this.appState.events = [event, ...this.appState.events];
     this.appState.lastEventId = event.id;
     this.store.save();
+    this.invalidateAIContext('往来已记录，请重新生成预览');
     this.notify();
     return true;
   }
@@ -283,6 +301,7 @@ export class StudioStore {
 
   enableAI(): void {
     this.aiSettings = { ...this.aiSettings, enabled: true };
+    this.invalidateAIContext('已开启，可先生成预览');
     this.aiStatus = 'idle';
     this.aiMessage = '已开启，可先生成预览';
     this.notify();
@@ -290,33 +309,28 @@ export class StudioStore {
 
   disableAI(): void {
     this.aiSettings = { ...this.aiSettings, enabled: false };
+    this.invalidateAIContext('AI 已关闭');
     this.aiStatus = 'disabled';
     this.aiMessage = 'AI 已关闭';
-    this.aiPreview = null;
     this.notify();
   }
 
   updateAIForm(patch: Partial<AssistantForm>): void {
     this.aiForm = { ...this.aiForm, ...patch };
     if (patch.apiKey !== undefined) this.writeKey(patch.apiKey);
-    this.aiPreview = null;
-    this.aiResult = null;
-    if (this.aiStatus === 'preview' || this.aiStatus === 'ok' || this.aiStatus === 'offline') {
-      this.aiStatus = 'idle';
-      this.aiMessage = '配置已更新，请重新生成预览';
-    }
+    this.invalidateAIContext('配置已更新，请重新生成预览');
     this.notify();
   }
 
   setAIScene(scene: string): void {
     this.aiScene = scene;
-    this.aiPreview = null;
+    this.invalidateAIContext('场景已更新，请重新生成预览');
     this.notify();
   }
 
   setAINote(note: string): void {
     this.aiNote = note;
-    this.aiPreview = null;
+    this.invalidateAIContext('补充说明已更新，请重新生成预览');
     this.notify();
   }
 
@@ -325,7 +339,7 @@ export class StudioStore {
       ...this.aiSettings,
       contextPolicy: { ...this.aiSettings.contextPolicy, [key]: checked }
     };
-    this.aiPreview = null;
+    this.invalidateAIContext('隐私字段设置已更新，请重新生成预览');
     this.notify();
   }
 
@@ -393,6 +407,7 @@ export class StudioStore {
       return outcome;
     }
 
+    const runToken = this.aiRunToken;
     const approved = this.aiSettings.enabled && this.aiPreview !== null;
     if (this.aiSettings.enabled && !approved) {
       this.aiStatus = 'running';
@@ -409,6 +424,7 @@ export class StudioStore {
         now: this.now(),
         ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {})
       });
+      if (runToken !== this.aiRunToken || this.selectedId !== person.id) return previewResult;
       this.lastRun = previewResult;
       this.aiPreview = previewResult.preview;
       this.aiStatus = previewResult.status === 'disabled' ? 'disabled' : 'preview';
@@ -438,6 +454,7 @@ export class StudioStore {
       ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {})
     });
 
+    if (runToken !== this.aiRunToken || this.selectedId !== person.id) return result;
     this.lastRun = result;
     this.aiPreview = result.preview ?? this.aiPreview;
     this.aiResult = result.display;

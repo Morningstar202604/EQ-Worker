@@ -24,7 +24,6 @@ const VIEWS: Array<{ id: StudioView; label: string; icon: string }> = [
 ];
 
 function renderShell(studio: StudioStore): string {
-  const hasData = studio.getState().persons.length > 0;
   const view = studio.getView();
   const nav = VIEWS.map(
     (item) => [
@@ -50,7 +49,7 @@ function renderShell(studio: StudioStore): string {
     '</div>',
     '</aside>',
     '<main class="main" id="main">',
-    hasData ? renderView(studio) : renderEmptyLanding(),
+    renderView(studio),
     '</main>',
     '</div>',
     '<input type="file" id="import-file" accept="application/json,.json" hidden aria-label="选择要导入的 JSON 文件">',
@@ -61,7 +60,7 @@ function renderShell(studio: StudioStore): string {
 function renderView(studio: StudioStore): string {
   switch (studio.getView()) {
     case 'overview':
-      return renderOverviewView(studio);
+      return studio.getState().persons.length > 0 ? renderOverviewView(studio) : renderEmptyLanding();
     case 'persons':
       return renderPersonsView(studio);
     case 'ledger':
@@ -268,6 +267,10 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     }
     if (act === 'ai-disable') {
       studio.disableAI();
+      return;
+    }
+    if (act === 'ai-clear-key') {
+      studio.updateAIForm({ apiKey: '' });
       return;
     }
     if (act === 'ai-preview') {
