@@ -12,19 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: pnpm
 
-      - name: 构建（自动同步 Android/桌面端产物并校验一致）
-        run: node build.js
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
 
-      - name: 单元测试
-        run: node --test
+      - name: 默认工程门禁
+        run: pnpm run verify
 
       - name: 产物必须与源码同步（防止「改了 _app_dev.js 却忘了重新构建」）
         run: |
-          node build.js
           if ! git diff --quiet -- index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html; then
             echo "::error::构建产物与源码不同步，请本地执行 node build.js 后一并提交"
             git diff --stat -- index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html

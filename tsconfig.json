@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "packages/**/*.ts",
+    "apps/**/*.ts",
+    "tests/**/*.test.ts",
+    "vite.config.ts",
+    "vite.studio.config.ts",
+    "vitest.config.ts"
+  ]
+}

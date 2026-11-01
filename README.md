@@ -10,7 +10,7 @@ Local-first · Zero server · No ads · No tracking
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![Version](https://img.shields.io/badge/version-v3.1.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![Version](https://img.shields.io/badge/version-v3.2.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 **Live demo:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
@@ -116,6 +116,24 @@ Birthdays and anniversaries recur yearly; reminders are one-off events. Export e
 
 ---
 
+## Architecture (v3.2.0)
+
+The repository has two build chains and three reusable packages:
+
+| Path | Role |
+| --- | --- |
+| `packages/core` | TypeScript engine (types, constants, date, sanitize, ledger, health, actions, scripts, ICS, storage), parity-tested against legacy `_app_dev.js` |
+| `packages/viz` | Zero-dependency deterministic SVG charts (radar, network, trend, flow, gauge) |
+| `packages/ai` | Local-first AI orchestration skeleton: disabled by default, direct-from-device calls, user-supplied key, preview before send |
+| `apps/studio` | New UI built by `vite.studio.config.ts` into `dist-studio/` |
+
+- **Legacy chain (unchanged):** `node build.js` compiles `_app_dev.js` + `index.template.html` into `index.html` / `EQ-Worker.html`, force-syncs Android assets and `desktop/`, then verifies consistency.
+- **TypeScript chain:** `pnpm run typecheck`, `pnpm run test:vite`, `pnpm run build:vite`, `pnpm run build:studio`.
+- **Mini program:** `node scripts/build-mini-core.mjs` bundles `packages/core` into `EQ-Worker-小程序/utils/core.bundle.js`; `utils/engine.js` re-exports it instead of holding a duplicate engine.
+- **AI is off by default:** no key, no outbound call, no telemetry. Rule-based advisors stay the default path.
+
+---
+
 ## Platforms
 
 | Platform | Status | Notes |
@@ -148,10 +166,12 @@ python3 -m http.server 8000
 Build and test:
 
 ```bash
-npm run build   # _app_dev.js + index.template.html → index.html / EQ-Worker.html, sync Android and desktop assets
-npm test        # 54 unit tests
-npm run verify  # build + all tests
+pnpm install
+pnpm run test    # legacy Node.js tests + Vitest TypeScript smoke tests
+pnpm run verify  # legacy build/tests + TypeScript typecheck + Vitest + Vite build
 ```
+
+The default test and verify gates cover both the legacy JavaScript path and the Vite/TypeScript/Vitest path.
 
 Android / Windows build instructions: [`docs/双端构建与发布.md`](docs/双端构建与发布.md).
 
@@ -163,14 +183,22 @@ WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
 
 | Layer | Choice |
 | --- | --- |
-| Language | Vanilla JavaScript (no framework) |
+| Language | Vanilla JavaScript + TypeScript smoke entry |
 | Charts | ECharts 5 (inline) / Canvas 2D (mini program) |
 | Storage | localStorage / wx.storage |
 | Build | `build.js` — ESM, zero dependencies |
-| Tests | `node --test`, 54 cases |
+| Tests | `node --test` (59 legacy cases, incl. mini-core parity) + Vitest (core / viz / ai / smoke) |
 | Advisor | Local explainable rules, no external AI calls |
 
 ---
+
+## v3.2.0
+
+- Engineering foundation: Vite + TypeScript + Vitest alongside the legacy chain;
+- New `packages/core` (parity-tested engine), `packages/viz` (SVG charts), `packages/ai` (disabled by default) and `apps/studio`;
+- Mini program now consumes the core bundle, removing the duplicate engine implementation;
+- Android debug dev-server support and desktop `EQ_DEV_URL` development mode;
+- Version 3.2.0 across web, Android (`versionCode 312`) and desktop.
 
 ## v3.1.0
 
