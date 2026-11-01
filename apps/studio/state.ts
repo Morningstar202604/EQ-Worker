@@ -26,7 +26,7 @@ import {
 } from './assistant';
 import { demoPayload } from './demo';
 
-export type StudioView = 'overview' | 'persons' | 'ledger' | 'insights' | 'ai';
+export type StudioView = 'overview' | 'persons' | 'ledger' | 'ai';
 
 export type AIStatus = 'idle' | 'preview' | 'ok' | 'offline' | 'disabled' | 'running';
 

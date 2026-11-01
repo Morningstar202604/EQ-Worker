@@ -806,6 +806,68 @@ ul {
   gap: 18px;
 }
 
+.relationship-insights {
+  overflow: hidden;
+  border: 1px solid rgba(185, 164, 128, 0.24);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-soft);
+}
+
+.relationship-insights-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.relationship-insights-summary::-webkit-details-marker {
+  display: none;
+}
+
+.relationship-insights-summary strong,
+.relationship-insights-summary .muted {
+  display: block;
+}
+
+.relationship-insights-summary strong {
+  color: var(--ink-strong);
+  font-size: 15px;
+}
+
+.relationship-insights-summary .muted {
+  margin-top: 3px;
+}
+
+.relationship-insights-toggle {
+  flex-shrink: 0;
+  color: var(--teal);
+  font-size: 12px;
+}
+
+.relationship-insights[open] .relationship-insights-toggle {
+  font-size: 0;
+}
+
+.relationship-insights[open] .relationship-insights-toggle::after {
+  content: '收起';
+  font-size: 12px;
+}
+
+.relationship-insights-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 18px 18px;
+}
+
+.relationship-insights-body .table-card {
+  box-shadow: none;
+}
+
 .health-dot {
   display: inline-block;
   width: 7px;

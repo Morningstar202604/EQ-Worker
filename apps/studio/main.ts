@@ -14,14 +14,12 @@ import { renderEmptyLanding } from './views/empty';
 import { renderOverviewView } from './ui/overview';
 import { renderPersonsView } from './ui/persons';
 import { renderLedgerView } from './ui/ledger';
-import { renderInsightsView } from './ui/insights';
 import { renderAIView } from './ui/ai';
 
 const VIEWS: Array<{ id: StudioView; label: string; icon: string }> = [
   { id: 'overview', label: '仪表盘', icon: '◈' },
   { id: 'persons', label: '人脉', icon: '☰' },
-  { id: 'ledger', label: '账本', icon: '¥' },
-  { id: 'insights', label: '洞察', icon: '◎' },
+  { id: 'ledger', label: '账本与洞察', icon: '¥' },
   { id: 'ai', label: 'AI 助手', icon: '✧' }
 ];
 
@@ -32,7 +30,7 @@ function renderShell(studio: StudioStore): string {
     (item) => [
       `<button type="button" class="nav-item${item.id === view ? ' active' : ''}" data-act="nav" data-view="${item.id}" aria-label="打开${item.label}"${item.id === view ? ' aria-current="page"' : ''}>`,
       `<span class="nav-icon" aria-hidden="true">${item.icon}</span>`,
-      `<span>${item.label}</span>`,
+      `<span class="nav-label">${item.label}</span>`,
       `</button>`
     ].join('')
   ).join('');
@@ -68,8 +66,6 @@ function renderView(studio: StudioStore): string {
       return renderPersonsView(studio);
     case 'ledger':
       return renderLedgerView(studio);
-    case 'insights':
-      return renderInsightsView(studio);
     case 'ai':
       return renderAIView(studio);
     default:

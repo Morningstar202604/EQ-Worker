@@ -29,7 +29,10 @@ describe('studio real entry render', () => {
     expect(root!.querySelectorAll('button').length).toBeGreaterThan(0);
     expect(root!.textContent).toContain('EQ-Worker');
     expect(root!.textContent).toContain('仪表盘');
+    expect(root!.textContent).toContain('账本与洞察');
     expect(root!.textContent).toContain('AI 助手');
+    expect(root!.querySelectorAll('[data-act="nav"]').length).toBe(4);
+    expect(root!.querySelector('[data-view="insights"]')).toBeNull();
   });
 
   it('shows the empty landing before any data exists', async () => {

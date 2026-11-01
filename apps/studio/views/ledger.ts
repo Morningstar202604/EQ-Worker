@@ -20,12 +20,74 @@ export interface LedgerInsightView {
   topOccasionAmount: number;
 }
 
+export interface RelationshipInsightRow {
+  id: string;
+  name: string;
+  score: number;
+  level: string;
+  cls: string;
+  netLabel: string;
+  lastDays: number | null;
+}
+
+export interface RelationshipInsightsView {
+  networkSvg: string;
+  networkLabel: string;
+  trendSvg: string;
+  trendLabel: string;
+  ranking: RelationshipInsightRow[];
+  nodeCount: number;
+  linkCount: number;
+}
+
 export interface LedgerData {
   totals: { given: number; received: number; net: number; owe: number; due: number; oweCount: number; dueCount: number };
   flowSvg: string;
   flowLabel: string;
   insights: LedgerInsightView;
+  relationship: RelationshipInsightsView;
   rows: LedgerPersonRow[];
+}
+
+function renderRelationshipInsights(data: RelationshipInsightsView): string {
+  const rows = data.ranking.length
+    ? data.ranking
+        .map(
+          (row) => [
+            '<tr>',
+            `<td><button type="button" class="linklike" data-act="person-open" data-id="${escapeHtml(row.id)}" aria-label="查看 ${escapeHtml(row.name)} 的详情">${escapeHtml(row.name)}</button></td>`,
+            `<td><span class="health-dot ${escapeHtml(row.cls)}" aria-hidden="true"></span>${escapeHtml(row.level)}</td>`,
+            `<td>${row.score}</td>`,
+            `<td>${escapeHtml(row.netLabel)}</td>`,
+            `<td class="muted">${row.lastDays === null ? '还没有往来' : `${row.lastDays} 天前`}</td>`,
+            '</tr>'
+          ].join('')
+        )
+        .join('\n')
+    : '<tr><td colspan="5" class="muted center">还没有人脉数据</td></tr>';
+
+  return [
+    '<details class="relationship-insights" aria-labelledby="relationship-insights-title">',
+    '<summary class="relationship-insights-summary">',
+    '<span><strong id="relationship-insights-title">关系洞察</strong><span class="muted">网络、趋势与健康排行</span></span>',
+    '<span class="relationship-insights-toggle" aria-hidden="true">展开</span>',
+    '</summary>',
+    '<div class="relationship-insights-body">',
+    `<p class="muted">${data.nodeCount} 个节点 · ${data.linkCount} 条边（按往来金额加权）</p>`,
+    '<div class="insights-grid">',
+    `<figure class="chart network" role="img" aria-label="${escapeHtml(data.networkLabel)}">${data.networkSvg}</figure>`,
+    `<figure class="chart trend" role="img" aria-label="${escapeHtml(data.trendLabel)}">${data.trendSvg}</figure>`,
+    '</div>',
+    '<section class="card table-card" aria-labelledby="ranking-title">',
+    '<h2 id="ranking-title">关系健康排行</h2>',
+    '<table class="data-table">',
+    '<thead><tr><th scope="col">姓名</th><th scope="col">状态</th><th scope="col">分数</th><th scope="col">账本净额</th><th scope="col">最后往来</th></tr></thead>',
+    `<tbody>${rows}</tbody>`,
+    '</table>',
+    '</section>',
+    '</div>',
+    '</details>'
+  ].join('\n');
 }
 
 export function renderLedger(data: LedgerData): string {
@@ -64,7 +126,7 @@ export function renderLedger(data: LedgerData): string {
     '<section class="view ledger" aria-labelledby="ledger-title">',
     '<header class="view-head">',
     '<div>',
-    '<p class="eyebrow">账本</p>',
+    '<p class="eyebrow">账本与洞察</p>',
     '<h1 id="ledger-title">人情账本</h1>',
     `<p class="muted">${escapeHtml(data.insights.topOccasion ? `本月的重点场合是「${data.insights.topOccasion}」` : '账目一目了然')}</p>`,
     '</div>',
@@ -91,6 +153,7 @@ export function renderLedger(data: LedgerData): string {
     `<tbody>${rows}</tbody>`,
     '</table>',
     '</section>',
+    renderRelationshipInsights(data.relationship),
     '</section>'
   ].join('\n');
 }

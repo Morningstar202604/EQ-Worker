@@ -17,11 +17,9 @@ import { runAssistant, previewAssistantContext } from '../assistant';
 import { buildOverviewData } from '../ui/overview';
 import { buildLedgerData } from '../ui/ledger';
 import { buildPersonList, buildPersonDetail } from '../ui/persons';
-import { buildInsightsData } from '../ui/insights';
 import { renderPersons } from '../views/persons';
 import { renderLedger } from '../views/ledger';
 import { renderOverview } from '../views/overview';
-import { renderInsights } from '../views/insights';
 import { renderAI } from '../views/ai';
 import { buildAIViewData } from '../ui/ai';
 import { mountStudio } from '../main';
@@ -160,24 +158,27 @@ describe('Persons and ledger views', () => {
 
     const html = renderLedger(data);
     expect(html).toContain('每人净额');
+    expect(html).toContain('关系洞察');
+    expect(html).toContain('viz-network');
+    expect(html).toContain('viz-trend');
     expect(html).toMatch(/<tbody>[\s\S]*<tr>/);
     expect(html).toContain('data-act="person-open"');
   });
 
-  it('renders network and six-month trend insights', () => {
+  it('keeps relationship network, trend and ranking data in the consolidated ledger area', () => {
     const store = makeStore();
     store.loadDemo();
-    const data = buildInsightsData(store.getState(), NOW);
+    const data = buildLedgerData(store.getState(), NOW);
 
-    expect(data.networkSvg).toContain('viz-network');
-    expect(data.trendSvg).toContain('viz-trend');
-    expect(data.nodeCount).toBeGreaterThanOrEqual(7);
-    expect(data.linkCount).toBeGreaterThanOrEqual(6);
-
-    const html = renderInsights(data);
-    expect(html).toContain('近 6 月收发趋势');
-    expect(html).toContain('关系健康排行');
+    expect(data.relationship.networkSvg).toContain('viz-network');
+    expect(data.relationship.trendSvg).toContain('viz-trend');
+    expect(data.relationship.nodeCount).toBeGreaterThanOrEqual(7);
+    expect(data.relationship.linkCount).toBeGreaterThanOrEqual(6);
+    expect(data.relationship.ranking.length).toBeGreaterThanOrEqual(6);
+    expect(renderLedger(data)).toContain('近 6 月收发趋势');
+    expect(renderLedger(data)).toContain('关系健康排行');
   });
+
 });
 
 describe('XSS escaping', () => {
@@ -400,10 +401,31 @@ describe('Studio shell integration', () => {
     expect(document.querySelector('.overview')).not.toBeNull();
     expect(document.querySelector('.nav-item.active')).not.toBeNull();
 
+    const navItems = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-act="nav"]'));
+    expect(navItems.map((item) => item.querySelector('.nav-label')?.textContent?.trim())).toEqual(['仪表盘', '人脉', '账本与洞察', 'AI 助手']);
+    expect(navItems.some((item) => item.dataset.view === 'insights')).toBe(false);
+
     const personsNav = document.querySelector<HTMLButtonElement>('[data-act="nav"][data-view="persons"]');
     personsNav?.click();
     expect(document.querySelector('.persons')).not.toBeNull();
     expect(document.querySelectorAll('.person-open').length).toBeGreaterThanOrEqual(6);
+
+    const ledgerNav = document.querySelector<HTMLButtonElement>('[data-act="nav"][data-view="ledger"]');
+    ledgerNav?.click();
+    expect(document.querySelector('.ledger')).not.toBeNull();
+    const relationshipInsights = document.querySelector<HTMLDetailsElement>('.relationship-insights');
+    expect(relationshipInsights).not.toBeNull();
+    expect(relationshipInsights?.open).toBe(false);
+    const relationshipSummary = relationshipInsights?.querySelector('summary');
+    expect(relationshipSummary?.textContent).toContain('关系洞察');
+    relationshipSummary?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(relationshipInsights?.open).toBe(true);
+    expect(relationshipInsights?.querySelector('[aria-label="关系网络图，节点为人，边为往来金额"]')).not.toBeNull();
+    expect(document.querySelector('[data-view="insights"]')).toBeNull();
+
+    const aiNav = document.querySelector<HTMLButtonElement>('[data-act="nav"][data-view="ai"]');
+    aiNav?.click();
+    expect(document.querySelector('.ai')).not.toBeNull();
 
     unmount();
     document.body.innerHTML = '';
