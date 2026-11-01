@@ -14,6 +14,7 @@ export interface MockProvider extends AIProvider {
 }
 
 export function createMockProvider(config: ProviderConfig, options: MockProviderOptions = {}): MockProvider {
+  config = { ...config };
   const queue = [...(options.responses ?? [])];
   const calls: AIRequest[] = [];
   let callIndex = 0;
@@ -22,6 +23,7 @@ export function createMockProvider(config: ProviderConfig, options: MockProvider
     id: config.id,
     label: config.label,
     kind: config.kind,
+    destination: Object.freeze({ baseUrl: config.baseUrl, model: config.model, mock: true }),
     calls,
     enqueue(...responses: string[]): void {
       queue.push(...responses);

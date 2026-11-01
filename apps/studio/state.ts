@@ -88,6 +88,7 @@ export class StudioStore {
   private listeners = new Set<() => void>();
   private lastRun: AssistantRunResult | null = null;
   private aiRunToken = 0;
+  private aiAbort: AbortController | null = null;
 
   constructor(options: StudioStoreOptions = {}) {
     const adapter =
@@ -203,6 +204,8 @@ export class StudioStore {
 
   private invalidateAIContext(message: string): void {
     this.aiRunToken += 1;
+    this.aiAbort?.abort();
+    this.aiAbort = null;
     this.aiPreview = null;
     this.aiResult = null;
     this.lastRun = null;
@@ -383,7 +386,8 @@ export class StudioStore {
       person,
       this.aiSettings,
       this.inputContext(),
-      this.now()
+      this.now(),
+      this.aiForm
     );
     this.aiStatus = 'preview';
     this.aiMessage = '预览已生成，确认后才会发送';
@@ -408,7 +412,9 @@ export class StudioStore {
     }
 
     const runToken = this.aiRunToken;
-    const approved = this.aiSettings.enabled && this.aiPreview !== null;
+    const currentPreview = previewAssistantContext(this.appState, person, this.aiSettings, this.inputContext(), this.now(), this.aiForm);
+    const approved = this.aiSettings.enabled && this.aiPreview !== null &&
+      JSON.stringify(this.aiPreview) === JSON.stringify(currentPreview);
     if (this.aiSettings.enabled && !approved) {
       this.aiStatus = 'running';
       this.aiMessage = '正在生成发送前预览…';
@@ -433,15 +439,22 @@ export class StudioStore {
       return previewResult;
     }
 
+    const approvedPreview = this.aiPreview;
     this.aiStatus = 'running';
     this.aiMessage = '运行中…';
     this.notify();
+    if (runToken !== this.aiRunToken || this.selectedId !== person.id) {
+      return { status: 'preview', preview: this.aiPreview, pipeline: null, display: null, offline: false, message: '上下文已更改，请重新生成预览' };
+    }
 
     this.aiMessages = [
       ...this.aiMessages,
       { role: 'user', text: `${person.name} · ${this.aiScene}${this.aiNote ? ` · ${this.aiNote}` : ''}` }
     ];
 
+    this.aiAbort?.abort();
+    const controller = new AbortController();
+    this.aiAbort = controller;
     const result = await runAssistant({
       app: this.appState,
       settings: this.aiSettings,
@@ -450,11 +463,14 @@ export class StudioStore {
       scene: this.aiScene,
       note: this.aiNote,
       approved,
+      ...(approved && approvedPreview ? { approvedPreview } : {}),
+      signal: controller.signal,
       now: this.now(),
       ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {})
     });
 
-    if (runToken !== this.aiRunToken || this.selectedId !== person.id) return result;
+    if (this.aiAbort === controller) this.aiAbort = null;
+    if (runToken !== this.aiRunToken || this.selectedId !== person.id || controller.signal.aborted) return result;
     this.lastRun = result;
     this.aiPreview = result.preview ?? this.aiPreview;
     this.aiResult = result.display;

@@ -5,7 +5,6 @@ import {
   createFallbackHandler,
   createMockProvider,
   createProvider,
-  redactPreview,
   ruleText,
   runPipeline,
   toAIError
@@ -22,6 +21,7 @@ import type {
   RedactedPreview
 } from '../../packages/ai/src/index';
 import type { AppState, Person } from '../../packages/core/src/index';
+import { builtinPipelinePreview } from '../../packages/ai/src/pipelines';
 
 export interface AssistantForm {
   kind: ProviderKind;
@@ -71,6 +71,8 @@ export interface AssistantRunOptions {
   scene?: string;
   note?: string;
   approved?: boolean;
+  approvedPreview?: RedactedPreview;
+  signal?: AbortSignal;
   fetchImpl?: FetchLike;
   now?: number;
 }
@@ -202,14 +204,15 @@ export function buildPipelineContext(
       .map((event) => ({ type: event.type, title: event.title, amount: event.amount, time: event.time }))
   };
   const context = buildPersonContext(personInput, settings.contextPolicy, { now: new Date(now) });
+  const scene = input.scene.trim() || '日常';
   return {
     person: personInput,
     context,
     input: {
       text: input.note.trim(),
-      scene: input.scene,
-      sceneId: input.scene,
-      occasion: input.scene
+      scene,
+      sceneId: scene,
+      occasion: scene
     },
     outputs: {},
     approved,
@@ -223,15 +226,12 @@ export function previewAssistantContext(
   person: Person,
   settings: AISettings,
   input: { scene: string; note: string },
-  now: number
+  now: number,
+  form?: AssistantForm
 ): RedactedPreview {
   const context = buildPipelineContext(app, person, settings, input, false, now);
-  return redactPreview({
-    system: context.context.system,
-    user: context.context.user,
-    fields: context.context.fields,
-    redactions: context.context.redactions
-  });
+  const preview = builtinPipelinePreview(context);
+  return form ? { ...preview, destination: { kind: form.kind, baseUrl: form.baseUrl.trim(), model: form.model.trim(), mock: form.mock } } : preview;
 }
 
 function mockResponses(): string[] {
@@ -291,12 +291,8 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
 
   const input = { scene: options.scene?.trim() || '日常', note: options.note ?? '' };
   const context = buildPipelineContext(app, person, settings, input, approved, now);
-  const preview = redactPreview({
-    system: context.context.system,
-    user: context.context.user,
-    fields: context.context.fields,
-    redactions: context.context.redactions
-  });
+  const pipelinePreview = builtinPipelinePreview(context);
+  const preview = { ...pipelinePreview, destination: { kind: form.kind, baseUrl: form.baseUrl.trim(), model: form.model.trim(), mock: form.mock } };
 
   if (!settings.enabled) {
     const pipeline = await runPipeline(builtinPipeline, context, {
@@ -304,8 +300,8 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
     });
     return {
       status: 'disabled',
-      preview: pipeline.preview ?? preview,
-      pipeline,
+      preview,
+      pipeline: { ...pipeline, preview },
       display: null,
       offline: false,
       message: 'AI 未启用'
@@ -315,14 +311,15 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
   const config = providerConfig(form);
   const chain = new FallbackChain();
 
-  if (!approved) {
-    const pipeline = await runPipeline(builtinPipeline, context, {
+  if (!approved || JSON.stringify(options.approvedPreview) !== JSON.stringify(preview)) {
+    const pipeline = await runPipeline(builtinPipeline, { ...context, approved: false }, {
+      requireApproval: true,
       settings: { ...settings, provider: config, enabled: true }
     });
     return {
       status: 'preview',
-      preview: pipeline.preview ?? preview,
-      pipeline,
+      preview,
+      pipeline: { ...pipeline, preview },
       display: null,
       offline: false,
       message: '发送前请确认预览内容'
@@ -348,6 +345,8 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
 
   const pipeline = await runPipeline(builtinPipeline, { ...context, approved: true }, {
     provider,
+    approvedPreview: preview,
+    ...(options.signal ? { signal: options.signal } : {}),
     settings: { ...settings, provider: config, enabled: true },
     fallback: createFallbackHandler(chain),
     ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
@@ -356,8 +355,8 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
   if (pipeline.ok) {
     return {
       status: 'ok',
-      preview: pipeline.preview ?? preview,
-      pipeline,
+      preview,
+      pipeline: { ...pipeline, preview },
       display: parseDisplay(pipeline.output),
       offline: false,
       message: 'AI 生成完成'
@@ -371,8 +370,8 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
   }
   return {
     status: 'offline',
-    preview: pipeline.preview ?? preview,
-    pipeline,
+    preview,
+    pipeline: { ...pipeline, preview },
     display,
     offline: true,
     message: pipeline.degraded
