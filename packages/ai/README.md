@@ -48,14 +48,23 @@ packages/ai/
 ## 使用
 
 ```ts
-const settings = defaultAISettings();
-const context = buildPersonContext(person, settings.contextPolicy);
-const result = await runPipeline(builtinPipeline, pipelineContext, {
+const settings = { ...defaultAISettings(), enabled: true, provider: providerConfig };
+const deps = {
   settings,
   apiKey,
   fetchImpl: window.fetch.bind(window),
   fallback: createFallbackHandler(new FallbackChain())
-});
+};
+const result = await runPipeline(builtinPipeline, pipelineContext, deps);
+if (result.reason === 'approval_required' && result.preview) {
+  const approved = await confirmPreview(result.preview);
+  if (approved) {
+    await runPipeline(builtinPipeline, { ...pipelineContext, approved: true }, {
+      ...deps,
+      approvedPreview: result.preview
+    });
+  }
+}
 ```
 
-`previewBeforeSend` 为 true 时，先展示 `result.preview`，用户确认后把 `pipelineContext.approved = true` 再跑一次。
+`confirmPreview` 表示应用提供的交互：必须展示完整预览、目标地址和模型，并取得用户明确确认。`previewBeforeSend` 为 true 时，内置流水线要求同时传入 `approved: true` 和原始 `approvedPreview`；内容或目的地变化必须重新预览确认。自定义 provider 必须提供准确的 `destination`，否则内置流水线不会通过批准检查。

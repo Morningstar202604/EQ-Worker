@@ -1,4 +1,5 @@
 import { AIErrorException } from './types';
+import { redactPreview } from './context';
 import type {
   AIProvider,
   ChatMessage,
@@ -114,15 +115,25 @@ function describeInput(ctx: PipelineContext): string {
   return parts.length > 0 ? parts.join('\n') : '用户未提供额外描述，请按已有关系信息处理。';
 }
 
+export function builtinPipelinePreview(ctx: PipelineContext) {
+  return redactPreview({
+    system: ctx.context.system,
+    user: `${ctx.context.user}\n${describeInput(ctx)}`,
+    fields: ctx.context.fields,
+    redactions: ctx.context.redactions
+  });
+}
+
 function messagesFor(ctx: PipelineContext, instruction: string): ChatMessage[] {
+  const preview = ctx.outboundPreview ?? builtinPipelinePreview(ctx);
   return [
     {
       role: 'system',
-      content: `${ctx.context.system}\n你只输出一个 JSON 对象，不要输出 Markdown、解释或额外文字。`
+      content: `${preview.system}\n你只输出一个 JSON 对象，不要输出 Markdown、解释或额外文字。`
     },
     {
       role: 'user',
-      content: `${ctx.context.user}\n${describeInput(ctx)}\n\n${instruction}`
+      content: `${preview.user}\n\n${instruction}`
     }
   ];
 }

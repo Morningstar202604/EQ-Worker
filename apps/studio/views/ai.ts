@@ -13,7 +13,7 @@ export interface AIData {
   personName: string | null;
   scene: string;
   note: string;
-  preview: { system: string; user: string; fields: string[]; redactions: string[]; masked: number } | null;
+  preview: { system: string; user: string; fields: string[]; redactions: string[]; masked: number; destination?: { kind: string; baseUrl: string; model: string; mock: boolean } } | null;
   result: AssistantDisplay | null;
   status: 'idle' | 'preview' | 'ok' | 'offline' | 'disabled' | 'running';
   message: string;
@@ -126,6 +126,7 @@ export function renderAI(data: AIViewData): string {
     ? [
         '<section class="detail-section preview">',
         '<h3>发送前预览</h3>',
+        data.preview.destination ? `<p class="muted">目标：${escapeHtml(data.preview.destination.mock ? '离线 Mock' : `${data.preview.destination.kind} · ${data.preview.destination.baseUrl} · ${data.preview.destination.model}`)}</p>` : '',
         `<p class="muted">将以如下内容发送，敏感字段已按勾选脱敏${data.preview.masked ? `，已遮蔽 ${data.preview.masked} 处疑似密钥` : ''}。</p>`,
         '<div class="preview-block"><h4>System</h4><pre>' + escapeHtml(data.preview.system) + '</pre></div>',
         '<div class="preview-block"><h4>User</h4><pre>' + escapeHtml(data.preview.user) + '</pre></div>',

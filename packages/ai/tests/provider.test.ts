@@ -50,6 +50,41 @@ async function captureError(task: Promise<unknown>): Promise<AIErrorException> {
   throw new Error('expected provider to throw');
 }
 
+describe.each([['OpenAI', openaiConfig], ['Anthropic', anthropicConfig]] as const)('%s response body cancellation', (_name, config) => {
+  it('propagates abort after headers while the body is pending', async () => {
+    let bodyStarted: (() => void) | undefined;
+    const started = new Promise<void>((resolve) => { bodyStarted = resolve; });
+    let resolveBody: ((value: string) => void) | undefined;
+    const fetchImpl: FetchLike = async (_url, init) => ({
+      ok: true,
+      text: () => new Promise<string>((resolve, reject) => {
+        resolveBody = resolve;
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        bodyStarted?.();
+      })
+    } as Response);
+    const controller = new AbortController();
+    const provider = createProvider(config, { fetchImpl, apiKey: API_KEY });
+    const pending = captureError(provider.chat({ messages: [{ role: 'user', content: 'hi' }], signal: controller.signal }));
+    await started;
+    controller.abort();
+    resolveBody?.('invalid');
+    expect((await pending).code).toBe('aborted');
+  });
+
+  it('times out while the response body is pending', async () => {
+    const fetchImpl: FetchLike = async (_url, init) => ({
+      ok: true,
+      text: () => new Promise<string>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      })
+    } as Response);
+    const provider = createProvider(config, { fetchImpl, apiKey: API_KEY });
+    const error = await captureError(provider.chat({ messages: [{ role: 'user', content: 'hi' }], timeoutMs: 10 }));
+    expect(error.code).toBe('timeout');
+  });
+});
+
 describe('OpenAI compatible provider', () => {
   it('posts to /chat/completions with auth header and model body', async () => {
     const captured: Captured[] = [];

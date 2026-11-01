@@ -47,12 +47,14 @@ export function createAnthropicProvider(
   if (!deps.apiKey.trim()) {
     throw providerError('missing_key', 'API key is required for this provider');
   }
+  config = { ...config };
   const endpoint = messagesEndpoint(config.baseUrl);
 
   return {
     id: config.id,
     label: config.label,
     kind: config.kind,
+    destination: Object.freeze({ baseUrl: config.baseUrl, model: config.model, mock: false }),
     async chat(request: AIRequest): Promise<AIResponse> {
       const { system, messages } = splitMessages(request.messages);
       const maxTokens = request.maxTokens ?? config.maxTokens ?? DEFAULT_MAX_TOKENS;
@@ -71,6 +73,7 @@ export function createAnthropicProvider(
       }
 
       let response: Response;
+      let rawText: string;
       const abort = buildAbortSignal(request.timeoutMs ?? 30_000, request.signal);
       try {
         response = await deps.fetchImpl(endpoint, {
@@ -83,6 +86,7 @@ export function createAnthropicProvider(
           body: JSON.stringify(body),
           signal: abort.signal
         });
+        rawText = await response.text();
       } catch {
         const aborted = abort.signal.aborted;
         const external = request.signal?.aborted === true;
@@ -96,7 +100,6 @@ export function createAnthropicProvider(
         abort.dispose();
       }
 
-      const rawText = await response.text();
       if (!response.ok) {
         const detail = scrubSecret(extractErrorMessage(rawText), deps.apiKey);
         throw providerError(
