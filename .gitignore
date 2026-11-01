@@ -16,3 +16,15 @@ desktop/index.html
 desktop/icon.png
 brand/dist/
 android/build/
+
+# S1 Vite smoke workspace
+node_modules/
+dist-vite/
+dist-studio/
+.aqg/
+
+# 本地 dev-server 地址（只提交 .example）
+android/app/src/debug/assets/dev-server.txt
+
+# 本地临时预览/调试文件
+.tmp/

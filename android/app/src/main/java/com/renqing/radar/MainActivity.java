@@ -15,6 +15,12 @@ import android.webkit.WebViewClient;
 
 import androidx.webkit.WebViewAssetLoader;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
 /**
  * EQ-Worker · 安卓壳
  *
@@ -24,19 +30,43 @@ import androidx.webkit.WebViewAssetLoader;
  *  2. 用 WebViewAssetLoader 把 assets 映射成 https 自定义域 ——
  *     file:// 协议下部分 WebView 版本的 localStorage 行为不一致，https 域是官方推荐做法。
  *  3. 不申请存储权限：数据全部落在应用私有目录，卸载即清（应用内自带 JSON/CSV/剪贴板备份）。
+ *  4. debug 包可选 dev-server：assets/dev-server.txt 存在且 BuildConfig.DEBUG 为真时直接加载
+ *     该地址（如 http://10.0.2.2:5173），便于连 Vite 热更新；release 永远走 assets。
  */
 public class MainActivity extends Activity {
 
     /** 应用内资源的虚拟域：与 assets 目录一一对应 */
     private static final String VIRTUAL_DOMAIN = "appassets.eqworker.local";
     private static final String START_URL = "https://" + VIRTUAL_DOMAIN + "/assets/index.html";
+    private static final String DEV_SERVER_ASSET = "dev-server.txt";
 
     private WebView webView;
+
+    /** 仅 debug 读取 assets/dev-server.txt；为空、读失败或 release 包都返回 null。 */
+    private String readDevServerUrl() {
+        if (!BuildConfig.DEBUG) return null;
+        try (InputStream in = getAssets().open(DEV_SERVER_ASSET);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String url = line.trim();
+                if (url.isEmpty() || url.startsWith("#")) continue;
+                return (url.startsWith("http://") || url.startsWith("https://")) ? url : null;
+            }
+            return null;
+        } catch (IOException e) {
+            return null;
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (BuildConfig.DEBUG) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
 
         // 沉浸式：纸底状态栏，正文从状態栏下开始（与网页版 UI 同色）
         Window w = getWindow();
@@ -79,7 +109,8 @@ public class MainActivity extends Activity {
             }
         });
 
-        webView.loadUrl(START_URL);
+        final String devUrl = readDevServerUrl();
+        webView.loadUrl(devUrl != null ? devUrl : START_URL);
     }
 
     @Override
