@@ -45,12 +45,15 @@ __export(index_exports, {
   SCHEMA_VERSION: () => SCHEMA_VERSION,
   SCRIPT_SCENES: () => SCRIPT_SCENES,
   SCRIPT_TONES: () => SCRIPT_TONES,
+  achievements: () => achievements,
+  annualReport: () => annualReport,
   avg: () => avg,
   buildActions: () => buildActions,
   buildAlerts: () => buildAlerts,
   buildICS: () => buildICS,
   buildScripts: () => buildScripts,
   clamp: () => clamp,
+  commitPractice: () => commitPractice,
   computePerson: () => computePerson,
   computedFor: () => computedFor,
   createEmptyState: () => createEmptyState,
@@ -61,6 +64,7 @@ __export(index_exports, {
   detectSchema: () => detectSchema,
   esc: () => esc,
   eventDir: () => eventDir,
+  findScenario: () => findScenario,
   fmtDate: () => fmtDate,
   fmtMoney: () => fmtMoney,
   getLevel: () => getLevel,
@@ -73,18 +77,21 @@ __export(index_exports, {
   ledgerNetShort: () => ledgerNetShort,
   ledgerTotals: () => ledgerTotals,
   migrate: () => migrate,
+  monthInsights: () => monthInsights,
   nextMMDD: () => nextMMDD,
   niceAmount: () => niceAmount,
   normalizeSettings: () => normalizeSettings,
   overallMetrics: () => overallMetrics,
   personHealth: () => personHealth,
   personLedger: () => personLedger,
+  recordPractice: () => recordPractice,
   relationRead: () => relationRead,
   sanitizeImport: () => sanitizeImport,
   settlePrefill: () => settlePrefill,
   solarToLunar: () => solarToLunar,
   toDateInput: () => toDateInput,
   toMMDD: () => toMMDD,
+  todayScenario: () => todayScenario,
   todayStr: () => todayStr,
   uid: () => uid,
   upcomingDates: () => upcomingDates,
@@ -1674,6 +1681,144 @@ function upcomingDates(state, days, now = Date.now()) {
   return out.sort((a, b) => a.days - b.days);
 }
 
+// packages/core/src/achievements.ts
+function achievements(state, now = Date.now()) {
+  const nP = state.persons.length;
+  const nE = state.events.length;
+  const sk = state.streak || { n: 0, last: "" };
+  const trained = Object.keys(state.progress || {}).filter((k) => state.progress[k].times > 0).length;
+  const withBirthday = state.persons.filter((p) => p.birthday).length;
+  const m = overallMetrics(state, now);
+  const idx = m ? m.index : 0;
+  let clear = nP > 0;
+  for (const p of state.persons) {
+    const mm = computedFor(state, p.id, now);
+    if (mm && mm.debt > 0) {
+      clear = false;
+      break;
+    }
+  }
+  const defs = [
+    { t: "\u7834\u51B0\u8005", d: "\u8BB0\u4E0B\u7B2C\u4E00\u7B14\u5F80\u6765", cur: Math.min(nE, 1), need: 1 },
+    { t: "\u521D\u7ED3\u4EBA\u8109", d: "\u6DFB\u52A0 5 \u4F4D\u4EBA\u8109", cur: Math.min(nP, 5), need: 5 },
+    { t: "\u5708\u5B50\u6210\u578B", d: "\u6DFB\u52A0 20 \u4F4D\u4EBA\u8109", cur: Math.min(nP, 20), need: 20 },
+    { t: "\u767E\u4EBA\u8109\u7EDC", d: "\u6DFB\u52A0 100 \u4F4D\u4EBA\u8109", cur: Math.min(nP, 100), need: 100 },
+    { t: "\u65E5\u79EF\u6708\u7D2F", d: "\u7D2F\u8BA1 50 \u7B14\u5F80\u6765", cur: Math.min(nE, 50), need: 50 },
+    { t: "\u4EBA\u60C5\u7EC3\u8FBE", d: "\u7D2F\u8BA1 200 \u7B14\u5F80\u6765", cur: Math.min(nE, 200), need: 200 },
+    { t: "\u4E09\u65E5\u4E0D\u8F8D", d: "\u8FDE\u7EED\u8BB0\u5F55 3 \u5929", cur: Math.min(sk.n, 3), need: 3 },
+    { t: "\u4E03\u65E5\u6210\u4E60", d: "\u8FDE\u7EED\u8BB0\u5F55 7 \u5929", cur: Math.min(sk.n, 7), need: 7 },
+    { t: "\u521D\u5165\u4FEE\u70BC", d: "\u5B8C\u6210 5 \u9053\u60C5\u666F\u9898", cur: Math.min(trained, 5), need: 5 },
+    { t: "\u4E16\u4E8B\u6D1E\u660E", d: "\u5B8C\u6210 15 \u9053\u60C5\u666F\u9898", cur: Math.min(trained, 15), need: 15 },
+    { t: "\u4E24\u4E0D\u76F8\u6B20", d: "\u6240\u6709\u4EBA\u60C5\u8D26\u90FD\u8FD8\u6E05", cur: clear ? 1 : 0, need: 1 },
+    { t: "\u4EBA\u60C5\u5927\u5E08", d: "\u4EBA\u60C5\u6307\u6570\u8FBE\u5230 60", cur: Math.min(idx, 60), need: 60 },
+    { t: "\u7EC6\u5FC3\u4EBA", d: "\u4E3A 3 \u4F4D\u4EBA\u8109\u8BB0\u4E0B\u751F\u65E5", cur: Math.min(withBirthday, 3), need: 3 }
+  ];
+  return defs.map((x) => ({ t: x.t, d: x.d, cur: x.cur, need: x.need, done: x.cur >= x.need }));
+}
+function monthInsights(state, now = Date.now()) {
+  const d = new Date(now);
+  const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const mev = state.events.filter((e) => fmtDate(e.time).startsWith(ym));
+  const byPerson = /* @__PURE__ */ new Map();
+  for (const e of mev) byPerson.set(e.personId, (byPerson.get(e.personId) || 0) + 1);
+  const nameOf = (id) => {
+    var _a;
+    return ((_a = state.persons.find((p) => p.id === id)) == null ? void 0 : _a.name) || "";
+  };
+  const top = [...byPerson.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, count]) => ({ id, name: nameOf(id), count }));
+  const topDebts = state.persons.map((p) => ({ p, m: computedFor(state, p.id, now) })).filter((x) => x.m !== null && x.m.debt > 0).sort((a, b) => b.m.debt - a.m.debt).slice(0, 3).map((x) => ({ id: x.p.id, name: x.p.name, debt: x.m.debt }));
+  const newPersons = state.persons.filter((p) => fmtDate(p.createdAt || 0).startsWith(ym)).length;
+  return { ym, count: mev.length, top, newPersons, topDebts };
+}
+function annualReport(state, now = Date.now()) {
+  const d = new Date(now);
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const md = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    const ym = `${md.getFullYear()}-${String(md.getMonth() + 1).padStart(2, "0")}`;
+    months.push({ label: `${md.getMonth() + 1}\u6708`, count: state.events.filter((e) => fmtDate(e.time).startsWith(ym)).length });
+  }
+  const total = months.reduce((s, x) => s + x.count, 0);
+  const peak = Math.max(...months.map((x) => x.count), 1);
+  const bestMonths = months.filter((x) => x.count === peak).map((x) => x.label);
+  const yStart = `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  const byPerson = /* @__PURE__ */ new Map();
+  for (const e of state.events) if (fmtDate(e.time) >= yStart) byPerson.set(e.personId, (byPerson.get(e.personId) || 0) + 1);
+  const topPersons = [...byPerson.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, count]) => {
+    var _a;
+    return { id, name: ((_a = state.persons.find((p) => p.id === id)) == null ? void 0 : _a.name) || "", count };
+  });
+  const topDebts = state.persons.map((p) => ({ p, m: computedFor(state, p.id, now) })).filter((x) => x.m !== null && x.m.debt > 0).sort((a, b) => b.m.debt - a.m.debt).slice(0, 3).map((x) => ({ id: x.p.id, name: x.p.name, debt: x.m.debt }));
+  const w = getWisdom(state);
+  const lv = getLevel(w);
+  const keywords = [];
+  if (total === 0) {
+    keywords.push("\u8FD9\u4E00\u5E74\u7684\u5F80\u6765\u8FD8\u662F\u4E00\u5F20\u767D\u7EB8\uFF0C\u4ECE\u8BB0\u5F55\u7B2C\u4E00\u7B14\u5F00\u59CB");
+  } else {
+    if (total >= 60) keywords.push("\u8D70\u52A8\u5F88\u52E4\uFF0C\u662F\u5708\u5B50\u91CC\u7684\u4EBA\u8109\u6D3B\u8DC3\u5206\u5B50");
+    else if (total >= 20) keywords.push("\u4FDD\u6301\u4E86\u8282\u594F\uFF0C\u5173\u7CFB\u7EC6\u6C34\u957F\u6D41");
+    else keywords.push("\u5F80\u6765\u504F\u5C11\uFF0C\u660E\u5E74\u53EF\u4EE5\u591A\u8D70\u52A8");
+  }
+  if (w >= 60) keywords.push("\u4FEE\u70BC\u6709\u6210\uFF0C\u5DF2\u8FC8\u5165\u4EBA\u60C5\u5927\u5E08");
+  else if (w >= 15) keywords.push("\u4FEE\u70BC\u8D77\u6B65\uFF0C\u5DF2\u7565\u61C2\u4E16\u6545");
+  if (topDebts.length) keywords.push(`\u4EBA\u60C5\u503A\u699C\u9996\u662F\u300C${topDebts[0].name}\u300D\uFF0C\u8BB0\u5F97\u8FD8`);
+  return {
+    months,
+    total,
+    peak,
+    bestMonths,
+    topPersons,
+    topDebts,
+    wisdom: w,
+    level: { name: lv.cur.name, desc: lv.cur.desc },
+    keywords
+  };
+}
+
+// packages/core/src/practice.ts
+function findScenario(id) {
+  return SCENARIOS.find((s) => s.id === id);
+}
+function todayScenario(now = Date.now()) {
+  const idx = Math.floor(now / DAY) % SCENARIOS.length;
+  return SCENARIOS[idx];
+}
+function recordPractice(state, scenarioId, choiceIndex, now = Date.now()) {
+  const sc = findScenario(scenarioId);
+  const choice = sc == null ? void 0 : sc.choices[choiceIndex];
+  if (!sc || !choice) return null;
+  const today = todayStr(now);
+  const sk = state.streak || { n: 0, last: "" };
+  let streakExtended = false;
+  let streak = sk;
+  if (sk.last !== today) {
+    const yesterday = fmtDate(now - DAY);
+    streak = { n: sk.last === yesterday ? sk.n + 1 : 1, last: today };
+    streakExtended = true;
+  }
+  const prev = state.progress[sc.id] || { best: 0, times: 0 };
+  const best = Math.max(prev.best, choice.s);
+  const gained = Math.round(choice.s * DIFFS[sc.diff].w);
+  return {
+    choice,
+    gained,
+    best,
+    times: prev.times + 1,
+    streak,
+    streakExtended
+  };
+}
+function commitPractice(state, result, scenarioId) {
+  return {
+    ...state,
+    streak: result.streak,
+    progress: {
+      ...state.progress,
+      [scenarioId]: { best: result.best, times: result.times }
+    }
+  };
+}
+
 // packages/core/src/storage/adapter.ts
 function createMemoryAdapter(seed = {}) {
   const mem = new Map(Object.entries(seed));
@@ -1839,6 +1984,9 @@ function createStore(adapter) {
   let state = createEmptyState();
   let writeProtected = false;
   const store = {
+    setState(next) {
+      state = next;
+    },
     getState() {
       return state;
     },

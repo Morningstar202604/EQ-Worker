@@ -31,7 +31,7 @@ describe('studio real entry render', () => {
     expect(root!.textContent).toContain('仪表盘');
     expect(root!.textContent).toContain('账本与洞察');
     expect(root!.textContent).toContain('AI 助手');
-    expect(root!.querySelectorAll('[data-act="nav"]').length).toBe(4);
+    expect(root!.querySelectorAll('[data-act="nav"]').length).toBe(5);
     expect(root!.querySelector('[data-view="insights"]')).toBeNull();
   }, 15000);
 

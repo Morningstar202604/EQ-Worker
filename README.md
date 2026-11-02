@@ -108,6 +108,14 @@ annual report, relationship network, achievements, and offline PWA support.
 | --- | --- |
 | ![Studio](docs/screenshots/v3/11-studio-overview.png) | ![Studio AI](docs/screenshots/v3/12-studio-ai.png) |
 
+| Practice arena | Answer feedback |
+| --- | --- |
+| ![Practice](docs/screenshots/v3/13-studio-practice.png) | ![Result](docs/screenshots/v3/14-studio-practice-result.png) |
+
+| Achievement badges | Twelve-month review |
+| --- | --- |
+| ![Achievements](docs/screenshots/v3/15-studio-achievements.png) | ![Annual](docs/screenshots/v3/16-studio-annual.png) |
+
 ---
 
 ## Which client should I use?
@@ -117,12 +125,29 @@ annual report, relationship network, achievements, and offline PWA support.
 | **Web (PWA)** | Complete | Every feature, installable, works offline |
 | **Android** | Complete | Native WebView shell around the web client; ~1.4 MB APK |
 | **Windows desktop** | Complete | Electron shell, portable zip, no installer |
-| **Studio** | Separate build | A denser workbench: overview, contacts, ledger and insights, optional AI |
-| **WeChat Mini Program** | Lightweight | Radar, contacts, record, practice, profile — no advisor screens |
+| **Studio** | Separate build | A denser workbench: overview, contacts, ledger and insights, practice, optional AI |
+| **WeChat Mini Program** | Lightweight | Radar, contacts, record, practice, profile, plus gift and script advisors |
 
 The web, Android, and desktop clients share **one** build artifact, so a fix lands everywhere at
 once. Studio is built separately and is not included in the release packages. The Mini Program is a
 deliberately smaller companion.
+
+### Feature coverage
+
+| Capability | Web / Android / Desktop | Studio | Mini Program |
+| --- | --- | --- | --- |
+| Daily actions and reminders | Yes | Yes (overview) | Yes |
+| Ledger and settlement | Yes | Yes | Yes |
+| Gift advisor | Yes | Yes | Yes |
+| Script advisor | Yes | Yes (inside AI view) | Yes |
+| Relationship health | Yes | Yes (ledger page) | Yes |
+| Practice arena | Yes | Yes | Yes |
+| Achievement badges | Yes | Yes | Yes |
+| Annual review | Yes | Yes (12-month review) | Yes |
+| Optional AI | No (rules only) | Yes, off by default | No |
+
+Achievement rules, practice scoring, and annual statistics all live in `packages/core`, so the three
+clients share one implementation instead of each carrying its own copy.
 
 ---
 

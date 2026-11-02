@@ -1,0 +1,74 @@
+<import src="/templates/ui.wxml"/>
+<template is="uiModal" data="{{..._modal}}"/>
+<template is="uiToast" data="{{..._toast}}"/>
+
+<view wx:if="{{!hasData}}" class="empty">
+  <view class="t">先添加人脉</view>
+  <view class="d">随礼参谋要参考你和对方的关系与历史往来，先去「人脉」添加第一位。</view>
+</view>
+
+<block wx:else>
+  <view class="card">
+    <view class="card-title">随礼参谋</view>
+    <view class="card-sub">按关系、场合、档位和城市给出三档金额参考</view>
+
+    <view class="card-sub" style="margin-top:12rpx">给谁</view>
+    <picker mode="selector" range="{{persons}}" range-key="name" value="{{personIdx}}" bindchange="onPersonChange">
+      <view class="input" style="display:flex;justify-content:space-between;align-items:center">
+        <text>{{persons[personIdx].name}} · {{persons[personIdx].identity}}</text>
+        <text style="color:#a89b88">切换 ▾</text>
+      </view>
+    </picker>
+
+    <view class="card-sub" style="margin-top:12rpx">场合</view>
+    <picker mode="selector" range="{{occasions}}" value="{{occIdx}}" bindchange="onOccChange">
+      <view class="input" style="display:flex;justify-content:space-between;align-items:center">
+        <text>{{occasions[occIdx]}}</text>
+        <text style="color:#a89b88">切换 ▾</text>
+      </view>
+    </picker>
+
+    <view class="card-sub" style="margin-top:12rpx">档位</view>
+    <view class="tag-row">
+      <view class="chip-sel {{item.key === tierKey ? 'on' : ''}}" wx:for="{{tiers}}" wx:key="key" data-k="{{item.key}}" bindtap="onTier">{{item.label}}</view>
+    </view>
+
+    <view class="card-sub" style="margin-top:12rpx">城市</view>
+    <picker mode="selector" range="{{cities}}" value="{{cityIdx}}" bindchange="onCityChange">
+      <view class="input" style="display:flex;justify-content:space-between;align-items:center">
+        <text>{{cities[cityIdx]}}</text>
+        <text style="color:#a89b88">切换 ▾</text>
+      </view>
+    </picker>
+  </view>
+
+  <view class="card" wx:if="{{advice}}">
+    <view class="card-title">参考区间</view>
+    <view class="card-sub">{{advice.identity}} · {{advice.occasion}} · {{advice.tier}} · {{advice.city}}</view>
+    <view style="display:flex;gap:16rpx;margin:20rpx 0">
+      <view class="pick-row" style="flex:1;text-align:center;padding:20rpx 0">
+        <view class="card-sub">从简</view>
+        <view style="font-size:34rpx;font-weight:600">{{advice.low}}</view>
+      </view>
+      <view class="pick-row" style="flex:1;text-align:center;padding:20rpx 0;border-color:#5f8575;background:rgba(95,133,117,.08)">
+        <view class="card-sub">建议</view>
+        <view style="font-size:34rpx;font-weight:600;color:#5f8575">{{advice.mid}}</view>
+      </view>
+      <view class="pick-row" style="flex:1;text-align:center;padding:20rpx 0">
+        <view class="card-sub">重视</view>
+        <view style="font-size:34rpx;font-weight:600">{{advice.high}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{advice.note}}" class="card-sub" style="color:#5f8575">{{advice.note}}</view>
+
+    <view class="card-sub" style="margin-top:16rpx">怎么算的</view>
+    <view wx:for="{{advice.reasons}}" wx:key="*this" class="card-sub" style="margin-top:6rpx">· {{item}}</view>
+
+    <button class="btn primary" style="margin-top:20rpx" bindtap="goRecord">按建议记一笔</button>
+  </view>
+
+  <view class="card">
+    <view class="card-sub">金额只进账本，不影响人情分。实际随礼仍需结合当地习俗与真实关系判断。</view>
+  </view>
+</block>

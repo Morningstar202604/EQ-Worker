@@ -1,0 +1,41 @@
+<import src="/templates/ui.wxml"/>
+<template is="uiModal" data="{{..._modal}}"/>
+<template is="uiToast" data="{{..._toast}}"/>
+
+<view class="card">
+  <view class="card-title">话术参谋</view>
+  <view class="card-sub">选场景、选对象，三种语气可复制后微调</view>
+
+  <view class="card-sub" style="margin-top:12rpx">场景</view>
+  <picker mode="selector" range="{{scenes}}" range-key="label" value="{{sceneIdx}}" bindchange="onSceneChange">
+    <view class="input" style="display:flex;justify-content:space-between;align-items:center">
+      <text>{{scenes[sceneIdx].label}}</text>
+      <text style="color:#a89b88">切换 ▾</text>
+    </view>
+  </picker>
+
+  <view class="card-sub" style="margin-top:12rpx">对谁说（可选）</view>
+  <picker mode="selector" range="{{persons}}" range-key="name" value="{{personIdx}}" bindchange="onPersonChange">
+    <view class="input" style="display:flex;justify-content:space-between;align-items:center">
+      <text>{{persons[personIdx].name}}</text>
+      <text style="color:#a89b88">切换 ▾</text>
+    </view>
+  </picker>
+
+  <view class="card-sub" style="margin-top:12rpx">补充背景（可选）</view>
+  <input class="input" placeholder="例如：上次他帮我搬过家" value="{{context}}" bindinput="onContext" bindblur="onContextBlur" />
+</view>
+
+<block wx:if="{{result}}">
+  <view class="card">
+    <view class="card-title">{{result.sceneLabel}}</view>
+    <view class="card-sub">{{result.sceneHint}}</view>
+    <view wx:if="{{result.personName}}" class="card-sub" style="color:#5f8575;margin-top:6rpx">对象：{{result.personName}}</view>
+  </view>
+
+  <view class="card" wx:for="{{result.variants}}" wx:key="tone">
+    <view class="card-title">{{item.tone}}</view>
+    <view style="font-size:28rpx;line-height:1.75;margin:12rpx 0">{{item.text}}</view>
+    <button class="btn sm" data-text="{{item.text}}" bindtap="copy">复制</button>
+  </view>
+</block>

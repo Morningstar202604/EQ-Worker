@@ -257,5 +257,7 @@ module.exports = {
   overallMetrics, getWisdom, getLevel, DIFFS, LEVELS,
   buildAlerts, wxAlerts, getSuggestion, relationRead,
   personLedger, giftAdvice, personHealth, buildActions, buildScripts, upcomingDates,
-  SCENARIOS, monthData, trendData, annualData
+  SCENARIOS, monthData, trendData, annualData,
+  SCRIPT_SCENES: core.SCRIPT_SCENES, SCRIPT_TONES: core.SCRIPT_TONES,
+  fmtMoney: core.fmtMoney, ledgerNetLabel: core.ledgerNetLabel, ledgerNetShort: core.ledgerNetShort
 };

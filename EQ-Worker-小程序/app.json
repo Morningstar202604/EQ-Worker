@@ -6,7 +6,9 @@
     "pages/train/train",
     "pages/me/me",
     "pages/detail/detail",
-    "pages/scenario/scenario"
+    "pages/scenario/scenario",
+    "pages/gift/gift",
+    "pages/script/script"
   ],
   "window": {
     "navigationBarBackgroundColor": "#fffdf6",

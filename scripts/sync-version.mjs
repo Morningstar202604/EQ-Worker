@@ -142,9 +142,23 @@ if (!problems.length && !writes.length) {
 }
 
 if (WRITE) {
+  /* 同一文件可能有多个 target（如 build.gradle 的 versionCode 与 versionName）。
+     每个 target 都基于原始文本生成 next，逐个写会互相覆盖——按文件合并后一次写入。 */
+  const byPath = new Map();
   for (const w of writes) {
+    const existing = byPath.get(w.path);
+    if (!existing) {
+      byPath.set(w.path, { ...w, labels: [w.label] });
+      continue;
+    }
+    // 在已有 next 的基础上继续应用本 target 的替换
+    const target = targets.find((t) => t.label === w.label);
+    const merged = target && !target.json ? existing.next.replace(target.pattern, target.expected) : existing.next;
+    byPath.set(w.path, { ...existing, next: merged, labels: [...existing.labels, w.label], from: `${existing.from}, ${w.from}` });
+  }
+  for (const w of byPath.values()) {
     await writeFile(w.path, w.next, 'utf8');
-    console.log(`[version] 已更新 ${w.label}: ${w.from} -> ${w.to}`);
+    console.log(`[version] 已更新 ${w.labels.join(' + ')}: ${w.from} -> ${w.to}`);
   }
   if (!writes.length) console.log('[version] 无需写入');
   if (problems.length) {

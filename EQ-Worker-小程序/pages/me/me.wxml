@@ -77,6 +77,15 @@
 </view>
 
 <view class="card">
+  <view class="card-title">人情参谋</view>
+  <view class="card-sub" style="margin:8rpx 0 12rpx">不确定随多少、不知道怎么开口，先来这里问一句。</view>
+  <view style="display:flex;flex-wrap:wrap">
+    <view class="btn sm primary" bindtap="goGift">随礼参谋</view>
+    <view class="btn sm" bindtap="goScript">话术参谋</view>
+  </view>
+</view>
+
+<view class="card">
   <view class="card-title">数据管理</view>
   <view class="card-sub" style="margin:8rpx 0 12rpx">所有数据只保存在本机微信缓存，不上传任何服务器。换手机前用「复制备份」，新手机「粘贴导入」即可无缝迁移。</view>
   <view style="display:flex;flex-wrap:wrap">

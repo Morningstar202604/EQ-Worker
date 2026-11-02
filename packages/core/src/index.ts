@@ -8,6 +8,8 @@ export * from './health';
 export * from './actions';
 export * from './scripts';
 export * from './ics';
+export * from './achievements';
+export * from './practice';
 export * from './storage/adapter';
 export * from './storage/local';
 export * from './storage/migrate';

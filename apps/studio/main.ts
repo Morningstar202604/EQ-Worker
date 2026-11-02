@@ -15,11 +15,14 @@ import { renderOverviewView } from './pages/overview';
 import { renderPersonsView } from './pages/persons';
 import { renderLedgerView } from './pages/ledger';
 import { renderAIView } from './pages/ai';
+import { renderPracticeView, renderPracticeResultView } from './pages/practice';
+import { findScenario } from '../../packages/core/src/index';
 
 const VIEWS: Array<{ id: StudioView; label: string; icon: string }> = [
   { id: 'overview', label: '仪表盘', icon: '◈' },
   { id: 'persons', label: '人脉', icon: '☰' },
   { id: 'ledger', label: '账本与洞察', icon: '¥' },
+  { id: 'practice', label: '修炼', icon: '✎' },
   { id: 'ai', label: 'AI 助手', icon: '✧' }
 ];
 
@@ -66,6 +69,8 @@ function renderView(studio: StudioStore): string {
       return renderPersonsView(studio);
     case 'ledger':
       return renderLedgerView(studio);
+    case 'practice':
+      return renderPracticeView(studio);
     case 'ai':
       return renderAIView(studio);
     default:
@@ -275,6 +280,43 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     if (act === 'copy-text' || act === 'copy-variant') {
       const text = el.dataset.text ?? '';
       void navigator.clipboard?.writeText(text);
+      return;
+    }
+    if (act === 'practice-filter') {
+      const diff = (el.dataset.diff ?? '全部') as '全部' | '入门' | '进阶' | '高手';
+      studio.setPracticeFilter(diff);
+      return;
+    }
+    if (act === 'practice-open') {
+      const id = el.dataset.id ?? '';
+      const sc = findScenario(id);
+      if (!sc) return;
+      const idx = studio.getState().progress[id];
+      const best = idx ? idx.best : 0;
+      const body = [
+        `<p class="muted small">${escapeHtml(sc.tag)} · ${escapeHtml(sc.diff)}</p>`,
+        `<p class="muted">${escapeHtml(sc.scene)}</p>`,
+        `<p class="hint">如果是你，你会怎么应对？</p>`,
+        '<div class="choices">',
+        ...sc.choices.map((c, i) =>
+          `<button type="button" class="choice" data-act="practice-answer" data-id="${escapeHtml(sc.id)}" data-index="${i}"><span class="choice-key" aria-hidden="true">${['A','B','C','D'][i] ?? i + 1}</span><span>${escapeHtml(c.t)}</span></button>`
+        ),
+        '</div>',
+        `<p class="muted small">历史最高 ${best} 分</p>`
+      ].join('');
+      openDialog(doc, `${sc.tag} · ${sc.title}`, body);
+      return;
+    }
+    if (act === 'practice-answer') {
+      const id = el.dataset.id ?? '';
+      const index = Number(el.dataset.index ?? '-1');
+      const result = studio.answerScenario(id, index);
+      if (!result) {
+        openDialog(doc, '保存失败', '<p class="error">练习结果未能保存，本次成绩未记录。请检查浏览器存储空间后重试。</p><div class="dialog-actions"><button type="button" class="btn ghost" data-act="dialog-close">知道了</button></div>');
+        return;
+      }
+      const body = renderPracticeResultView(studio, id, index, result.best, result.gained, result.streak.n, result.streakExtended);
+      openDialog(doc, '练习结果', body);
       return;
     }
     if (act === 'ai-enable') {

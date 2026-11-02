@@ -15,7 +15,7 @@ Page({
     showImport: false,
     importText: '',
     picker: { show: false, options: [] },
-    version: 'v3.2.0',
+    version: 'v3.3.0',
     _modal: { show: false, anim: '' },
     _toast: { show: false, anim: '' }
   },
@@ -115,6 +115,8 @@ Page({
   closePicker() {
     this.setData({ 'picker.show': false });
   },
+  goGift() { wx.navigateTo({ url: '/pages/gift/gift' }); },
+  goScript() { wx.navigateTo({ url: '/pages/script/script' }); },
   openReport() {
     const d = engine.annualData();
     const peak = d.peak;

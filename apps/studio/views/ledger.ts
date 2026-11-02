@@ -47,6 +47,26 @@ export interface LedgerData {
   insights: LedgerInsightView;
   relationship: RelationshipInsightsView;
   rows: LedgerPersonRow[];
+  achievements: AchievementView[];
+  annual: AnnualView;
+}
+
+export interface AchievementView {
+  t: string;
+  d: string;
+  cur: number;
+  need: number;
+  done: boolean;
+}
+
+export interface AnnualView {
+  months: { label: string; count: number }[];
+  total: number;
+  peak: number;
+  bestMonths: string[];
+  topPersons: { name: string; count: number }[];
+  topDebts: { name: string; debt: number }[];
+  keywords: string[];
 }
 
 function renderRelationshipInsights(data: RelationshipInsightsView): string {
@@ -88,6 +108,68 @@ function renderRelationshipInsights(data: RelationshipInsightsView): string {
     '</div>',
     '</details>'
   ].join('\n');
+}
+
+function renderAchievements(list: AchievementView[]): string {
+  const got = list.filter((x) => x.done).length;
+  const items = list
+    .map((x) =>
+      [
+        `<li class="badge${x.done ? ' done' : ''}">`,
+        `<span class="badge-mark" aria-hidden="true">${x.done ? '🏅' : '🔒'}</span>`,
+        `<div class="badge-body">`,
+        `<strong>${escapeHtml(x.t)}</strong>`,
+        `<span class="muted tiny">${escapeHtml(x.d)}</span>`,
+        `</div>`,
+        `<span class="badge-progress">${x.done ? '已达成' : `${x.cur}/${x.need}`}</span>`,
+        `</li>`
+      ].join('')
+    )
+    .join('');
+  return [
+    '<section class="card achievements-card" aria-labelledby="achievements-title">',
+    '<div class="card-head">',
+    `<h2 id="achievements-title">成就徽章</h2>`,
+    `<span class="muted small">${got} / ${list.length} 已达成</span>`,
+    '</div>',
+    '<p class="muted small">用真实往来解锁徽章：记录、走动、修炼、还清人情，都会留下痕迹。</p>',
+    `<ul class="badge-grid">${items}</ul>`,
+    '</section>'
+  ].join('');
+}
+
+function renderAnnual(a: AnnualView): string {
+  const bars = a.months
+    .map((m) => {
+      const h = Math.max(4, Math.round((m.count / a.peak) * 64));
+      return [
+        '<div class="annual-bar">',
+        `<span class="annual-bar-fill" style="height:${h}px" title="${escapeHtml(m.label)}：${m.count} 笔"></span>`,
+        `<span class="annual-bar-label">${escapeHtml(m.label)}</span>`,
+        '</div>'
+      ].join('');
+    })
+    .join('');
+  const tops = a.topPersons.length
+    ? a.topPersons.map((p) => `<span class="chip">${escapeHtml(p.name)} ${p.count} 笔</span>`).join('')
+    : '<span class="chip">暂无</span>';
+  const debts = a.topDebts.length
+    ? a.topDebts.map((d) => `<span class="chip">${escapeHtml(d.name)} ${Math.round(d.debt)}</span>`).join('')
+    : '<span class="chip">暂无欠债</span>';
+  const kw = a.keywords.map((k) => `<li>${escapeHtml(k)}</li>`).join('');
+  return [
+    '<section class="card annual-card" aria-labelledby="annual-title">',
+    '<div class="card-head">',
+    `<h2 id="annual-title">近 12 个月回顾</h2>`,
+    `<span class="muted small">共 ${a.total} 笔往来</span>`,
+    '</div>',
+    `<div class="annual-bars" role="img" aria-label="近 12 个月往来笔数柱状图">${bars}</div>`,
+    a.total > 0 ? `<p class="muted small">走动最多的月份：${escapeHtml(a.bestMonths.join('、'))}</p>` : '',
+    '<div class="annual-row"><span class="muted small">最常走动</span><div class="chips">' + tops + '</div></div>',
+    '<div class="annual-row"><span class="muted small">人情债前三</span><div class="chips">' + debts + '</div></div>',
+    `<ul class="annual-keywords">${kw}</ul>`,
+    '</section>'
+  ].join('');
 }
 
 export function renderLedger(data: LedgerData): string {
@@ -154,6 +236,8 @@ export function renderLedger(data: LedgerData): string {
     '</table>',
     '</section>',
     renderRelationshipInsights(data.relationship),
+    renderAchievements(data.achievements),
+    renderAnnual(data.annual),
     '</section>'
   ].join('\n');
 }

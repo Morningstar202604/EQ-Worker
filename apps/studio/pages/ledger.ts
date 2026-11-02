@@ -1,4 +1,6 @@
 import {
+  achievements,
+  annualReport,
   computePerson,
   fmtMoney,
   healthRanking,
@@ -170,7 +172,20 @@ export function buildLedgerData(state: AppState, now: number): LedgerData {
       topOccasionAmount: insights.topOccasionAmount
     },
     relationship: buildRelationshipInsights(state, now),
-    rows
+    rows,
+    achievements: achievements(state, now).map((a) => ({ t: a.t, d: a.d, cur: a.cur, need: a.need, done: a.done })),
+    annual: (() => {
+      const r = annualReport(state, now);
+      return {
+        months: r.months,
+        total: r.total,
+        peak: r.peak,
+        bestMonths: r.bestMonths,
+        topPersons: r.topPersons.map((p) => ({ name: p.name, count: p.count })),
+        topDebts: r.topDebts.map((d) => ({ name: d.name, debt: d.debt })),
+        keywords: r.keywords
+      };
+    })()
   };
 }
 

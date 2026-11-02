@@ -3,10 +3,14 @@ import {
   EVENT_TYPES,
   createLocalAdapter,
   createStore,
+  recordPractice,
+  commitPractice,
   uid,
   type AppState,
   type EventType,
   type Person,
+  type PracticeResult,
+  type Diff,
   type StorageAdapter,
   type Store
 } from '../../packages/core/src/index';
@@ -26,7 +30,7 @@ import {
 } from './assistant';
 import { demoPayload } from './demo';
 
-export type StudioView = 'overview' | 'persons' | 'ledger' | 'ai';
+export type StudioView = 'overview' | 'persons' | 'ledger' | 'practice' | 'ai';
 
 export type AIStatus = 'idle' | 'preview' | 'ok' | 'offline' | 'disabled' | 'running';
 
@@ -90,6 +94,7 @@ export class StudioStore {
   private aiRunToken = 0;
   private aiAbort: AbortController | null = null;
   private storageWarning = '';
+  private practiceFilter: Diff | '全部' = '全部';
 
   constructor(options: StudioStoreOptions = {}) {
     const backing = options.adapter ?? createLocalAdapter({ keyPrefix: 'eqworker_studio_' });
@@ -249,6 +254,15 @@ export class StudioStore {
     }
   }
 
+  getPracticeFilter(): Diff | '全部' {
+    return this.practiceFilter;
+  }
+
+  setPracticeFilter(filter: Diff | '全部'): void {
+    this.practiceFilter = filter;
+    this.notify();
+  }
+
   setView(view: StudioView): void {
     this.currentView = view;
     this.notify();
@@ -333,6 +347,31 @@ export class StudioStore {
     this.store.save();
     this.notify();
     return true;
+  }
+
+  /**
+   * 提交一次情景练习。计分与连击规则来自 core 的 recordPractice，
+   * 这里只负责落库与通知；保存失败时回滚，避免 UI 显示成功但实际没存。
+   */
+  answerScenario(scenarioId: string, choiceIndex: number): PracticeResult | null {
+    const result = recordPractice(this.appState, scenarioId, choiceIndex, this.now());
+    if (!result) return null;
+    const before = this.appState;
+    const next = commitPractice(before, result, scenarioId);
+    this.appState = next;
+    // 关键：commitPractice 返回新对象，必须同步回 store，否则 save() 仍序列化旧状态。
+    this.store.setState(next);
+    const ok = this.store.save();
+    if (!ok) {
+      this.appState = before;
+      this.store.setState(before);
+      this.storageWarning = '练习结果保存失败，本次成绩未记录。请检查浏览器存储空间。';
+      this.notify();
+      return null;
+    }
+    this.invalidateAIContext('练习记录已更新，请重新生成预览');
+    this.notify();
+    return result;
   }
 
   enableAI(): void {

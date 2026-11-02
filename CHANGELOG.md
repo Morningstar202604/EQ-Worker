@@ -1,5 +1,37 @@
 # Changelog
 
+## v3.3.0 — 2026-11-03
+
+把「能算」补齐到「能练、能看长线」：成就、修炼计分与年度回顾下沉到 core，三端共用同一份规则。
+
+### 新增
+
+- **`packages/core/src/achievements.ts`**：`achievements()`（13 个徽章，全部由当前数据实时推导，不新增持久化字段）、`monthInsights()`（本月往来、走动最勤、新增人脉、人情债前三）、`annualReport()`（近 12 个月滚动窗口、最常走动、年度关键词）。
+- **`packages/core/src/practice.ts`**：`recordPractice()` / `commitPractice()` / `todayScenario()`，把修炼计分、难度加成与连续打卡从 UI 内联逻辑抽成纯函数；`commitPractice` 返回新 state，不修改入参。
+- **Studio 修炼页**（导航由 4 项增至 5 项）：今日情景、情景库、难度筛选、答题点评与人情点拨、连续修炼天数。
+- **Studio 成就徽章与近 12 个月回顾**：并入账本与洞察页。
+- **小程序随礼参谋**（`pages/gift/`）：按关系、场合、档位、城市给出三档金额与计算依据。
+- **小程序话术参谋**（`pages/script/`）：覆盖全部场景，三种语气，可一键复制，支持指定对象与补充背景。
+
+### 修复
+
+- **`Store` 缺少 `setState()`**：Studio 采用纯函数式更新（`commitPractice` 返回新对象并替换 `StudioStore.appState`），但 `store.save()` 序列化的始终是内部闭包状态，导致**修炼成绩刷新即丢失**。新增 `Store.setState(next)` 并在写入后同步；保存失败时回滚内存状态并明确提示。补 2 个回归测试锁死该行为。
+- **小程序 `engine` 未导出 `fmtMoney`**：随礼参谋调用即抛 `TypeError`。补导出 `fmtMoney` / `ledgerNetLabel` / `ledgerNetShort`。
+- **小程序 `engine` 未导出 `SCRIPT_SCENES`**：话术参谋无法枚举场景。补导出。
+
+### 改进
+
+- 小程序「我的」页新增「人情参谋」区块，直通随礼与话术参谋。
+- README 增加三端能力对照表（中英双语）。
+
+### 质量
+
+- 单元测试 408 个（127 legacy `node --test` + 281 Vitest / 28 文件），`tsc --noEmit` 无错误。
+- 变异反证：把 `achievements()` 的 `done` 改成恒 `true`，5 个测试变红；恢复后全绿。
+- 浏览器 E2E 13 项全过（Edge + Playwright）：Studio 五项导航、修炼页渲染、答题出结果、**刷新后智慧值保留（2 → 2）**、13 个徽章、12 根年度柱、移动端 390×844；legacy 六个 Tab 可切换；两端零控制台错误。
+- 四份 `index.html` 产物 sha256 完全一致。
+- 未验证：小程序未做真机调试（仅用 vm 模拟 `wx` 环境验证页面逻辑）；安卓 APK 与 Windows 包未重建（本轮未改原生壳）。
+
 ## v3.2.0 — 2026-10-31
 
 把「能跑」推进到「可维护」：工程化地基、三包分层与多端收口。

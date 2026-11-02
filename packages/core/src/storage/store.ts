@@ -26,6 +26,8 @@ export interface ImportResult {
 
 export interface Store {
   getState(): AppState;
+  /** 用外部构造的新状态替换内存状态（纯函数式更新后必须调用，否则 save() 仍写旧状态）。 */
+  setState(next: AppState): void;
   isWriteProtected(): boolean;
   load(): boolean;
   save(): boolean;
@@ -44,6 +46,10 @@ export function createStore(adapter: StorageAdapter): Store {
   let writeProtected = false;
 
   const store: Store = {
+    setState(next: AppState) {
+      state = next;
+    },
+
     getState() {
       return state;
     },

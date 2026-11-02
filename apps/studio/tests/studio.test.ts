@@ -532,7 +532,7 @@ describe('Studio shell integration', () => {
     const store = makeStore();
     const unmount = mountStudio(store, document);
 
-    expect(document.querySelectorAll('[data-act="nav"]')).toHaveLength(4);
+    expect(document.querySelectorAll(`[data-act="nav"]`)).toHaveLength(5);
     expect(document.querySelector('[data-act="export"]')).not.toBeNull();
     expect(document.querySelector('[data-act="import-trigger"]')).not.toBeNull();
 
@@ -563,7 +563,7 @@ describe('Studio shell integration', () => {
     expect(document.querySelector('.nav-item.active')).not.toBeNull();
 
     const navItems = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-act="nav"]'));
-    expect(navItems.map((item) => item.querySelector('.nav-label')?.textContent?.trim())).toEqual(['仪表盘', '人脉', '账本与洞察', 'AI 助手']);
+    expect(navItems.map((item) => item.querySelector('.nav-label')?.textContent?.trim())).toEqual(['仪表盘', '人脉', '账本与洞察', '修炼', 'AI 助手']);
     expect(navItems.some((item) => item.dataset.view === 'insights')).toBe(false);
 
     const personsNav = document.querySelector<HTMLButtonElement>('[data-act="nav"][data-view="persons"]');
@@ -587,6 +587,78 @@ describe('Studio shell integration', () => {
     const aiNav = document.querySelector<HTMLButtonElement>('[data-act="nav"][data-view="ai"]');
     aiNav?.click();
     expect(document.querySelector('.ai')).not.toBeNull();
+
+    unmount();
+    document.body.innerHTML = '';
+  });
+});
+
+describe('Studio practice view', () => {
+  it('renders today scenario, level banner and scenario library', () => {
+    document.body.innerHTML = '<div id="studio"></div>';
+    const store = makeStore();
+    const unmount = mountStudio(store, document);
+    store.loadDemo();
+
+    document.querySelector<HTMLButtonElement>('[data-view="practice"]')?.click();
+    const view = document.querySelector('.practice');
+    expect(view).not.toBeNull();
+    const text = view?.textContent ?? '';
+    expect(text).toContain('人情修炼场');
+    expect(text).toContain('今日情景');
+    expect(text).toContain('情景库');
+    expect(document.querySelectorAll('[data-act="practice-answer"]').length).toBeGreaterThan(0);
+
+    unmount();
+    document.body.innerHTML = '';
+  });
+
+  it('records an answer, updates progress and persists to the store', () => {
+    document.body.innerHTML = '<div id="studio"></div>';
+    const store = makeStore();
+    const unmount = mountStudio(store, document);
+    store.loadDemo();
+    document.querySelector<HTMLButtonElement>('[data-view="practice"]')?.click();
+
+    const before = Object.keys(store.getState().progress).length;
+    const firstChoice = document.querySelector<HTMLButtonElement>('[data-act="practice-answer"]');
+    expect(firstChoice).not.toBeNull();
+    const scenarioId = firstChoice!.dataset.id!;
+    firstChoice?.click();
+
+    // 结果弹层出现，且成绩写回状态
+    const dialog = document.querySelector('#dialog-root');
+    expect(dialog?.textContent).toContain('练习结果');
+    expect(dialog?.textContent).toContain('人情点拨');
+    expect(store.getState().progress[scenarioId]).toBeDefined();
+    expect(store.getState().progress[scenarioId].times).toBe(1);
+    expect(Object.keys(store.getState().progress).length).toBe(before + 1);
+    expect(store.getState().streak.n).toBeGreaterThanOrEqual(1);
+
+    // 关键回归：store 内部状态与 StudioStore 暴露的状态必须一致，
+    // 否则 save() 会把旧状态写回，刷新后成绩丢失。
+    expect(store.getStore().getState().progress[scenarioId]).toBeDefined();
+
+    unmount();
+    document.body.innerHTML = '';
+  });
+
+  it('filters the scenario library by difficulty', () => {
+    document.body.innerHTML = '<div id="studio"></div>';
+    const store = makeStore();
+    const unmount = mountStudio(store, document);
+    store.loadDemo();
+    document.querySelector<HTMLButtonElement>('[data-view="practice"]')?.click();
+
+    const allCards = document.querySelectorAll('.scenario-card').length;
+    const hardChip = document.querySelector<HTMLButtonElement>('[data-act="practice-filter"][data-diff="高手"]');
+    expect(hardChip).not.toBeNull();
+    hardChip?.click();
+
+    const hardCards = document.querySelectorAll('.scenario-card').length;
+    expect(hardCards).toBeLessThan(allCards);
+    expect(hardCards).toBeGreaterThan(0);
+    expect(store.getPracticeFilter()).toBe('高手');
 
     unmount();
     document.body.innerHTML = '';
