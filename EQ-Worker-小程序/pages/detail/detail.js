@@ -76,8 +76,7 @@ Page({
     const p = S.persons.find(x => x.id === this.data.id);
     if (!p) return;
     /* 与 Web 端一致：手动微调上限 ±30，避免单靠微调把热度拉满。 */
-    p.adjust = Math.max(-30, Math.min(30, (p.adjust || 0) + d));
-    engine.save();
+    if (!engine.update(() => { p.adjust = Math.max(-30, Math.min(30, (p.adjust || 0) + d)); })) return;
     this.refresh();
   },
   goRecord() {
@@ -87,8 +86,7 @@ Page({
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
     ui.confirm(this, '删除这条记录？', '此操作无法撤销。', () => {
-      S.events = S.events.filter(x => x.id !== id);
-      engine.save();
+      if (!engine.update(() => { S.events = S.events.filter(x => x.id !== id); })) return;
       this.refresh();
     }, true);
   },
@@ -118,20 +116,20 @@ Page({
     const S = engine.getState();
     const tags = f.tags.split(/[、,，\s]+/).filter(Boolean).slice(0, 6);
     if (this.data.mode === 'add') {
-      S.persons.push({
+      if (!engine.update(() => { S.persons.push({
         id: engine.uid(), name, identity: IDENTITIES[f.identityIdx],
         birthday: engine.toMMDD(f.birthday), tags, note: f.note.trim(),
         adjust: 0, createdAt: Date.now()
-      });
-      engine.save();
+      }); })) return;
       ui.toast(this, '已添加', { icon: '✓' });
       setTimeout(() => wx.navigateBack(), 400);
     } else {
       const p = S.persons.find(x => x.id === this.data.id);
       if (!p) return;
-      p.name = name; p.identity = IDENTITIES[f.identityIdx];
-      p.birthday = engine.toMMDD(f.birthday); p.tags = tags; p.note = f.note.trim();
-      engine.save();
+      if (!engine.update(() => {
+        p.name = name; p.identity = IDENTITIES[f.identityIdx];
+        p.birthday = engine.toMMDD(f.birthday); p.tags = tags; p.note = f.note.trim();
+      })) return;
       wx.setNavigationBarTitle({ title: '人脉详情' });
       this.setData({ mode: 'view' });
       this.refresh();
@@ -151,11 +149,10 @@ Page({
       confirmType: 'teal',
       onConfirm: (val) => {
         if (val && val.trim()) {
-          S.reminders.push({
+          if (!engine.update(() => { S.reminders.push({
             id: engine.uid(), personId: this.data.id,
             content: val.trim(), date: '', status: 'pending'
-          });
-          engine.save();
+          }); })) return false;
           ui.toast(this, '已添加提醒', { icon: '✓' });
         }
       }
@@ -164,10 +161,11 @@ Page({
   delPerson() {
     const S = engine.getState();
     ui.confirm(this, '删除这个人脉？', '其往来记录也会一并删除，且不可恢复。', () => {
-      S.persons = S.persons.filter(x => x.id !== this.data.id);
-      S.events = S.events.filter(x => x.personId !== this.data.id);
-      S.reminders = S.reminders.filter(x => x.personId !== this.data.id);
-      engine.save();
+      if (!engine.update(() => {
+        S.persons = S.persons.filter(x => x.id !== this.data.id);
+        S.events = S.events.filter(x => x.personId !== this.data.id);
+        S.reminders = S.reminders.filter(x => x.personId !== this.data.id);
+      })) return;
       wx.navigateBack();
     }, true);
   }

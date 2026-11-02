@@ -22,6 +22,11 @@ function stateWith(persons: Person[], events: PersonalEvent[]): AppState {
 }
 
 describe('ledger', () => {
+  it.each(['__proto__', 'constructor', 'toString'])('特殊场合名称 %s 正确累计金额', (occasion) => {
+    const state = stateWith([person('p1', '张三')], [event('e1', 'p1', 'gift_give', 500, NOW, { dir: 'out', occasion })]);
+    expect(ledgerInsights(state, NOW).topOccasion).toBe(occasion);
+    expect(ledgerInsights(state, NOW).topOccasionAmount).toBe(500);
+  });
   it('收礼 - 送礼 = 净额，正数代表我欠对方', () => {
     const s = stateWith([person('p1', '张三')], [
       event('e1', 'p1', 'gift_give', 500, NOW, { dir: 'out' }),

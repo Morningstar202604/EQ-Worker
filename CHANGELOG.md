@@ -17,9 +17,17 @@
 
 ### 改进
 
-- 版本号统一至 3.2.0（root / android versionCode 312 / desktop）。
+- 版本号改为**单一来源**：`package.json` 为唯一手写处，`scripts/sync-version.mjs` 派生并校验安卓 `versionCode`/`versionName`、桌面、三份 `sw.js` 缓存名与小程序关于页；`verify` 第一步即执行校验。同步修正两处历史漂移：网页头部停留在 `v3.1.0`（应为 `v3.2.0`）；安卓 `versionCode` 误写 `312`，按历史规则 `major*100+minor*10+patch`（2.8.1→281、3.0.0→300、3.1.0→310）应为 `320`，且 `320 > 312`，已装设备可正常覆盖升级。
 - `verify` 在 legacy build 后自动重建小程序 core bundle，再跑测试与双 Vite 构建。
-- README / 双端构建文档补充新架构、双链构建与 AI 默认关闭说明。
+- README 重写为英文主文档（`README.md`）加中文译本（`README.zh.md`），截图按 v3.2.0 实际界面全部重拍。
+- 补齐开源项目管理：`ROADMAP.md`、`CONTRIBUTING.md`、`ARCHITECTURE.md`、`SUPPORT.md`、`CODE_OF_CONDUCT.md`、Issue 表单与 PR 模板、`docs/adr/` 五篇决策记录、`docs/RELEASE.md`、`docs/ai-privacy.md`；`SECURITY.md` 重写，修正原先「数据永不离开设备」与可选 AI 外发相矛盾的表述。
+- 代码分层修正：`apps/studio/ui/` 更名为 `apps/studio/pages/`（页面数据组装），与 `views/`（纯渲染）职责分离；删除 `views/html.ts` 中未被引用的 `shortDate`；`overview.ts` 内联的百分比收敛逻辑改为复用 `clampPercent`。
+
+### 质量
+
+- 单元测试 255 个（legacy `node --test` + Vitest），`tsc --noEmit` 无错误。
+- 浏览器实跑（Edge + Playwright，1280×633 与 390×844）：旧版客户端 13 步全流程通过——演示数据加载、六个 Tab、人物详情、随礼参谋、话术参谋、记录表单、刷新后持久化（6 位人脉保持不变）、移动端，零控制台报错；Studio 四视图（仪表盘 / 人脉 / 账本与洞察 / AI）渲染正常。
+- 未验证：安卓 APK 与 Windows 包本轮未重新构建（未改动原生壳代码），微信小程序未做真机测试。
 
 ## v3.1.0 — 2026-10-28
 

@@ -14,14 +14,14 @@ import {
 import { demoPayload } from '../demo';
 import { StudioStore } from '../state';
 import { runAssistant, previewAssistantContext } from '../assistant';
-import { buildOverviewData } from '../ui/overview';
-import { buildLedgerData } from '../ui/ledger';
-import { buildPersonList, buildPersonDetail } from '../ui/persons';
+import { buildOverviewData } from '../pages/overview';
+import { buildLedgerData } from '../pages/ledger';
+import { buildPersonList, buildPersonDetail } from '../pages/persons';
 import { renderPersons } from '../views/persons';
 import { renderLedger } from '../views/ledger';
 import { renderOverview } from '../views/overview';
 import { renderAI } from '../views/ai';
-import { buildAIViewData } from '../ui/ai';
+import { buildAIViewData } from '../pages/ai';
 import { mountStudio } from '../main';
 
 const NOW = new Date('2026-10-31T10:00:00+08:00').getTime();

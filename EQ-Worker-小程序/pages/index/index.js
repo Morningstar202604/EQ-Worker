@@ -50,6 +50,6 @@ Page({
     const id = e.currentTarget.dataset.rid;
     const S = engine.getState();
     const r = S.reminders.find(x => x.id === id);
-    if (r) { r.status = 'done'; engine.save(); this.onShow(); }
+    if (r && engine.update(() => { r.status = 'done'; })) this.onShow();
   }
 });

@@ -1,0 +1,98 @@
+name: Bug report
+description: Something is broken, or data did not behave as expected
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Two things make a report actionable: which client you used, and
+        whether your data survived. Please fill both in.
+
+        If this is a security issue, close this form and follow SECURITY.md instead.
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: Which client?
+      options:
+        - Legacy web (index.html / EQ-Worker.html)
+        - Studio (dist-studio)
+        - Android app
+        - Windows desktop app
+        - WeChat Mini Program
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown in the app header, e.g. v3.2.0
+      placeholder: v3.2.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data-impact
+    attributes:
+      label: Did you lose or corrupt data?
+      description: This product stores records you cannot reconstruct, so data loss is always critical.
+      options:
+        - "No — data is intact"
+        - "Yes — records disappeared or changed"
+        - "Yes — a save reported success but nothing was stored"
+        - "Not applicable"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Be specific. "Open the app" is not a step.
+      placeholder: |
+        1. Open the app, load the demo dataset
+        2. Go to 账本 and click ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Paste console errors if you have them. Screenshots help for rendering issues.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        OS: Windows 11
+        Browser: Edge 131
+        Opened via: http://localhost:8000 / file:// / APK
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: I reproduced this with the built-in demo dataset, not only my own data
+          required: false
+        - label: This is not a security vulnerability (those go through SECURITY.md)
+          required: true

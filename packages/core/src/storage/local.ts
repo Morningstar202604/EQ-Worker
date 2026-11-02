@@ -19,11 +19,16 @@ export interface LocalAdapter extends StorageAdapter {
 export function createLocalAdapter(options: LocalAdapterOptions = {}): LocalAdapter {
   const prefix = options.keyPrefix || '';
   const fallback = createMemoryAdapter();
+  const pending = new Set<string>();
   let storage: StorageLike | null = options.storage ?? null;
-  if (storage === null && typeof localStorage !== 'undefined') {
-    storage = localStorage;
-  }
   let degraded = false;
+  if (storage === null) {
+    try {
+      if (typeof localStorage !== 'undefined') storage = localStorage;
+    } catch {
+      degraded = true;
+    }
+  }
 
   const k = (key: string) => prefix + key;
 
@@ -33,6 +38,7 @@ export function createLocalAdapter(options: LocalAdapterOptions = {}): LocalAdap
       return degraded;
     },
     getItem(key: string): string | null {
+      if (pending.has(key)) return fallback.getItem(k(key));
       if (storage) {
         try {
           const v = storage.getItem(k(key));
@@ -48,13 +54,16 @@ export function createLocalAdapter(options: LocalAdapterOptions = {}): LocalAdap
       if (storage) {
         try {
           storage.setItem(k(key), v);
+          pending.delete(key);
           return true;
         } catch (e) {
           degraded = true;
+          pending.add(key);
           return false;
         }
       }
       degraded = true;
+      pending.add(key);
       return false;
     },
     removeItem(key: string): void {
@@ -62,9 +71,13 @@ export function createLocalAdapter(options: LocalAdapterOptions = {}): LocalAdap
       if (storage) {
         try {
           storage.removeItem(k(key));
+          pending.delete(key);
         } catch (e) {
           degraded = true;
+          pending.add(key);
         }
+      } else {
+        pending.add(key);
       }
     }
   };

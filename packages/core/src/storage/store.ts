@@ -26,6 +26,7 @@ export interface ImportResult {
 
 export interface Store {
   getState(): AppState;
+  isWriteProtected(): boolean;
   load(): boolean;
   save(): boolean;
   export(): ExportPayload;
@@ -40,41 +41,58 @@ export interface Store {
 
 export function createStore(adapter: StorageAdapter): Store {
   let state: AppState = createEmptyState();
+  let writeProtected = false;
 
   const store: Store = {
     getState() {
       return state;
     },
 
+    isWriteProtected() {
+      return writeProtected;
+    },
+
     load(): boolean {
       try {
         let raw = adapter.getItem(DB_KEY);
         let fromLegacyKey = false;
-        if (!raw) {
+        if (raw === null) {
           for (const k of LEGACY_DB_KEYS) {
             const old = adapter.getItem(k);
-            if (old) {
+            if (old !== null) {
               raw = old;
               fromLegacyKey = true;
               break;
             }
           }
         }
-        if (!raw) return false;
+        if ('degraded' in adapter && adapter.degraded) writeProtected = true;
+        if (raw === null) return false;
         const parsed: unknown = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as Record<string, unknown>).persons)) {
+          writeProtected = true;
           return false;
         }
         const migrated = migrate(parsed);
         state = migrated.state;
-        if (fromLegacyKey || migrated.from !== SCHEMA_VERSION) store.save();
+        if (migrated.unsafe) writeProtected = true;
+        if (!writeProtected && migrated.backupRequired) {
+          const backupKey = `${DB_KEY}_migration_backup`;
+          const existing = adapter.getItem(backupKey);
+          if (('degraded' in adapter && adapter.degraded) || (existing !== null && existing !== raw) || (existing === null && !adapter.setItem(backupKey, raw)) || adapter.getItem(backupKey) !== raw || ('degraded' in adapter && adapter.degraded)) {
+            writeProtected = true;
+          }
+        }
+        if (!writeProtected && (fromLegacyKey || migrated.from !== SCHEMA_VERSION)) store.save();
         return true;
       } catch (e) {
+        writeProtected = true;
         return false;
       }
     },
 
     save(): boolean {
+      if (writeProtected) return false;
       try {
         const updatedAt = Date.now();
         state.meta = { schema: SCHEMA_VERSION, updatedAt };

@@ -167,7 +167,7 @@ export function sanitizeImport(d: Raw): SanitizeResult {
     : [];
 
   const rawProg = isObj(d.progress) ? d.progress : {};
-  const progress: Record<string, ProgressEntry> = {};
+  const progress: Record<string, ProgressEntry> = Object.create(null);
   for (const k of Object.keys(rawProg)) {
     const v = rawProg[k];
     if (isObj(v)) progress[k] = { best: num(v.best, 0), times: num(v.times, 0) };

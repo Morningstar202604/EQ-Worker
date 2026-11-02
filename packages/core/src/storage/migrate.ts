@@ -7,12 +7,32 @@ export interface MigrationResult {
   from: number;
   to: number;
   warnings: string[];
+  unsafe: boolean;
+  backupRequired: boolean;
 }
 
 type Raw = Record<string, unknown>;
 
 function isObj(x: unknown): x is Raw {
   return !!x && typeof x === 'object' && !Array.isArray(x);
+}
+
+function preservesInput(raw: unknown, clean: unknown, allowLegacyDate = false): boolean {
+  if (Array.isArray(raw)) {
+    return Array.isArray(clean) && raw.length === clean.length && raw.every((item, i) => preservesInput(item, clean[i], allowLegacyDate));
+  }
+  if (isObj(raw)) {
+    return isObj(clean) && Object.keys(raw).every((key) => {
+      if (!Object.prototype.hasOwnProperty.call(clean, key)) return false;
+      const value = raw[key];
+      if (allowLegacyDate && (key === 'birthday' || key === 'anniversary') && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const date = new Date(`${value}T00:00:00Z`);
+        if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value && clean[key] === value.slice(5)) return true;
+      }
+      return preservesInput(value, clean[key], allowLegacyDate);
+    });
+  }
+  return raw === clean;
 }
 
 export function detectSchema(raw: unknown): number {
@@ -29,7 +49,7 @@ export function migrate(raw: unknown): MigrationResult {
 
   if (!isObj(raw)) {
     warnings.push('数据结构无法识别，已按空数据初始化');
-    return { state: createEmptyState(), from, to, warnings };
+    return { state: createEmptyState(), from, to, warnings, unsafe: true, backupRequired: false };
   }
 
   if (from > to) {
@@ -62,5 +82,19 @@ export function migrate(raw: unknown): MigrationResult {
     ledgerFilter: 'all'
   };
 
-  return { state, from, to, warnings };
+  const fields = ['persons', 'events', 'reminders', 'progress', 'streak', 'settings'] as const;
+  const rawMeta = isObj(raw.meta) ? raw.meta : {};
+  const legacy = from > 0 && from < to;
+  const backupRequired = legacy && !preservesInput(raw.persons, state.persons);
+  const invalidMeta = 'meta' in raw && (!isObj(raw.meta) ||
+    ('schema' in rawMeta && (typeof rawMeta.schema !== 'number' || !Number.isInteger(rawMeta.schema) || rawMeta.schema < 0)) ||
+    ('updatedAt' in rawMeta && (typeof rawMeta.updatedAt !== 'number' || !Number.isFinite(rawMeta.updatedAt))));
+  const invalidSchema = 'schema' in raw && (typeof raw.schema !== 'number' || !Number.isInteger(raw.schema) || raw.schema < 0);
+  const unsafe = invalidMeta || invalidSchema || from > to || (typeof raw.schema === 'number' && raw.schema > to) ||
+    (typeof rawMeta.schema === 'number' && rawMeta.schema > to) ||
+    Object.keys(raw).some((key) => !['schema', 'meta', ...fields].includes(key)) ||
+    Object.keys(rawMeta).some((key) => key !== 'schema' && key !== 'updatedAt') ||
+    fields.some((field) => field in raw && !preservesInput(raw[field], state[field], legacy && field === 'persons'));
+  if (unsafe) warnings.push('数据版本不兼容或清洗会丢失原始数据，已启用写保护');
+  return { state, from, to, warnings, unsafe, backupRequired };
 }

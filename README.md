@@ -2,180 +2,223 @@
 
 # EQ-Worker
 
-**A local-first Chinese social intelligence assistant — keep favors clear, keep relationships warm.**
+**Remember what you owe people. Never lose a relationship to a forgotten detail.**
 
-Daily actions · Favor ledger · Gift advisor · Conversation scripts · Relationship health
+Daily actions · Relationship ledger · Gift advisor · Script advisor · Health check
 
-Local-first · Optional user-configured AI · No ads · No tracking
+Local-first · No account · Optional AI you bring yourself
 
-<a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
+<a href="README.md"><b>English</b></a> · <a href="README.zh.md">简体中文</a>
 
 [![Version](https://img.shields.io/badge/version-v3.2.0-orange)](https://gitcode.com/badhope/EQ-Worker)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-255%20passing-brightgreen)](https://github.com/badhope/EQ-Worker/actions)
+[![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20android%20%C2%B7%20windows%20%C2%B7%20wechat-blueviolet)](#which-client-should-i-use)
 
-**Live demo:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
+**Try it:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
 
-**Repositories:** [GitCode](https://gitcode.com/badhope/EQ-Worker) · [Gitee](https://gitee.com/badhope/EQ-Worker) · [GitHub @badhope](https://github.com/badhope/EQ-Worker) · [GitHub @X33834](https://github.com/X33834/EQ-Worker) · [GitHub @Morningstar202604](https://github.com/Morningstar202604/EQ-Worker)
+**Mirrors:** [GitCode](https://gitcode.com/badhope/EQ-Worker) · [Gitee](https://gitee.com/badhope/EQ-Worker) · [GitHub](https://github.com/badhope/EQ-Worker)
 
 </div>
 
 ---
 
-## Why EQ-Worker
+## The problem
 
-Most people do not struggle with relationships because they do not care. They struggle because they cannot remember, cannot calculate, and cannot find the right words:
+Nobody forgets that relationships matter. People forget the specifics:
 
-- Who helped you, whom you owe a dinner, what happened last month;
-- How much to give for a wedding, a baby, a housewarming, or a hospital visit;
-- How to decline a loan request, ask for money back, or apologize without sounding cold.
+- Who helped you last month, and what you still owe them
+- How much to give at a wedding, a baby shower, a housewarming, a hospital visit
+- How to decline a loan request, chase a repayment, or apologise — without the words coming out wrong
 
-EQ-Worker puts these into one **local-first workspace**. Every time you open it, it tells you what to do today, then gives you the ledger, a gift range, and scripts you can copy.
+EQ-Worker is a workbench for those specifics. Open it and it tells you what to do today. Then it
+gives you the ledger, a gift range with the reasoning shown, and scripts you can copy and adjust.
 
-> It is not a fancier contacts app. It is an assistant that **thinks one step ahead about your relationships**.
+It is not a fancier contacts app. It is the assistant that thinks about your obligations before you do.
 
 ---
 
-## Core features
+## What it does
 
-### 1. Daily actions (assistant home)
+### Today's actions
 
-Combines birthdays, anniversaries, overdue reminders, fading relationships, favor debt, ledger balances, thank-you follow-ups, and key-relationship maintenance into one prioritized list.
+One ranked list combining upcoming dates, pending reminders, outstanding debts, relationships that
+have gone quiet, and thank-yous you owe. Every item carries two buttons that do the next thing —
+open the gift advisor, generate a script, or record the interaction in ten seconds.
 
-Every action carries two buttons, for example:
+### Relationship ledger
 
-- **Gift advisor** → a concrete gift range;
-- **Reconnect script** → three ready-to-copy tones;
-- **Log it** → record the interaction in ten seconds.
+Record gifts given and received, loans, and repayments. See your net position per person and across
+everyone.
 
-### 2. Favor ledger
+- **One-tap settlement** turns a net balance into an actual record: repayment, return gift, or
+  incoming repayment. Partial settlement is supported.
+- **Ledger insights**: given this month, received this month, average gift, most-invested occasion.
+- **Amounts never affect relationship scores.** Money lives in the ledger; heat, trust, and
+  obligation are separate, so the two cannot contaminate each other.
 
-- Record gift / received gift / loan / repayment with amount, direction, and occasion;
-- Per-person net position: **I owe them** / **they owe me** / **settled**;
-- Totals: given, received, net, people owed, people owing;
-- **One-click settlement**: turn the net position into a repayment / return-gift / collection record, with partial settlement supported;
-- **Ledger insights**: this month's given/received, average per gift, and the occasion that costs the most;
-- Filters and CSV export;
-- **Money only affects the ledger, never the heat / trust / favor-debt scores.**
+### Gift advisor
 
-### 3. Gift advisor
+Given relationship, occasion, tier, and city, it returns three amounts — modest, appropriate, and
+generous — and explains each one: the base reference, what they gave you before (a return gift
+should not be less), an upward adjustment when you owe them, and their stated preferences.
 
-Suggests **simple / appropriate / generous** ranges based on relationship, occasion, tier, and city, with explanations:
+> Gift amounts vary enormously by region and local custom. The advisor is a reference, not a rule.
 
-- baseline by relationship and occasion;
-- what they gave you on the same occasion (return gifts should not be lower);
-- an upward adjustment when your ledger shows a net debt;
-- their likes and taboos as gift-selection hints.
+### Script advisor
 
-> Gift amounts vary heavily by region, closeness, and local custom. Treat this as a reference, not a rule.
+16 everyday situations, three tones each (steady, close, brief), with the person's name filled in.
+Some scripts also reference your recent history with that person. Copy, adjust, send.
 
-### 4. Conversation scripts
+### Relationship health
 
-16 high-frequency scenes: reconnect, thank, apologize, ask a favor, decline, refuse a loan, collect a debt, give a gift, toast, visit the sick, decline an invitation, festival greetings, invite to dinner, follow up, birthday, anniversary.
+A composite score from relationship indicators, ledger reciprocity, and recent friction, with a
+ranked list so you fix the most neglected relationship first.
 
-Each scene offers **steady / close / brief** versions, automatically using the person's name, role, and latest interaction. One-click copy.
+### Everything else
 
-### 5. Relationship health
-
-Combines heat, trust, intimacy, activity, ledger reciprocity, and conflicts in the past year into a 0–100 score with concrete next steps. A **global health list** sorts everyone from lowest to highest, so you fix the relationship that needs it most first.
-
-### 6. Important dates and calendar
-
-Birthdays and anniversaries recur yearly; reminders are one-off events. Export everything as `.ics`.
-
-### 7. Everything from v2 remains
-
-- Five-dimension person profiles;
-- Quick logging with undo, search highlight, role filters, three sort modes;
-- 15 Chinese social scenarios and ranks;
-- Monthly insights, annual report, relationship network;
-- Achievements, PWA offline support, JSON / clipboard / CSV migration.
+Contact profiles, quick record with undo, search and filters, scenario practice, monthly insights,
+annual report, relationship network, achievements, and offline PWA support.
 
 ---
 
 ## Screenshots
 
-| Assistant | Favor ledger |
+| Today's actions | Relationship ledger |
 | --- | --- |
-| ![assistant](docs/screenshots/v3/01-assistant.png) | ![ledger](docs/screenshots/v3/02-ledger.png) |
+| ![Assistant](docs/screenshots/v3/01-assistant.png) | ![Ledger](docs/screenshots/v3/02-ledger.png) |
 
-| Gift advisor | Conversation scripts |
+| Gift advisor | Script advisor |
 | --- | --- |
-| ![gift](docs/screenshots/v3/03-gift.png) | ![scripts](docs/screenshots/v3/04-script.png) |
+| ![Gift](docs/screenshots/v3/03-gift.png) | ![Script](docs/screenshots/v3/04-script.png) |
 
 | Quick record | Mobile |
 | --- | --- |
-| ![record](docs/screenshots/v3/05-record.png) | ![mobile](docs/screenshots/v3/06-mobile.png) |
+| ![Record](docs/screenshots/v3/05-record.png) | ![Mobile](docs/screenshots/v3/06-mobile.png) |
 
-| Ledger insights | One-click settlement |
+| Ledger insights | One-tap settlement |
 | --- | --- |
-| ![insights](docs/screenshots/v3/07-ledger-insights.png) | ![settlement](docs/screenshots/v3/08-settlement.png) |
+| ![Insights](docs/screenshots/v3/07-ledger-insights.png) | ![Settlement](docs/screenshots/v3/08-settlement.png) |
 
-| Settlement record | Relationship health |
+| Settlement history | Relationship health |
 | --- | --- |
-| ![record](docs/screenshots/v3/09-settlement-record.png) | ![health](docs/screenshots/v3/10-health.png) |
+| ![History](docs/screenshots/v3/09-settlement-record.png) | ![Health](docs/screenshots/v3/10-health.png) |
+
+| Studio workbench | Studio AI (off by default) |
+| --- | --- |
+| ![Studio](docs/screenshots/v3/11-studio-overview.png) | ![Studio AI](docs/screenshots/v3/12-studio-ai.png) |
 
 ---
 
-## Architecture (v3.2.0)
+## Which client should I use?
 
-The repository has two build chains and three reusable packages:
-
-| Path | Role |
-| --- | --- |
-| `packages/core` | TypeScript engine (types, constants, date, sanitize, ledger, health, actions, scripts, ICS, storage), parity-tested against legacy `_app_dev.js` |
-| `packages/viz` | Zero-dependency deterministic SVG charts (radar, network, trend, flow, gauge) |
-| `packages/ai` | Local-first AI orchestration skeleton: disabled by default, direct-from-device calls, user-supplied key, preview before send |
-| `apps/studio` | New UI built by `vite.studio.config.ts` into `dist-studio/` |
-
-- **Legacy chain (unchanged):** `node build.js` compiles `_app_dev.js` + `index.template.html` into `index.html` / `EQ-Worker.html`, force-syncs Android assets and `desktop/`, then verifies consistency. These legacy releases do not include the separately built Studio.
-- **TypeScript chain:** `pnpm run typecheck`, `pnpm run test:vite`, `pnpm run build:vite`, `pnpm run build:studio`.
-- **Mini program:** `node scripts/build-mini-core.mjs` bundles `packages/core` into `EQ-Worker-小程序/utils/core.bundle.js`; `utils/engine.js` re-exports it instead of holding a duplicate engine.
-- **AI is off by default:** no key, no outbound call, no telemetry. Rule-based advisors stay the default path.
-
----
-
-## Platforms
-
-| Platform | Status | Notes |
+| Client | State | What you get |
 | --- | --- | --- |
-| **Web (PWA)** | Full | Self-contained single HTML file, offline-ready |
-| **Android** | Full | Native WebView shell embedding the same `index.html` |
-| **Windows desktop** | Full | Portable Electron build |
-| **WeChat Mini Program** | Lite | Radar, contacts, record, training, profile; data-compatible with Web v4, without the new assistant/advisor UI |
+| **Web (PWA)** | Complete | Every feature, installable, works offline |
+| **Android** | Complete | Native WebView shell around the web client; ~1.4 MB APK |
+| **Windows desktop** | Complete | Electron shell, portable zip, no installer |
+| **Studio** | Separate build | A denser workbench: overview, contacts, ledger and insights, optional AI |
+| **WeChat Mini Program** | Lightweight | Radar, contacts, record, practice, profile — no advisor screens |
 
----
-
-## Data and privacy
-
-- **Local-first**: data is stored locally by default; AI is off by default. If the user enables AI and confirms an external request, the selected context is sent to their configured provider;
-- No account, no ads, no analytics;
-- Backups are plain JSON and can move between web and mini program;
-- Legacy `rqsg_radar_v2` data migrates automatically to `eqworker_db_v1`.
+The web, Android, and desktop clients share **one** build artifact, so a fix lands everywhere at
+once. Studio is built separately and is not included in the release packages. The Mini Program is a
+deliberately smaller companion.
 
 ---
 
 ## Quick start
 
-Open `EQ-Worker.html` directly, or serve the folder:
+### Web
+
+Open `EQ-Worker.html` directly, or serve the directory:
 
 ```bash
 python3 -m http.server 8000
-# http://localhost:8000/
+# open http://localhost:8000/
 ```
 
-Build and test:
+For PWA offline support, serve over HTTP(S) and keep `index.html`, `EQ-Worker.html`,
+`sw-register.js`, and `sw.js` together. Service workers require a secure context.
+
+### Build from source
 
 ```bash
 pnpm install
-pnpm run test    # legacy Node.js tests + Vitest TypeScript smoke tests
-pnpm run verify  # legacy build/tests + TypeScript typecheck + Vitest + Vite build
+pnpm run dev:studio     # Studio dev server
+pnpm run build:studio   # build Studio to dist-studio/
+pnpm run test           # legacy node:test + Vitest
+pnpm run verify         # full gate: version, builds, tests, typecheck, dist
 ```
 
-The default test and verify gates cover both the legacy JavaScript path and the Vite/TypeScript/Vitest path.
+`pnpm run verify` is the definition of green. It checks version consistency, rebuilds every
+artifact, runs both test suites, type-checks, and builds both Vite targets.
 
-Android / Windows build instructions: [`docs/双端构建与发布.md`](docs/双端构建与发布.md).
+### Android and Windows
 
-WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
+See [`docs/双端构建与发布.md`](docs/双端构建与发布.md) (Chinese) and
+[`docs/RELEASE.md`](docs/RELEASE.md) (release checklist, signing, artifact verification).
+
+### WeChat Mini Program
+
+Import `EQ-Worker-小程序/` into WeChat DevTools.
+
+---
+
+## Architecture
+
+Four layers, one source of truth for the rules:
+
+```
+shells     android/  desktop/            (embed the legacy build)
+UIs        _app_dev.js  apps/studio  EQ-Worker-小程序/
+packages   packages/ai  packages/viz
+core       packages/core                  (pure domain, no DOM)
+```
+
+`packages/core` holds the ledger math, health scoring, sanitization, and advice rules as pure
+functions. Every client consumes it, which is why the numbers agree across clients. Charts in
+`packages/viz` are deterministic SVG strings with no runtime dependencies, so the single-file build
+does not carry a charting library. AI in `packages/ai` is off by default and speaks to providers
+through a minimal fetch interface rather than an SDK.
+
+Full reasoning, including the trade-offs we accepted: [`ARCHITECTURE.md`](ARCHITECTURE.md) and
+[`docs/adr/`](docs/adr/).
+
+---
+
+## Data and privacy
+
+- **Local by default.** Records live in `localStorage`, WebView storage, or `wx.storage`. No account,
+  no server, no analytics.
+- **Exports are sanitized.** A JSON backup contains your relationship data and deliberately excludes
+  AI provider configuration and keys.
+- **AI is opt-in and previewed.** Disabled by default with zero network requests. When you enable it,
+  you see the exact text that will be sent and must confirm before anything leaves the device.
+  Changing the person, context, provider, or model invalidates that approval.
+- **Fail closed on storage trouble.** If a migration would lose data, the app refuses to write and
+  tells you, rather than overwriting. If a save fails, it says so instead of pretending success.
+
+Read [`docs/ai-privacy.md`](docs/ai-privacy.md) for the precise boundary, including what we cannot
+guarantee.
+
+---
+
+## Project management
+
+| Document | Purpose |
+| --- | --- |
+| [ROADMAP.md](ROADMAP.md) | What shipped, what's next, and what "done" means |
+| [CHANGELOG.md](CHANGELOG.md) | Version history with verification evidence |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, conventions, testing expectations |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Layers, boundaries, and why |
+| [docs/adr/](docs/adr/) | Decisions that are expensive to reverse |
+| [docs/RELEASE.md](docs/RELEASE.md) | Release checklist, signing, artifact parity |
+| [SECURITY.md](SECURITY.md) | Reporting, scope, AI red lines |
+| [SUPPORT.md](SUPPORT.md) | Where to ask what |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
+
+Version numbers are single-sourced from `package.json`; `scripts/sync-version.mjs` derives and
+verifies every other location, and `pnpm run verify` fails on drift.
 
 ---
 
@@ -183,49 +226,34 @@ WeChat Mini Program: import `EQ-Worker-小程序/` into WeChat DevTools.
 
 | Layer | Choice |
 | --- | --- |
-| Language | Vanilla JavaScript + TypeScript smoke entry |
-| Charts | ECharts 5 (inline) / Canvas 2D (mini program) |
-| Storage | localStorage / wx.storage |
-| Build | `build.js` — ESM, zero dependencies |
-| Tests | `node --test` (59 legacy cases, incl. mini-core parity) + Vitest (core / viz / ai / smoke) |
-| Advisor | Local explainable rules by default; optional AI uses a user-configured provider |
+| Language | TypeScript (packages, Studio) and JavaScript (legacy single-file client) |
+| Charts | Canvas 2D (Mini Program) · ECharts 5 (legacy) · deterministic SVG (packages/viz) |
+| Storage | `localStorage` · `wx.storage` · in-memory fallback |
+| Build | `build.js` (legacy) · Vite (Studio, web) |
+| Tests | `node:test` (legacy + cross-end parity) · Vitest |
+| Native shells | Android WebView + WebViewAssetLoader · Electron 44 |
 
 ---
 
-## v3.2.0
+## Version 3.2.0
 
-- Engineering foundation: Vite + TypeScript + Vitest alongside the legacy chain;
-- New `packages/core` (parity-tested engine), `packages/viz` (SVG charts), `packages/ai` (disabled by default) and `apps/studio`;
-- Mini program now consumes the core bundle, removing the duplicate engine implementation;
-- Android debug dev-server support and desktop `EQ_DEV_URL` development mode;
-- Version 3.2.0 across web, Android (`versionCode 312`) and desktop.
+- TypeScript core extracted to `packages/core`, parity-tested against the legacy engine
+- New `packages/viz` (SVG charts), `packages/ai` (opt-in), and `apps/studio`
+- Mini Program now consumes the core bundle; the duplicated engine is gone
+- Dual build chain with a single `verify` gate
+- Storage hardening: write protection, verified backups, in-memory fallback, save rollback
+- Version single-sourced and enforced
 
-## v3.1.0
-
-- New **one-click settlement** for repayment / return gifts / collections, including partial settlement;
-- New **ledger insights**: monthly given/received, average per gift, top occasion;
-- New **global relationship health list** sorted from lowest score;
-- Modal keyboard focus trap and focus restoration;
-- 54 tests passing, zero browser console errors.
-
-## v3.0.0
-
-- Rebranded from 人情世故雷达 to **EQ-Worker**;
-- New **assistant home / daily actions**;
-- New **favor ledger** with amounts, direction, occasion, filters, CSV;
-- New **gift advisor**;
-- New **conversation scripts** (16 scenes × 3 tones);
-- New **relationship health** and per-person ledger;
-- New **.ics export**;
-- Data schema v4 with automatic migration.
+Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## License
 
-Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). See [`LICENSE`](LICENSE).
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). See [LICENSE](LICENSE).
 
 <div align="center">
 
-**Relationships are not transactions — but remembering matters.**
+**Etiquette is not calculation. It is keeping people in mind.**
+
 </div>

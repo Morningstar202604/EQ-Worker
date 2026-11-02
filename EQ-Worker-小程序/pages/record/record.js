@@ -78,9 +78,7 @@ Page({
       weight: this.data.weight,
       note: this.data.note.trim()
     };
-    S.events.push(ev);
-    S.lastEventId = ev.id;
-    engine.save();
+    if (!engine.update(() => { S.events.push(ev); S.lastEventId = ev.id; })) return;
     this.setData({ title: '', date: '', note: '', weight: (EVENTS[this.data.curType] || EVENTS.other).dHeat });
     this.refreshRecent();
     ui.toast(this, '已记录', { icon: '✓' });
@@ -88,9 +86,7 @@ Page({
   undo() {
     const S = engine.getState();
     if (!S.lastEventId) return;
-    S.events = S.events.filter(x => x.id !== S.lastEventId);
-    S.lastEventId = null;
-    engine.save();
+    if (!engine.update(() => { S.events = S.events.filter(x => x.id !== S.lastEventId); S.lastEventId = null; })) return;
     this.refreshRecent();
     ui.toast(this, '已撤销', { icon: '↺' });
   },
@@ -98,8 +94,7 @@ Page({
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
     ui.confirm(this, '删除这条记录？', '此操作无法撤销。', () => {
-      S.events = S.events.filter(x => x.id !== id);
-      engine.save();
+      if (!engine.update(() => { S.events = S.events.filter(x => x.id !== id); })) return;
       this.refreshRecent();
     }, true);
   }

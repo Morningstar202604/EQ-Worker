@@ -117,38 +117,82 @@ function applySettings(raw) {
   return { giftTier: raw.giftTier, cityTier: raw.cityTier };
 }
 
+const BACKUP_KEY = DB_KEY + '_migration_backup';
+let writeProtected = true;
+
+function preservesInput(raw, clean, allowDates) {
+  if (Array.isArray(raw)) return Array.isArray(clean) && raw.length === clean.length && raw.every((v, i) => preservesInput(v, clean[i], allowDates));
+  if (raw && typeof raw === 'object') {
+    return clean && typeof clean === 'object' && !Array.isArray(clean) && Object.keys(raw).every(key => {
+      if (!Object.prototype.hasOwnProperty.call(clean, key)) return false;
+      const value = raw[key];
+      if (allowDates && (key === 'birthday' || key === 'anniversary') && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const date = new Date(value + 'T00:00:00Z');
+        if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value && clean[key] === value.slice(5)) return true;
+      }
+      return preservesInput(value, clean[key], allowDates);
+    });
+  }
+  return raw === clean;
+}
+
 function load() {
+  writeProtected = true;
   try {
-    let raw = wx.getStorageSync(DB_KEY);
-    if (!raw) raw = wx.getStorageSync(LEGACY_DB_KEY);
-    if (!raw) { _empty(); return S; }
+    const keys = wx.getStorageInfoSync().keys;
+    const sourceKey = keys.includes(DB_KEY) ? DB_KEY : keys.includes(LEGACY_DB_KEY) ? LEGACY_DB_KEY : null;
+    if (!sourceKey) { _empty(); writeProtected = false; return S; }
+    const raw = wx.getStorageSync(sourceKey);
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (!d || !Array.isArray(d.persons)) { _empty(); return S; }
+    if (!d || typeof d !== 'object' || Array.isArray(d) || !Array.isArray(d.persons)) return S;
     const clean = sanitizeImport(d);
-    S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
-    S.progress = clean.progress; S.streak = clean.streak; S.settings = applySettings(clean.settings);
-    S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
+    const next = { persons: clean.persons, events: clean.events, reminders: clean.reminders, progress: clean.progress, streak: clean.streak, settings: applySettings(clean.settings), lastEventId: typeof d.lastEventId === 'string' ? d.lastEventId : null };
+    const fields = ['persons', 'events', 'reminders', 'progress', 'streak', 'settings', 'lastEventId'];
+    const validSchema = !('schema' in d) || (Number.isInteger(d.schema) && d.schema >= 0 && d.schema <= SCHEMA_VERSION);
+    const validFields = Object.keys(d).every(key => key === 'schema' || fields.includes(key)) && fields.every(key => !(key in d) || preservesInput(d[key], next[key], key === 'persons'));
+    const needsBackup = !preservesInput(d.persons, next.persons, false);
+    Object.assign(S, next);
     invalidateCache();
+    if (!validSchema || !validFields) return S;
+    if (needsBackup) {
+      if (keys.includes(BACKUP_KEY)) {
+        if (JSON.stringify(wx.getStorageSync(BACKUP_KEY)) !== JSON.stringify(raw)) return S;
+      } else {
+        wx.setStorageSync(BACKUP_KEY, raw);
+        if (JSON.stringify(wx.getStorageSync(BACKUP_KEY)) !== JSON.stringify(raw)) return S;
+      }
+    }
+    writeProtected = false;
     return S;
-  } catch (e) { _empty(); return S; }
+  } catch (e) { return S; }
 }
 
 function save() {
-  try { wx.setStorageSync(DB_KEY, { schema: SCHEMA_VERSION, ...S }); } catch (e) { wx.showToast({ title: '保存失败', icon: 'none' }); }
   invalidateCache();
+  if (writeProtected) { wx.showToast({ title: '数据异常，禁止覆盖', icon: 'none' }); return false; }
+  try { wx.setStorageSync(DB_KEY, { schema: SCHEMA_VERSION, ...S }); return true; }
+  catch (e) { wx.showToast({ title: '保存失败', icon: 'none' }); return false; }
 }
+function update(change) {
+  const before = JSON.stringify(S);
+  change(S);
+  if (save()) return true;
+  Object.assign(S, JSON.parse(before));
+  invalidateCache();
+  return false;
+}
+function isWriteProtected() { return writeProtected; }
 function getState() { return S; }
 function backupText() { return JSON.stringify({ app: 'EQ-Worker', version: 3, exportedAt: Date.now(), persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak, settings: S.settings }, null, 1); }
 function restoreText(txt) {
   const d = JSON.parse(txt);
   if (!d || !Array.isArray(d.persons)) throw new Error('bad');
   const clean = sanitizeImport(d);
-  S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
-  S.progress = clean.progress; S.streak = clean.streak; S.settings = applySettings(clean.settings);
-  S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
-  save();
-  invalidateCache();
-  return S;
+  return update(() => {
+    S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
+    S.progress = clean.progress; S.streak = clean.streak; S.settings = applySettings(clean.settings);
+    S.lastEventId = typeof d.lastEventId === 'string' ? d.lastEventId : null;
+  }) ? S : false;
 }
 
 /* ---------------- 月度 / 年度 / 趋势 数据（小程序特有聚合，保留本地实现） ---------------- */
@@ -204,7 +248,7 @@ function annualData() {
 }
 
 module.exports = {
-  load, save, getState, backupText, restoreText,
+  load, save, update, isWriteProtected, getState, backupText, restoreText,
   uid, DAY, todayStr, fmtDate, timeAgo, toMMDD, toDateInput, daysUntil, initials, sanitizeImport,
   clamp, avg, esc,
   solarToLunar, upcomingFestival,

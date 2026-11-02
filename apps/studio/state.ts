@@ -55,8 +55,8 @@ export interface ImportOutcome {
 const SESSION_KEY = 'eqworker.studio.ai.key';
 
 function browserSessionStorage(): StudioStoreOptions['sessionKeyStore'] {
-  if (typeof sessionStorage === 'undefined') return null;
   try {
+    if (typeof sessionStorage === 'undefined') return null;
     const probe = '__eqworker_studio_probe__';
     sessionStorage.setItem(probe, '1');
     sessionStorage.removeItem(probe);
@@ -89,19 +89,48 @@ export class StudioStore {
   private lastRun: AssistantRunResult | null = null;
   private aiRunToken = 0;
   private aiAbort: AbortController | null = null;
+  private storageWarning = '';
 
   constructor(options: StudioStoreOptions = {}) {
-    const adapter =
-      options.adapter ??
-      createLocalAdapter({
-        keyPrefix: 'eqworker_studio_',
-        storage: typeof localStorage === 'undefined' ? null : localStorage
-      });
+    const backing = options.adapter ?? createLocalAdapter({ keyPrefix: 'eqworker_studio_' });
+    let hadStoredValue = false;
+    let writeProtected = false;
+    const warnRead = (): void => {
+      writeProtected = true;
+      this.storageWarning = '本地存储读取失败或不可用，已启用写保护，当前更改仅保存在内存中。导出的当前数据可能不含历史数据；请另存备份，修复浏览器存储或在浏览器存储中恢复原始备份后重新加载。';
+    };
+    const warnSave = (): void => { this.storageWarning = '本地保存失败，当前更改可能仅保存在内存中；请及时导出备份。'; };
+    const adapter: StorageAdapter = {
+      getItem: (key) => {
+        try {
+          const value = backing.getItem(key);
+          if (value) hadStoredValue = true;
+          if ('degraded' in backing && backing.degraded) warnRead();
+          return value;
+        } catch {
+          warnRead();
+          return null;
+        }
+      },
+      setItem: (key, value) => {
+        if (writeProtected) return false;
+        try {
+          const saved = backing.setItem(key, value);
+          if (!saved) warnSave();
+          return saved;
+        } catch {
+          warnSave();
+          return false;
+        }
+      },
+      removeItem: (key) => backing.removeItem(key)
+    };
     this.store = createStore(adapter);
     this.nowFn = options.now ?? (() => Date.now());
     this.fetchImpl = options.fetchImpl;
     this.sessionKeys = options.sessionKeyStore === undefined ? browserSessionStorage() : options.sessionKeyStore;
-    this.store.load();
+    const loaded = this.store.load();
+    if ((!loaded && hadStoredValue && !this.storageWarning) || this.store.isWriteProtected()) warnRead();
     this.appState = this.store.getState();
     this.selectedId = this.appState.persons[0]?.id ?? null;
     this.aiForm = {
@@ -115,6 +144,10 @@ export class StudioStore {
 
   now(): number {
     return this.nowFn();
+  }
+
+  getStorageWarning(): string {
+    return this.storageWarning;
   }
 
   getState(): AppState {

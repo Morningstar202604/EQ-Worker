@@ -7,14 +7,35 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
 
+/* 版本单一来源：package.json。
+   历史上 BRAND.version 与模板里的 <span class="ver"> 各自硬编码，曾漂移成 v3.1.0（package 已是 3.2.0）。
+   这里统一从 package.json 读取并注入，源码里只保留占位符 __APP_VERSION__。 */
+async function readVersion() {
+  const pkg = JSON.parse(await readFile(resolve(ROOT, 'package.json'), 'utf8'));
+  if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) {
+    throw new Error(`package.json 的 version 不是合法语义化版本：${pkg.version}`);
+  }
+  return pkg.version;
+}
+
 async function build() {
   const t0 = Date.now();
+  const version = await readVersion();
+  const versionTag = 'v' + version;
 
-  // 1. 读取应用 JS
-  const appJs = await readFile(resolve(ROOT, '_app_dev.js'), 'utf8');
+  // 1. 读取应用 JS，并把版本占位符替换成 package.json 的真实版本
+  let appJs = await readFile(resolve(ROOT, '_app_dev.js'), 'utf8');
+  if (!appJs.includes('__APP_VERSION__')) {
+    throw new Error('_app_dev.js 中未找到 __APP_VERSION__ 占位符（BRAND.version 必须由构建注入）');
+  }
+  appJs = appJs.replaceAll('__APP_VERSION__', versionTag);
 
-  // 2. 读取模板
-  const template = await readFile(resolve(ROOT, 'index.template.html'), 'utf8');
+  // 2. 读取模板，并替换模板内的版本占位符
+  let template = await readFile(resolve(ROOT, 'index.template.html'), 'utf8');
+  if (!template.includes('__APP_VERSION__')) {
+    throw new Error('index.template.html 中未找到 __APP_VERSION__ 占位符');
+  }
+  template = template.replaceAll('__APP_VERSION__', versionTag);
 
   // 3. 将 JS 内容替换占位符
   if (!template.includes('/*__APP_JS__*/')) {

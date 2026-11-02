@@ -67,7 +67,7 @@ export function wisdomFull(): number {
 
 export function getWisdom(state: AppState): number {
   let s = 0;
-  for (const k in state.progress) {
+  for (const k of Object.keys(state.progress)) {
     const sc = SCENARIOS.find((x) => x.id === k);
     const w = DIFFS[sc ? sc.diff : '入门'].w;
     s += state.progress[k].best * w;

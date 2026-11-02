@@ -6,12 +6,12 @@
 
 今日行动 · 人情账本 · 随礼参谋 · 话术参谋 · 关系体检
 
-本地优先 · 可选自配置 AI · 无广告 · 无埋点
+本地优先 · 旧版规则参谋 · 独立 Studio 可选 AI
 
 <a href="README.zh.md"><b>简体中文</b></a> · <a href="README.md">English</a>
 
-[![版本](https://img.shields.io/badge/版本-v3.2.0-orange)](https://gitcode.com/badhope/EQ-Worker)
-[![许可](https://img.shields.io/badge/许可-CC%20BY--NC%204.0-red)](LICENSE)
+[![版本](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v3.2.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![许可](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF-CC%20BY--NC%204.0-red)](LICENSE)
 
 **在线体验：** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
 
@@ -35,60 +35,17 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 
 ---
 
-## 核心功能
+## 旧版客户端功能
 
-### 1. 今日行动（助手首页）
+以下功能和截图描述旧版网页客户端，安卓和桌面版也使用该客户端。Studio 与小程序界面独立，功能不完全相同。
 
-把生日、纪念日、待办、断联、欠人情、账本净额、该道谢、关键关系维护合成一份按紧急度排序的清单。
-
-每条行动都带两个按钮，例如：
-
-- 「还礼参谋」→ 直接给出礼金区间；
-- 「破冰话术」→ 给出三种语气的现成说法；
-- 「记一笔」→ 10 秒把这次走动记进账本。
-
-### 2. 人情账本
-
-- 送礼 / 收礼 / 借款 / 还款分别记「金额 + 方向 + 场合」；
-- 单人净额：**我欠对方** / **对方欠我** / **两清**；
-- 总账：累计送出、累计收到、净额、待还人数、待收人数；
-- **一键结清**：把净额直接变成「还款 / 回礼 / 收款 / 对方回礼」记录，支持只结一部分；
-- **账本洞察**：本月送出/收到、平均每笔、最花心思的场合；
-- 支持筛选、CSV 导出；
-- **金额只进账本，不影响热度/信任/人情债等人情分**，两套账互不污染。
-
-### 3. 随礼参谋
-
-按「关系 × 场合 × 档位 × 城市」给出 **从简 / 建议 / 重视** 三档金额，并说明依据：
-
-- 关系与场合的基准参考；
-- 对方过去在同类场合给过你多少（还礼不低于此数）；
-- 账本净欠时适度上浮；
-- 对方的喜好与忌讳（礼物选择提示）。
-
-> 礼金受地区、亲疏、当地风俗影响很大，建议只是参谋，最终以你的真实关系和当地习惯为准。
-
-### 4. 话术参谋
-
-内置 16 个高频场景：破冰、道谢、道歉、请托、婉拒、拒绝借钱、催还、随礼、敬酒、探病、婉拒饭局、节日祝福、约饭、事后跟进、生日、纪念日。
-
-每个场景给出 **稳妥版 / 亲近版 / 简短版**，并自动带入对方称呼、身份、最近一次往来，支持一键复制。
-
-### 5. 关系体检
-
-把热度、信任、亲密度、活跃度、账本互惠度、近一年冲突次数合成 0–100 的健康度，并给出可执行建议。支持**全局体检列表**，按健康度从低到高排序，先修最需要经营的关系。
-
-### 6. 重要日子与日历
-
-生日、纪念日按年循环，待办按单次事件，一键导出 `.ics` 到系统日历。
-
-### 7. 原有能力保留
-
-- 人脉画像：热度 / 亲密度 / 信任度 / 活跃度 / 人情债；
-- 快速记录与撤销、搜索高亮、身份筛选、三种排序；
-- 15 个中国式社交情景修炼与段位；
-- 月度洞察、年度报告、关系网络图；
-- 成就徽章、PWA 离线、备份/剪贴板/CSV 迁移。
+- **今日行动**：按紧急度汇总重要日子、待办、人情往来和关系维护，并提供相应操作。
+- **人情账本**：记录送礼、收礼、借款和还款，查看单人净额、总账与洞察；支持部分结清、筛选及 CSV 导出。金额只进账本，不影响热度、信任和人情债等分数。
+- **随礼参谋**：根据关系、场合、档位、城市和历史往来，给出从简、建议、重视三档金额参考；喜好和忌讳仅用于礼物选择提示，不影响金额。礼金仍需结合当地习俗和实际关系决定。
+- **话术参谋**：覆盖 16 个常见场景，提供稳妥、亲近、简短三种语气，带入称呼；部分话术还会参考最近往来，可复制后调整。
+- **关系体检**：根据关系指标、账本互惠度和近一年冲突计算健康度，提供建议及排序列表。
+- **重要日子**：生日和纪念日按年循环，待办为单次事件；支持导出 `.ics`。
+- **其他**：人脉画像、快速记录与撤销、搜索与筛选、情景修炼、月度洞察、年度报告、关系网络、成就和 PWA 离线支持。
 
 ---
 
@@ -114,6 +71,10 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 | --- | --- |
 | ![结清记录](docs/screenshots/v3/09-settlement-record.png) | ![关系体检](docs/screenshots/v3/10-health.png) |
 
+| Studio 工作台 | Studio AI（默认关闭） |
+| --- | --- |
+| ![Studio](docs/screenshots/v3/11-studio-overview.png) | ![Studio AI](docs/screenshots/v3/12-studio-ai.png) |
+
 ---
 
 ## 新架构（v3.2.0）
@@ -122,26 +83,27 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 
 | 路径 | 作用 |
 | --- | --- |
-| `packages/core` | TypeScript 纯逻辑引擎（类型、常量、日期、清洗、账本、健康度、行动、话术、ICS、存储），与 legacy `_app_dev.js` 逐函数 parity |
+| `packages/core` | TypeScript 纯逻辑引擎（类型、常量、日期、清洗、账本、健康度、行动、话术、ICS、存储），部分核心函数与旧版 `_app_dev.js` 经一致性测试 |
 | `packages/viz` | 零依赖确定性 SVG 图表（雷达、关系网络、趋势、流向、仪表盘） |
-| `packages/ai` | 本地优先 AI 编排骨架：默认关闭、端侧直连、用户自备 Key、发送前预览 |
-| `apps/studio` | 新界面，由 `vite.studio.config.ts` 构建到 `dist-studio/` |
+| `packages/ai` | 可选 AI 编排，支持模拟和外部提供商 |
+| `apps/studio` | 独立界面，由 `vite.studio.config.ts` 构建到 `dist-studio/` |
 
 - **旧链路（保持可用）**：`node build.js` 把 `_app_dev.js` + `index.template.html` 编译成 `index.html` / `EQ-Worker.html`，强制同步 Android assets 与 `desktop/`，结尾做一致性校验。旧版发布包不包含单独构建的 Studio。
 - **TypeScript 链路**：`pnpm run typecheck`、`pnpm run test:vite`、`pnpm run build:vite`、`pnpm run build:studio`。
 - **小程序**：`node scripts/build-mini-core.mjs` 把 `packages/core` 打包成 `EQ-Worker-小程序/utils/core.bundle.js`，`utils/engine.js` 改为 re-export，不再保留重复引擎实现。
-- **AI 默认关闭**：无 Key、无外发请求、无埋点；规则参谋仍是默认路径。
+- **Studio AI**：默认关闭；启用后默认选中模拟模式，返回预设内容，不调用外部模型。使用真实提供商须关闭模拟模式并自行配置；发送前需确认预览，调用失败时回退本地规则。旧版客户端使用规则参谋。
 
 ---
 
-## 四端说明
+## 客户端说明
 
 | 端 | 状态 | 说明 |
 | --- | --- | --- |
-| **网页版（PWA）** | 完整功能 | 单文件自包含 HTML，离线可用，可添加到主屏幕 |
-| **安卓 App** | 完整功能 | 原生 WebView 壳，内嵌同一份 `index.html` |
-| **Windows 桌面版** | 完整功能 | Electron 免安装包，解压即用 |
-| **微信小程序** | 轻量版 | 保留雷达、人脉、记录、修炼、我的；数据与 Web v4 结构兼容，但不含新版助手/参谋 UI |
+| **旧版网页（PWA）** | 完整功能 | HTML 客户端，支持离线 |
+| **安卓 App** | 旧版客户端 | WebView 壳，内嵌 `index.html` |
+| **Windows 桌面版** | 旧版客户端 | Electron 免安装包 |
+| **Studio** | 独立构建 | 总览、人脉、账本及可选 AI；不包含在旧版发布包中 |
+| **微信小程序** | 轻量版 | 雷达、人脉、记录、修炼、我的；不含旧版助手/参谋界面 |
 
 > legacy 网页、安卓、桌面共用同一份构建产物；Studio 单独构建，小程序作为轻量随身端保留。
 
@@ -149,10 +111,12 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 
 ## 数据与隐私
 
-- **本地优先**：数据默认存储在本机（localStorage / wx.storage）；AI 默认关闭，用户启用 AI 并确认外部请求后，所选上下文会发送至其配置的提供商；
-- **无注册、无广告、无埋点**；
-- 备份格式为普通 JSON，网页 ↔ 小程序可互相导入；
-- 旧版 `rqsg_radar_v2` 数据会自动迁移到 `eqworker_db_v1`，不丢历史记录。
+- 数据默认存储在本机（`localStorage` / WebView 存储 / `wx.storage`），无账号、无服务器、无埋点。Studio 使用独立存储前缀，不与旧版客户端自动共享数据。网页支持 JSON 备份导入、导出；小程序通过剪贴板复制备份、粘贴导入。备份含个人信息，请妥善保管。
+- 旧版网页在 `eqworker_db_v1` 键不存在或其原始存储字符串为空、且同一浏览器存储中有 `rqsg_radar_v2` 时，会尝试读取并迁移旧数据；联系人列表为空本身不会触发迁移。
+- **存储异常时宁可拒绝写入，也不覆盖**：若某次迁移会丢失字段，应用进入写保护只读状态并明确提示，而不是悄悄改写；保存失败会告知用户，不会假装成功。详见 [`docs/adr/0005-storage-write-protection.md`](docs/adr/0005-storage-write-protection.md)。
+- Studio AI 默认关闭，关闭时**不发任何网络请求**（有测试断言）。启用后须先生成预览并确认，才会把预览中显示的内容发送给你配置的服务商；更换对象、上下文、服务商或模型都会使该确认失效。密钥仅存于 `sessionStorage`，不写入备份与导出。
+- 真实服务不可用或调用失败时，Studio 回退本地规则并标注来源；不会静默重试。
+- 需要说明的边界：请求一旦发出无法撤回；自定义服务商的实际去向无法验证。准确表述是「默认本地，仅在用户主动发送时外发」，而不是「数据永不离开设备」。详见 [`docs/ai-privacy.md`](docs/ai-privacy.md)。
 
 ---
 
@@ -160,7 +124,7 @@ EQ-Worker 把这些事收进一个**本地优先的人情工作台**：每天打
 
 ### 网页
 
-直接打开 `EQ-Worker.html`，或启动本地静态服务：
+直接打开 `EQ-Worker.html`，或启动本地静态服务。页面会向 `miaoda.feishu.cn` 请求外部字体样式，字体不可用时可能使用备用字体。使用 PWA 离线功能时，请通过 HTTP(S) 提供页面，并将 `index.html`、`EQ-Worker.html`、`sw-register.js` 和 `sw.js` 放在一起；Service Worker 还取决于浏览器支持和安全上下文（localhost 或 HTTPS）：
 
 ```bash
 python3 -m http.server 8000
@@ -171,15 +135,17 @@ python3 -m http.server 8000
 
 ```bash
 pnpm install
-pnpm run test    # 旧版 Node.js 测试 + Vitest TypeScript smoke 测试
-pnpm run verify  # 旧版构建/测试 + TypeScript 类型检查 + Vitest + Vite 构建
+pnpm run dev:studio   # 启动独立 Studio 开发服务器
+pnpm run build:studio # 构建 Studio 到 dist-studio/
+pnpm run test         # 旧版 Node.js 测试 + Vitest
+pnpm run verify       # 两条构建链、小程序核心、类型检查与测试
 ```
 
-默认 test 和 verify 门禁同时覆盖旧版 JavaScript 链路与 Vite/TypeScript/Vitest 链路。
+默认 test 和 verify 门禁同时覆盖旧版 JavaScript 链路与 Vite/TypeScript/Vitest 链路。`pnpm run verify` 会先做版本一致性校验，任何产物版本漂移都会让门禁失败。
 
 ### 安卓 / Windows
 
-见 [`docs/双端构建与发布.md`](docs/双端构建与发布.md)。
+见 [`docs/双端构建与发布.md`](docs/双端构建与发布.md)；发布清单、签名与产物校验见 [`docs/RELEASE.md`](docs/RELEASE.md)。
 
 ### 微信小程序
 
@@ -187,45 +153,47 @@ pnpm run verify  # 旧版构建/测试 + TypeScript 类型检查 + Vitest + Vite
 
 ---
 
+## 项目管理
+
+| 文档 | 用途 |
+| --- | --- |
+| [ROADMAP.md](ROADMAP.md) | 已完成与计划项，「完成」的判定标准 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本历史，含验证证据 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 开发环境、约定、测试要求 |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 分层、边界与取舍 |
+| [docs/adr/](docs/adr/) | 难以回退的架构决策记录 |
+| [docs/RELEASE.md](docs/RELEASE.md) | 发版清单、签名、产物一致性 |
+| [SECURITY.md](SECURITY.md) | 漏洞上报、范围、AI 红线 |
+| [SUPPORT.md](SUPPORT.md) | 去哪问什么 |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | 社区准则 |
+
+版本号唯一来源是 `package.json`；`scripts/sync-version.mjs` 派生并校验其余所有位置（安卓 `versionCode`/`versionName`、桌面、三份 `sw.js` 缓存名、小程序关于页），`pnpm run verify` 会在不一致时失败。
+
+---
+
 ## 技术栈
 
 | 层面 | 选型 |
 | --- | --- |
-| 语言 | 原生 JavaScript + TypeScript smoke 入口 |
-| 图表 | ECharts 5（内联）/ Canvas 2D（小程序） |
-| 存储 | localStorage / wx.storage（纯本地） |
-| 构建 | `build.js` — ESM，零依赖 |
-| 测试 | `node --test`（59 个旧版用例，含小程序 core parity）+ Vitest（core / viz / ai / smoke） |
-| 建议引擎 | 默认使用本地规则 + 可解释权重；可选 AI 由用户配置提供商 |
+| 语言 | JavaScript 和 TypeScript |
+| 图表 | ECharts 5（旧版）/ Canvas 2D（小程序）/ SVG（Studio 相关包） |
+| 存储 | localStorage / wx.storage |
+| 构建 | `build.js`（旧版）/ Vite（Studio） |
+| 测试 | `node --test`（旧版及小程序核心一致性）+ Vitest |
+| 建议引擎 | 旧版使用规则；Studio 使用模拟或用户配置的提供商 |
 
 ---
 
 ## v3.2.0 更新
 
 - 工程化地基：Vite + TypeScript + Vitest 与 legacy 链路并行；
-- 新增 `packages/core`（parity 引擎）、`packages/viz`（SVG 图表）、`packages/ai`（默认关闭）与 `apps/studio`；
+- 新增 `packages/core`（部分核心函数经一致性测试）、`packages/viz`（SVG 图表）、`packages/ai`（默认关闭）与 `apps/studio`；
 - 小程序改用 core bundle，删除重复引擎实现；
 - 安卓 debug dev-server、桌面 `EQ_DEV_URL` 开发模式；
-- 网页 / 安卓（versionCode 312）/ 桌面版本统一到 3.2.0。
+- 存储加固：迁移不安全时进入写保护、备份校验、内存兜底与保存回滚；
+- 版本号改为单一来源，并纳入 `verify` 门禁（修正网页头部停留在 v3.1.0、安卓 versionCode 误写 312 的漂移）。
 
-## v3.1.0 更新
-
-- 新增 **一键结清**：净额直接转成还款 / 回礼 / 收款记录，支持部分结清；
-- 新增 **账本洞察**：本月送出/收到、平均每笔、最花心思的场合；
-- 新增 **关系体检总览**：按健康度从低到高排，先修最需要经营的关系；
-- 弹层增加键盘焦点圈定与关闭后焦点恢复；
-- 54 个单元测试全部通过，浏览器控制台零报错。
-
-## v3.0.0
-
-- 品牌升级：人情世故雷达 → **EQ-Worker 人情世故助手**；
-- 新增 **助手首页 / 今日行动**，从「记录工具」变成「每天能用的助手」；
-- 新增 **人情账本**（金额、方向、场合、净额、筛选、CSV）；
-- 新增 **随礼参谋**（关系 × 场合 × 档位 × 城市 + 历史往来锚点）；
-- 新增 **话术参谋**（16 场景 × 3 语气，自动带入称呼与最近往来）；
-- 新增 **关系体检** 与人物详情账本；
-- 新增 **重要日子 .ics 导出**；
-- 数据结构升级到 v4，旧数据自动迁移。
+更早的版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

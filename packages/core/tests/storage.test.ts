@@ -50,6 +50,17 @@ describe('storage adapter 契约', () => {
     expect(a.getItem('k')).toBeNull();
   });
 
+  it('local adapter：写入失败后读取内存中的新值而不是持久化旧值', () => {
+    const backing: StorageLike = {
+      getItem: () => 'old',
+      setItem: () => { throw new Error('quota'); },
+      removeItem: () => undefined
+    };
+    const adapter = createLocalAdapter({ storage: backing });
+    expect(adapter.setItem('k', 'new')).toBe(false);
+    expect(adapter.getItem('k')).toBe('new');
+  });
+
   it('local adapter：storage 抛错时降级为内存并保持可读', () => {
     const backing: StorageLike = {
       getItem: () => {
@@ -111,8 +122,98 @@ describe('migrate v4 → v5', () => {
 });
 
 describe('store', () => {
+  it.each([4, 5])('schema %s 的特殊 progress 键迁移保存后可序列化并重载', (schema) => {
+    const raw = `{"schema":${schema},"persons":[],"progress":{"__proto__":{"best":4,"times":2},"constructor":{"best":3,"times":1},"toString":{"best":2,"times":1}}}`;
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw });
+    const store = createStore(adapter);
+    expect(store.load()).toBe(true);
+    expect(store.save()).toBe(true);
+    const saved = JSON.parse(adapter.getItem(DB_KEY)!);
+    expect(Object.hasOwn(saved.progress, '__proto__')).toBe(true);
+    expect(saved.progress.__proto__).toEqual({ best: 4, times: 2 });
+    expect(saved.progress.constructor).toEqual({ best: 3, times: 1 });
+    expect(saved.progress.toString).toEqual({ best: 2, times: 1 });
+    const reloaded = createStore(adapter);
+    expect(reloaded.load()).toBe(true);
+    expect(JSON.parse(reloaded.exportJSON()).progress).toEqual(saved.progress);
+    expect({}).not.toHaveProperty('best');
+  });
+  it('迁移完整日期并保留原始年份备份，重启后仍可保存', () => {
+    const raw = JSON.stringify(V4);
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw });
+    const store = createStore(adapter);
+    expect(store.load()).toBe(true);
+    expect(store.isWriteProtected()).toBe(false);
+    expect(store.getState().persons[0].birthday).toBe('05-20');
+    expect(store.save()).toBe(true);
+    expect(adapter.keys().some((key) => key !== DB_KEY && adapter.getItem(key) === raw)).toBe(true);
+    const reloaded = createStore(adapter);
+    expect(reloaded.load()).toBe(true);
+    expect(reloaded.getState().persons[0].birthday).toBe('05-20');
+    expect(reloaded.save()).toBe(true);
+  });
+
+  it('备份无法持久化时不覆盖需要日期转换的原始数据', () => {
+    const raw = JSON.stringify(V4);
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw });
+    const originalSet = adapter.setItem;
+    adapter.setItem = (key, value) => key === DB_KEY ? originalSet(key, value) : false;
+    const store = createStore(adapter);
+    expect(store.load()).toBe(true);
+    expect(store.save()).toBe(false);
+    expect(adapter.getItem(DB_KEY)).toBe(raw);
+  });
+
+  it('旧备份不同于原始数据时不覆盖备份或数据库', () => {
+    const raw = JSON.stringify(V4);
+    const backupKey = `${DB_KEY}_migration_backup`;
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw, [backupKey]: 'previous backup' });
+    const store = createStore(adapter);
+    expect(store.load()).toBe(true);
+    expect(store.save()).toBe(false);
+    expect(adapter.getItem(DB_KEY)).toBe(raw);
+    expect(adapter.getItem(backupKey)).toBe('previous backup');
+  });
+
+  it.each(['{bad', '', 'null', '{"persons":{}}'])('损坏原始值 %s 不被后续保存覆盖', (raw) => {
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw });
+    const store = createStore(adapter);
+    expect(store.load()).toBe(false);
+    expect(store.save()).toBe(false);
+    expect(adapter.getItem(DB_KEY)).toBe(raw);
+  });
+
+  it.each(['bad', null, [], { schema: 'five' }, { schema: 5, updatedAt: 'bad' }])('损坏 meta %j 保留原文', (meta) => {
+    const raw = JSON.stringify({ schema: 5, persons: [], meta });
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw });
+    const store = createStore(adapter);
+    store.load();
+    expect(store.save()).toBe(false);
+    expect(adapter.getItem(DB_KEY)).toBe(raw);
+  });
+
+  it('本地适配器吞掉读取异常时同样禁止覆盖', () => {
+    let writes = 0;
+    const adapter = createLocalAdapter({ storage: { getItem() { throw new Error('read denied'); }, setItem() { writes++; }, removeItem() {} } });
+    const store = createStore(adapter);
+    expect(store.load()).toBe(false);
+    expect(store.save()).toBe(false);
+    expect(writes).toBe(0);
+  });
+
+  it('读取异常不允许写回，缺失键则允许保存', () => {
+    let writes = 0;
+    const failed = createStore({ getItem() { throw new Error('read denied'); }, setItem() { writes++; return true; }, removeItem() {} });
+    expect(failed.load()).toBe(false);
+    expect(failed.save()).toBe(false);
+    expect(writes).toBe(0);
+    const empty = createStore(createMemoryAdapter());
+    expect(empty.load()).toBe(false);
+    expect(empty.save()).toBe(true);
+  });
+
   it('从旧 key rqsg_radar_v2 读取 v4 数据并写回 v5', () => {
-    const adapter = createMemoryAdapter({ rqsg_radar_v2: JSON.stringify(V4) });
+    const adapter = createMemoryAdapter({ rqsg_radar_v2: JSON.stringify({ ...V4, persons: V4.persons.map((person) => ({ ...person, birthday: '05-20', anniversary: '05-20' })) }) });
     const store = createStore(adapter);
     expect(store.load()).toBe(true);
     expect(store.getState().persons[0].name).toBe('张三');

@@ -1,0 +1,60 @@
+name: Feature request
+description: Propose a capability or an improvement
+title: "[feat] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        EQ-Worker is local-first: no account, no server, no telemetry. Proposals that require a
+        backend will be evaluated against that constraint, so please address it if relevant.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, not the implementation. What are you doing today and where does it hurt?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: Which client should this apply to?
+      multiple: true
+      options:
+        - Legacy web
+        - Studio
+        - Android
+        - Windows desktop
+        - WeChat Mini Program
+        - All / core logic
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Including doing nothing. What workarounds exist today?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints check
+      options:
+        - label: This does not require a self-hosted server or user accounts
+          required: false
+        - label: This does not add telemetry or analytics
+          required: false
+        - label: If this sends data off-device, it will be opt-in with a preview before sending
+          required: false

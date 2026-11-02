@@ -803,7 +803,7 @@ function sanitizeImport(d) {
     status: r.status === "done" ? "done" : "pending"
   })) : [];
   const rawProg = isObj(d.progress) ? d.progress : {};
-  const progress = {};
+  const progress = /* @__PURE__ */ Object.create(null);
   for (const k of Object.keys(rawProg)) {
     const v = rawProg[k];
     if (isObj(v)) progress[k] = { best: num(v.best, 0), times: num(v.times, 0) };
@@ -876,7 +876,7 @@ function wisdomFull() {
 }
 function getWisdom(state) {
   let s = 0;
-  for (const k in state.progress) {
+  for (const k of Object.keys(state.progress)) {
     const sc = SCENARIOS.find((x) => x.id === k);
     const w = DIFFS[sc ? sc.diff : "\u5165\u95E8"].w;
     s += state.progress[k].best * w;
@@ -1072,7 +1072,7 @@ function ledgerInsights(state, now = Date.now()) {
   let totalGiven = 0;
   let givenCount = 0;
   let maxGift = 0;
-  const byOcc = {};
+  const byOcc = /* @__PURE__ */ Object.create(null);
   for (const e of state.events) {
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;
@@ -1700,11 +1700,16 @@ function createLocalAdapter(options = {}) {
   var _a;
   const prefix = options.keyPrefix || "";
   const fallback = createMemoryAdapter();
+  const pending = /* @__PURE__ */ new Set();
   let storage = (_a = options.storage) != null ? _a : null;
-  if (storage === null && typeof localStorage !== "undefined") {
-    storage = localStorage;
-  }
   let degraded = false;
+  if (storage === null) {
+    try {
+      if (typeof localStorage !== "undefined") storage = localStorage;
+    } catch {
+      degraded = true;
+    }
+  }
   const k = (key) => prefix + key;
   return {
     kind: "local",
@@ -1712,6 +1717,7 @@ function createLocalAdapter(options = {}) {
       return degraded;
     },
     getItem(key) {
+      if (pending.has(key)) return fallback.getItem(k(key));
       if (storage) {
         try {
           const v = storage.getItem(k(key));
@@ -1727,13 +1733,16 @@ function createLocalAdapter(options = {}) {
       if (storage) {
         try {
           storage.setItem(k(key), v);
+          pending.delete(key);
           return true;
         } catch (e) {
           degraded = true;
+          pending.add(key);
           return false;
         }
       }
       degraded = true;
+      pending.add(key);
       return false;
     },
     removeItem(key) {
@@ -1741,9 +1750,13 @@ function createLocalAdapter(options = {}) {
       if (storage) {
         try {
           storage.removeItem(k(key));
+          pending.delete(key);
         } catch (e) {
           degraded = true;
+          pending.add(key);
         }
+      } else {
+        pending.add(key);
       }
     }
   };
@@ -1752,6 +1765,23 @@ function createLocalAdapter(options = {}) {
 // packages/core/src/storage/migrate.ts
 function isObj2(x) {
   return !!x && typeof x === "object" && !Array.isArray(x);
+}
+function preservesInput(raw, clean, allowLegacyDate = false) {
+  if (Array.isArray(raw)) {
+    return Array.isArray(clean) && raw.length === clean.length && raw.every((item, i) => preservesInput(item, clean[i], allowLegacyDate));
+  }
+  if (isObj2(raw)) {
+    return isObj2(clean) && Object.keys(raw).every((key) => {
+      if (!Object.prototype.hasOwnProperty.call(clean, key)) return false;
+      const value = raw[key];
+      if (allowLegacyDate && (key === "birthday" || key === "anniversary") && typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const date = /* @__PURE__ */ new Date(`${value}T00:00:00Z`);
+        if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value && clean[key] === value.slice(5)) return true;
+      }
+      return preservesInput(value, clean[key], allowLegacyDate);
+    });
+  }
+  return raw === clean;
 }
 function detectSchema(raw) {
   if (!isObj2(raw)) return 0;
@@ -1765,7 +1795,7 @@ function migrate(raw) {
   const to = SCHEMA_VERSION;
   if (!isObj2(raw)) {
     warnings.push("\u6570\u636E\u7ED3\u6784\u65E0\u6CD5\u8BC6\u522B\uFF0C\u5DF2\u6309\u7A7A\u6570\u636E\u521D\u59CB\u5316");
-    return { state: createEmptyState(), from, to, warnings };
+    return { state: createEmptyState(), from, to, warnings, unsafe: true, backupRequired: false };
   }
   if (from > to) {
     warnings.push(`\u6570\u636E\u7248\u672C v${from} \u9AD8\u4E8E\u5F53\u524D v${to}\uFF0C\u5DF2\u6309\u5F53\u524D\u7ED3\u6784\u5C3D\u91CF\u517C\u5BB9\u8BFB\u53D6`);
@@ -1793,44 +1823,68 @@ function migrate(raw) {
     trainDiff: "\u5168\u90E8",
     ledgerFilter: "all"
   };
-  return { state, from, to, warnings };
+  const fields = ["persons", "events", "reminders", "progress", "streak", "settings"];
+  const rawMeta = isObj2(raw.meta) ? raw.meta : {};
+  const legacy = from > 0 && from < to;
+  const backupRequired = legacy && !preservesInput(raw.persons, state.persons);
+  const invalidMeta = "meta" in raw && (!isObj2(raw.meta) || "schema" in rawMeta && (typeof rawMeta.schema !== "number" || !Number.isInteger(rawMeta.schema) || rawMeta.schema < 0) || "updatedAt" in rawMeta && (typeof rawMeta.updatedAt !== "number" || !Number.isFinite(rawMeta.updatedAt)));
+  const invalidSchema = "schema" in raw && (typeof raw.schema !== "number" || !Number.isInteger(raw.schema) || raw.schema < 0);
+  const unsafe = invalidMeta || invalidSchema || from > to || typeof raw.schema === "number" && raw.schema > to || typeof rawMeta.schema === "number" && rawMeta.schema > to || Object.keys(raw).some((key) => !["schema", "meta", ...fields].includes(key)) || Object.keys(rawMeta).some((key) => key !== "schema" && key !== "updatedAt") || fields.some((field) => field in raw && !preservesInput(raw[field], state[field], legacy && field === "persons"));
+  if (unsafe) warnings.push("\u6570\u636E\u7248\u672C\u4E0D\u517C\u5BB9\u6216\u6E05\u6D17\u4F1A\u4E22\u5931\u539F\u59CB\u6570\u636E\uFF0C\u5DF2\u542F\u7528\u5199\u4FDD\u62A4");
+  return { state, from, to, warnings, unsafe, backupRequired };
 }
 
 // packages/core/src/storage/store.ts
 function createStore(adapter) {
   let state = createEmptyState();
+  let writeProtected = false;
   const store = {
     getState() {
       return state;
+    },
+    isWriteProtected() {
+      return writeProtected;
     },
     load() {
       try {
         let raw = adapter.getItem(DB_KEY);
         let fromLegacyKey = false;
-        if (!raw) {
+        if (raw === null) {
           for (const k of LEGACY_DB_KEYS) {
             const old = adapter.getItem(k);
-            if (old) {
+            if (old !== null) {
               raw = old;
               fromLegacyKey = true;
               break;
             }
           }
         }
-        if (!raw) return false;
+        if ("degraded" in adapter && adapter.degraded) writeProtected = true;
+        if (raw === null) return false;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.persons)) {
+          writeProtected = true;
           return false;
         }
         const migrated = migrate(parsed);
         state = migrated.state;
-        if (fromLegacyKey || migrated.from !== SCHEMA_VERSION) store.save();
+        if (migrated.unsafe) writeProtected = true;
+        if (!writeProtected && migrated.backupRequired) {
+          const backupKey = `${DB_KEY}_migration_backup`;
+          const existing = adapter.getItem(backupKey);
+          if ("degraded" in adapter && adapter.degraded || existing !== null && existing !== raw || existing === null && !adapter.setItem(backupKey, raw) || adapter.getItem(backupKey) !== raw || "degraded" in adapter && adapter.degraded) {
+            writeProtected = true;
+          }
+        }
+        if (!writeProtected && (fromLegacyKey || migrated.from !== SCHEMA_VERSION)) store.save();
         return true;
       } catch (e) {
+        writeProtected = true;
         return false;
       }
     },
     save() {
+      if (writeProtected) return false;
       try {
         const updatedAt = Date.now();
         state.meta = { schema: SCHEMA_VERSION, updatedAt };

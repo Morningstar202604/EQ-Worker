@@ -11,10 +11,10 @@ import type { ContextPolicy } from '../../packages/ai/src/index';
 import { escapeHtml } from './views/html';
 import { StudioStore, type StudioView } from './state';
 import { renderEmptyLanding } from './views/empty';
-import { renderOverviewView } from './ui/overview';
-import { renderPersonsView } from './ui/persons';
-import { renderLedgerView } from './ui/ledger';
-import { renderAIView } from './ui/ai';
+import { renderOverviewView } from './pages/overview';
+import { renderPersonsView } from './pages/persons';
+import { renderLedgerView } from './pages/ledger';
+import { renderAIView } from './pages/ai';
 
 const VIEWS: Array<{ id: StudioView; label: string; icon: string }> = [
   { id: 'overview', label: '仪表盘', icon: '◈' },
@@ -49,6 +49,7 @@ function renderShell(studio: StudioStore): string {
     '</div>',
     '</aside>',
     '<main class="main" id="main">',
+    studio.getStorageWarning() ? `<p class="error" role="alert">${escapeHtml(studio.getStorageWarning())}</p>` : '',
     renderView(studio),
     '</main>',
     '</div>',
@@ -205,6 +206,13 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     }
   };
 
+  let pendingImport: string | null = null;
+  let fileReadToken = 0;
+  const applyImport = (text: string): void => {
+    const outcome = studio.importJSON(text);
+    if (!outcome.ok) openDialog(doc, '导入失败', `<p class="error">${escapeHtml(outcome.warnings.join('；'))}</p>`);
+  };
+
   const unsubscribe = studio.subscribe(render);
   render();
 
@@ -253,7 +261,15 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
       return;
     }
     if (act === 'dialog-close') {
+      pendingImport = null;
       closeDialog(doc);
+      return;
+    }
+    if (act === 'import-confirm') {
+      const text = pendingImport;
+      pendingImport = null;
+      closeDialog(doc);
+      if (text !== null) applyImport(text);
       return;
     }
     if (act === 'copy-text' || act === 'copy-variant') {
@@ -350,12 +366,19 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     if (input.id !== 'import-file') return;
     const file = input.files?.[0];
     if (!file) return;
-    const text = await file.text();
-    const outcome = studio.importJSON(text);
-    if (!outcome.ok) {
-      openDialog(doc, '导入失败', `<p class="error">${escapeHtml(outcome.warnings.join('；'))}</p>`);
+    const token = ++fileReadToken;
+    pendingImport = null;
+    closeDialog(doc);
+    try {
+      const text = await file.text();
+      if (token !== fileReadToken) return;
+      pendingImport = text;
+      openDialog(doc, '确认导入', '<p>导入将替换当前全部数据，此操作无法撤销。请先导出备份。</p><div class="dialog-actions"><button type="button" class="btn primary" data-act="import-confirm">确认替换</button><button type="button" class="btn ghost" data-act="dialog-close">取消</button></div>');
+    } catch {
+      if (token === fileReadToken) openDialog(doc, '导入失败', '<p class="error">文件读取失败，请重新选择文件。</p>');
+    } finally {
+      if (token === fileReadToken) input.value = '';
     }
-    input.value = '';
   };
 
   doc.addEventListener('click', onClick);
@@ -365,6 +388,7 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
   doc.addEventListener('change', onFile);
 
   return () => {
+    fileReadToken += 1;
     unsubscribe();
     doc.removeEventListener('click', onClick);
     doc.removeEventListener('change', onChange);

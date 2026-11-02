@@ -52,7 +52,9 @@ function modalClose(page, confirmed) {
   safeSet(page, { '_modal.anim': 'modal-out' });
   setTimeout(function () {
     safeSet(page, { '_modal.show': false });
-    if (cb) cb(confirmed && m.editable ? m.inputVal : undefined);
+    if (cb && cb(confirmed && m.editable ? m.inputVal : undefined) === false) {
+      safeSet(page, { '_modal.show': true, '_modal.anim': 'modal-in' });
+    }
   }, DURATION);
 }
 

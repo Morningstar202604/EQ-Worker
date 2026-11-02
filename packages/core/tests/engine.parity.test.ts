@@ -12,6 +12,12 @@ import type { AppState, CityTier, GiftTier, Person, PersonalEvent, Reminder } fr
 const NOW = new Date(2026, 9, 31, 12, 0, 0).getTime();
 const DAY = 86400000;
 
+it('ignores inherited progress entries in wisdom calculation', () => {
+  const state = createEmptyState();
+  state.progress = Object.create({ inherited: { best: 100000, times: 1 } });
+  expect(getWisdom(state)).toBe(0);
+});
+
 interface Fixture {
   name: string;
   persons: Person[];

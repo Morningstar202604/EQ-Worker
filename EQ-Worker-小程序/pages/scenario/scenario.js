@@ -32,17 +32,18 @@ Page({
     const base = opt.s;
     const gained = Math.round(base * sc.w);
     const pre = engine.getWisdom();
-    const pr = S.progress[sc.id] || { best: 0, times: 0 };
-    if (base > pr.best) S.progress[sc.id] = { best: base, times: pr.times + 1 };
-    const todayStr = engine.todayStr();
-    const sk = S.streak || { n: 0, last: '' };
-    if (sk.last !== todayStr) {
-      if (sk.last === engine.fmtDate(Date.now() - engine.DAY)) sk.n += 1;
-      else sk.n = 1;
-      sk.last = todayStr;
-    }
-    S.streak = sk;
-    engine.save();
+    if (!engine.update(() => {
+      const pr = S.progress[sc.id] || { best: 0, times: 0 };
+      if (base > pr.best) S.progress[sc.id] = { best: base, times: pr.times + 1 };
+      const todayStr = engine.todayStr();
+      const sk = S.streak || { n: 0, last: '' };
+      if (sk.last !== todayStr) {
+        if (sk.last === engine.fmtDate(Date.now() - engine.DAY)) sk.n += 1;
+        else sk.n = 1;
+        sk.last = todayStr;
+      }
+      S.streak = sk;
+    })) return;
     const after = engine.getWisdom();
     const lv = engine.getLevel(after);
     ui.modal(this, {

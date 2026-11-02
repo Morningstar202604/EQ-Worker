@@ -15,7 +15,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 /* 品牌（Logo / 名称 / Slogan 统一出口） */
 const LOGO_SVG = `<svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>`;
-const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: 'v3.1.0' };
+const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: '__APP_VERSION__' };
 
 function timeAgo(ts) {
   const s = (Date.now() - ts) / 1000;
@@ -181,7 +181,8 @@ function sanitizeImport(d) {
       taboos: str(p.taboos, 200),
       note: str(p.note, 500),
       adjust: num(p.adjust, 0),
-      createdAt: num(p.createdAt, Date.now())
+      createdAt: num(p.createdAt, Date.now()),
+      ...(Object.prototype.hasOwnProperty.call(p, 'updatedAt') ? { updatedAt: num(p.updatedAt, 0) } : {})
     }));
   if (nP !== persons.length) warn.push('人脉 ' + (nP - persons.length) + ' 条');
 
@@ -220,7 +221,7 @@ function sanitizeImport(d) {
 
   /* progress.best 必须是有限数字：否则段位与百分比会变成 NaN */
   const rawProg = isObj(d.progress) ? d.progress : {};
-  const progress = {};
+  const progress = Object.create(null);
   for (const k of Object.keys(rawProg)) {
     const v = rawProg[k];
     if (isObj(v)) progress[k] = { best: num(v.best, 0), times: num(v.times, 0) };
@@ -240,36 +241,64 @@ function sanitizeImport(d) {
     schemaMismatch: (typeof d.schema === 'number' && d.schema !== SCHEMA_VERSION)
   };
 }
+function preservesStoredValue(raw, clean, path, dates) {
+  if (Array.isArray(raw)) return Array.isArray(clean) && raw.length === clean.length && raw.every((v, i) => preservesStoredValue(v, clean[i], path.concat(i), dates));
+  if (raw && typeof raw === 'object') {
+    return clean && typeof clean === 'object' && !Array.isArray(clean) && Object.keys(raw).every(k =>
+      Object.prototype.hasOwnProperty.call(clean, k) && preservesStoredValue(raw[k], clean[k], path.concat(k), dates));
+  }
+  if (path.length === 3 && path[0] === 'persons' && (path[2] === 'birthday' || path[2] === 'anniversary') && typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const date = new Date(raw + 'T00:00:00Z');
+    if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === raw && clean === raw.slice(5)) { dates.required = true; return true; }
+  }
+  return raw === clean;
+}
 const store = {
+  locked: false,
+  lock() {
+    this.locked = true;
+    toast('本地数据读取异常、版本不兼容或备份失败，已启用写保护；当前修改无法保存，请先备份并恢复原始数据');
+  },
   load() {
+    if (this.locked) return false;
     try {
       let raw = localStorage.getItem(DB_KEY);
       let migrated = false;
-      if (!raw) {
+      if (raw === null) {
         for (const k of LEGACY_DB_KEYS) {
-          try {
-            const old = localStorage.getItem(k);
-            if (old) { raw = old; migrated = true; break; }
-          } catch (e) { /* 忽略单个旧键读取失败 */ }
+          const old = localStorage.getItem(k);
+          if (old !== null) { raw = old; migrated = true; break; }
         }
       }
-      if (!raw) return false;
+      if (raw === null) return false;
       const d = JSON.parse(raw);
-      if (!d || !Array.isArray(d.persons)) return false;
-      /* 本地缓存同样按不可信数据处理：旧版本/手改/半截写入都可能留下
-         progress.best 非数字、events 非数组等脏值，直接进 state 会 NaN 白屏。 */
+      if (!d || typeof d !== 'object' || Array.isArray(d) || !Array.isArray(d.persons)) { this.lock(); return false; }
       const clean = sanitizeImport(d);
+      const fields = ['persons', 'events', 'reminders', 'progress', 'streak', 'settings'];
+      const dates = { required: false };
+      const unsafe = ('schema' in d && (!Number.isInteger(d.schema) || d.schema < 0 || d.schema > SCHEMA_VERSION)) ||
+        Object.keys(d).some(k => k !== 'schema' && !fields.includes(k)) ||
+        fields.some(k => Object.prototype.hasOwnProperty.call(d, k) && !preservesStoredValue(d[k], clean[k], [k], dates));
       state.persons = clean.persons;
       state.events = clean.events;
       state.reminders = clean.reminders;
       state.progress = clean.progress;
       state.streak = clean.streak;
       state.settings = clean.settings;
+      if (unsafe) { this.lock(); return true; }
+      if (dates.required) {
+        const backupKey = DB_KEY + '_date_backup';
+        const backup = localStorage.getItem(backupKey);
+        if (backup !== null && backup !== raw) { this.lock(); return true; }
+        if (backup === null) localStorage.setItem(backupKey, raw);
+        if (localStorage.getItem(backupKey) !== raw) { this.lock(); return true; }
+      }
       if (migrated) this.save();
       return true;
-    } catch (e) { return false; }
+    } catch (e) { this.lock(); return false; }
   },
   save() {
+    if (this.locked) { this.lock(); return false; }
     try {
       localStorage.setItem(DB_KEY, JSON.stringify({
         schema: SCHEMA_VERSION,
@@ -277,7 +306,8 @@ const store = {
         reminders: state.reminders, progress: state.progress,
         streak: state.streak, settings: state.settings
       }));
-    } catch (e) { toast('保存失败：本地存储空间不足'); }
+      return true;
+    } catch (e) { toast('保存失败：本地存储空间不足'); return false; }
   },
   export() {
     const blob = new Blob([JSON.stringify({
@@ -336,6 +366,7 @@ const store = {
     reader.readAsText(file);
   },
   applyImport(clean) {
+    const before = snapshotState();
     state.persons = clean.persons;
     state.events = clean.events;
     state.reminders = clean.reminders;
@@ -343,7 +374,7 @@ const store = {
     state.streak = clean.streak;
     state.settings = clean.settings || { giftTier: 'standard', cityTier: '二线' };
     state.lastEventId = null; state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部';
-    invalidateCache(); store.save(); render();
+    invalidateCache(); if (!saveOrRestore(before)) return false; render();
     let msg = '导入成功，共 ' + state.persons.length + ' 位人脉';
     if (clean.warn.length) msg += '（已过滤无效：' + clean.warn.join('、') + '）';
     if (clean.schemaMismatch) msg += '（数据结构版本不同，已按当前版本兼容处理）';
@@ -353,9 +384,9 @@ const store = {
 
 /* ---------------- 3. 人情计算引擎（带缓存） ---------------- */
 /* 计算缓存：computePerson 结果按 personId 缓存，事件变更时失效 */
-let _computeCache = {}; // personId → {result, eventVersion}
+let _computeCache = Object.create(null); // personId → {result, eventVersion}
 let _eventVersion = 0;   // 事件全局版本号，增删事件时 +1
-function invalidateCache() { _computeCache = {}; _eventVersion++; }
+function invalidateCache() { _computeCache = Object.create(null); _eventVersion++; }
 function computedFor(personId) {
   const c = _computeCache[personId];
   if (c && c.__v === _eventVersion) return c.result;
@@ -366,7 +397,7 @@ function computedFor(personId) {
 }
 
 /* 事件类型：每个事件影响 热度/信任/亲密/人情债 四个维度，随时间按半衰期衰减（90 天减半） */
-const EVENT_TYPES = {
+const EVENT_TYPES = Object.assign(Object.create(null), {
   help_them: { label: '对方帮了我', dHeat: 6, dTrust: 6, dIntimacy: 4, dDebt: 8 },
   help_me:   { label: '我帮了对方', dHeat: 6, dTrust: 5, dIntimacy: 3, dDebt: -4 },
   meal:      { label: '饭局/聚会',  dHeat: 7, dTrust: 2, dIntimacy: 6, dDebt: 0 },
@@ -377,7 +408,7 @@ const EVENT_TYPES = {
   greeting:  { label: '问候/祝福',  dHeat: 3, dTrust: 1, dIntimacy: 2, dDebt: 0 },
   conflict:  { label: '冲突/摩擦',  dHeat: -10, dTrust: -6, dIntimacy: -6, dDebt: 0 },
   other:     { label: '其他',       dHeat: 2, dTrust: 1, dIntimacy: 1, dDebt: 0 }
-};
+});
 const PLACEHOLDERS = {
   help_them: '对方帮我协调了资源',
   help_me: '帮对方搬了家',
@@ -601,7 +632,7 @@ function ledgerInsights() {
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   let monthGiven = 0, monthReceived = 0, monthCount = 0;
   let totalGiven = 0, givenCount = 0, maxGift = 0;
-  const byOcc = {};
+  const byOcc = Object.create(null);
   for (const e of state.events) {
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;
@@ -1270,6 +1301,24 @@ const state = {
   evType: 'meal', evPersonId: null,
   streak: { n: 0, last: '' }
 };
+function snapshotState() {
+  const copy = value => {
+    if (Array.isArray(value)) return value.map(copy);
+    if (!value || typeof value !== 'object') return value;
+    const result = Object.create(Object.getPrototypeOf(value));
+    for (const key of Object.keys(value)) Object.defineProperty(result, key, { value: copy(value[key]), writable: true, enumerable: true, configurable: true });
+    return result;
+  };
+  return copy(state);
+}
+let lastSaveFailed = false;
+function saveOrRestore(before) {
+  lastSaveFailed = !store.save();
+  if (!lastSaveFailed) return true;
+  Object.assign(state, before);
+  invalidateCache();
+  return false;
+}
 const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '同学', '邻居', '其他'];
 let chartInstances = [];
 let _lastFocus = null;
@@ -1310,6 +1359,7 @@ function confirmCancel() { window.__confirmCb = null; closeModal(); }
 /* 轻提示 */
 let toastTimer;
 function toast(msg, ms) {
+  if (store.locked) msg = '本地数据异常，已启用写保护；当前修改无法保存，请先备份并恢复原始数据';
   const t = $('#toast-root');
   if (!t) return;
   clearTimeout(toastTimer);
@@ -1319,6 +1369,7 @@ function toast(msg, ms) {
 }
 /* 带撤销的 toast（msg 为纯文本，内部自动 esc 转义） */
 function toastUndo(msg, undoFn) {
+  if (store.locked) { toast(''); return; }
   const t = $('#toast-root');
   if (!t) return;
   clearTimeout(toastTimer);
@@ -1474,7 +1525,7 @@ function afterRender() {
   if (state.tab === 'me' && document.getElementById('typeChart')) {
     const nowT = new Date();
     const yStartT = `${nowT.getFullYear() - 1}-${String(nowT.getMonth() + 1).padStart(2, '0')}-01`;
-    const tCnt = {};
+    const tCnt = Object.create(null);
     for (const e of state.events) if (fmtDate(e.time) >= yStartT) tCnt[e.type] = (tCnt[e.type] || 0) + 1;
     const data = Object.entries(tCnt).map(([k, v]) => ({ name: (EVENT_TYPES[k] || EVENT_TYPES.other).label, value: v }));
     if (data.length) {
@@ -1511,7 +1562,7 @@ function openDimInsight(dim) {
   const m = overallMetrics();
   /* 预建「人脉 → 最后往来时间」映射：原本 lastTsOf 在排序比较器里对每个人做一次
      全量 events.filter，复杂度 O(人×log人×事件)，人多时会明显卡顿。改为一次遍历 O(事件)。 */
-  const lastTsMap = {};
+  const lastTsMap = Object.create(null);
   for (const ev of state.events) {
     if (!lastTsMap[ev.personId] || ev.time > lastTsMap[ev.personId]) lastTsMap[ev.personId] = ev.time;
   }
@@ -2019,7 +2070,7 @@ function viewPersons() {
   const kw = state.filter.trim().toLowerCase();
   /* 最后往来时间一次遍历建表：旧实现在排序比较器里对每个人做全量 events.filter，
      复杂度 O(人 × log人 × 事件)，人一多列表就明显卡顿。 */
-  const lastTsMap = {};
+  const lastTsMap = Object.create(null);
   for (const ev of state.events) {
     if (!lastTsMap[ev.personId] || ev.time > lastTsMap[ev.personId]) lastTsMap[ev.personId] = ev.time;
   }
@@ -2190,7 +2241,7 @@ function monthInsights() {
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const mev = state.events.filter(e => fmtDate(e.time).startsWith(ym));
-  const byPerson = {};
+  const byPerson = Object.create(null);
   for (const e of mev) byPerson[e.personId] = (byPerson[e.personId] || 0) + 1;
   const top = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, n]) => { const p = state.persons.find(x => x.id === id); return p ? `${esc(p.name)} ${n} 笔` : ''; })
@@ -2213,7 +2264,7 @@ function openAnnualReport() {
   }
   const total = months.reduce((s, x) => s + x.c, 0);
   const yStart = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const byPerson = {};
+  const byPerson = Object.create(null);
   for (const e of state.events) if (fmtDate(e.time) >= yStart) byPerson[e.personId] = (byPerson[e.personId] || 0) + 1;
   const topP = Object.entries(byPerson).sort((a, b) => b[1] - a[1]).slice(0, 3)
     .map(([id, n]) => { const p = state.persons.find(x => x.id === id); return p ? `<span class="chip">${esc(p.name)} ${n} 笔</span>` : ''; })
@@ -2320,7 +2371,7 @@ function drawNetwork(canvas) {
   const cx = W / 2, cy = H / 2, radius = Math.min(W, H) / 2 - 40;
   /* 连线：数据模型里事件只挂在单人身上，没有「两人共同事件」这种字段，
      所以关联度用「共同标签数」表示（同好、同圈子才连线），旧注释的说法与实现不符。 */
-  const tagSet = {};
+  const tagSet = Object.create(null);
   for (const p of persons) tagSet[p.id] = new Set(p.tags || []);
   /* 环形布局：第一人在中心，其余均匀分布圆周 */
   const nodes = persons.map((p, i) => {
@@ -2499,7 +2550,7 @@ function viewMe() {
   /* 往来类型分布（近 12 个月） */
   const nowT = new Date();
   const yStartT = `${nowT.getFullYear() - 1}-${String(nowT.getMonth() + 1).padStart(2, '0')}-01`;
-  const tCnt = {};
+  const tCnt = Object.create(null);
   for (const e of state.events) if (fmtDate(e.time) >= yStartT) tCnt[e.type] = (tCnt[e.type] || 0) + 1;
   const tTotal = Object.values(tCnt).reduce((s, v) => s + v, 0);
   return `
@@ -2849,7 +2900,6 @@ function showResult(sc, i, nextId) {
   const badge = c.s >= 80 ? 'green' : c.s >= 50 ? 'amber' : 'red';
   const dc = DIFFS[sc.diff];
   const pr = state.progress[sc.id] || { best: 0, times: 0 };
-  if (c.s > pr.best) { state.progress[sc.id] = { best: c.s, times: pr.times + 1 }; store.save(); }
   $('#modal-root').innerHTML = `
     <div class="mask center">
       <div class="sheet center">
@@ -2882,6 +2932,7 @@ function showResult(sc, i, nextId) {
 
 /* ---------------- 9. 演示数据 ---------------- */
 function loadDemo() {
+  const before = snapshotState();
   const now = Date.now();
   const mk = (name, identity, tags, birthday, note, adjust, likes, taboos, anniversary) => ({ id: uid(), name, identity, tags, birthday, note, adjust, likes: likes || '', taboos: taboos || '', anniversary: anniversary || '', createdAt: now - Math.random() * 90 * DAY });
   const p = {
@@ -2931,8 +2982,9 @@ function loadDemo() {
     gift: { best: 100, times: 1 }, weekend: { best: 100, times: 1 }
   };
   state.streak = { n: 2, last: fmtDate(now) };
-  invalidateCache(); store.save(); render();
+  invalidateCache(); if (!saveOrRestore(before)) return; render();
   toast('已载入 6 位人脉演示数据，可在「我的」里清空重建');
+  return true;
 }
 
 /* ---------------- 10. 交互动作（事件委托） ---------------- */
@@ -2983,15 +3035,15 @@ function onClick(e) {
       const likes = $('#pfLikes').value.trim();
       const taboos = $('#pfTaboos').value.trim();
       const data = { name, identity: $('#pfIdentity').value, tags, birthday: birth, anniversary, likes, taboos, note: $('#pfNote').value.trim() };
+      const before = snapshotState();
       if (arg) {
         const p = state.persons.find(x => x.id === arg);
         if (p) Object.assign(p, data, { updatedAt: Date.now() });
-        toast('已保存');
       } else {
         state.persons.push(Object.assign({ id: uid(), adjust: 0, createdAt: Date.now() }, data));
-        toast('已添加 ' + name);
       }
-      invalidateCache(); store.save();
+      invalidateCache(); if (!saveOrRestore(before)) break;
+      toast(arg ? '已保存' : '已添加 ' + name);
       const pid = window.__curPerson;
       closeModal(); render();
       if (pid) openPerson(pid);
@@ -3002,18 +3054,20 @@ function onClick(e) {
       confirmModal('删除后该人脉的所有往来记录与提醒都会一并删除，确定吗？', () => {
         /* 连同该人脉的往来记录与提醒一起备份：否则撤销后 events/reminders 已落盘丢失，
            人脉恢复了但记录永久消失（不可接受的静默数据丢失）。 */
+        const before = snapshotState();
         const backup = state.persons.find(x => x.id === arg);
         const backupEvents = state.events.filter(x => x.personId === arg);
         const backupReminders = state.reminders.filter(x => x.personId === arg);
         state.persons = state.persons.filter(x => x.id !== arg);
         state.events = state.events.filter(x => x.personId !== arg);
         state.reminders = state.reminders.filter(x => x.personId !== arg);
-        invalidateCache(); store.save(); closeModal(); render();
+        invalidateCache(); if (!saveOrRestore(before)) return; closeModal(); render();
         toastUndo('已删除「' + (backup ? backup.name : '') + '」', () => {
+          const beforeUndo = snapshotState();
           if (backup) state.persons.push(backup);
           if (backupEvents.length) state.events = state.events.concat(backupEvents);
           if (backupReminders.length) state.reminders = state.reminders.concat(backupReminders);
-          invalidateCache(); store.save(); render();
+          invalidateCache(); if (!saveOrRestore(beforeUndo)) return; render();
         });
       }, true);
       break;
@@ -3022,8 +3076,9 @@ function onClick(e) {
     case 'adjust': {
       const p = state.persons.find(x => x.id === window.__curPerson);
       if (!p) break;
+      const before = snapshotState();
       p.adjust = clamp((p.adjust || 0) + parseInt(arg, 10), -30, 30);
-      invalidateCache(); store.save(); render(); openPerson(p.id); toast('热度已手动调整');
+      invalidateCache(); if (!saveOrRestore(before)) break; render(); openPerson(p.id); toast('热度已手动调整');
       break;
     }
 
@@ -3047,18 +3102,20 @@ function onClick(e) {
       const t = Math.min(dtv ? new Date(dtv + 'T00:00:00').getTime() : Date.now(), Date.now()); // 日期留空按今天
       const ev = { id: uid(), personId: pid, type: state.evType, title, time: t, weight: parseInt($('#fWeight').textContent, 10), note: $('#fNote').value.trim(), amount: clamp(parseFloat($('#fAmount').value) || 0, 0, 10000000), dir: 'none', occasion: $('#fOccasion').value || '日常' };
       if (ev.amount > 0) ev.dir = $('#fDir').value;
+      const before = snapshotState();
       state.events.push(ev); state.lastEventId = ev.id; state.evPersonId = pid;
-      invalidateCache(); store.save(); $('#fTitle').value = ''; $('#fNote').value = ''; $('#fAmount').value = '';
+      invalidateCache(); if (!saveOrRestore(before)) break; $('#fTitle').value = ''; $('#fNote').value = ''; $('#fAmount').value = '';
       toast('已记录一笔「' + EVENT_TYPES[state.evType].label + '」' + (ev.amount > 0 ? `，金额 ${fmtMoney(ev.amount)}` : ''));
       render();
       break;
     }
     case 'undoLast': {
       if (!state.lastEventId) break;
+      const before = snapshotState();
       const backup = state.events.find(x => x.id === state.lastEventId);
       state.events = state.events.filter(x => x.id !== state.lastEventId);
-      state.lastEventId = null; invalidateCache(); store.save(); render();
-      toastUndo('已撤销上一条', () => { if (backup) state.events.push(backup); invalidateCache(); store.save(); render(); });
+      state.lastEventId = null; invalidateCache(); if (!saveOrRestore(before)) break; render();
+      toastUndo('已撤销上一条', () => { const beforeUndo = snapshotState(); if (backup) state.events.push(backup); invalidateCache(); if (!saveOrRestore(beforeUndo)) return; render(); });
       break;
     }
 
@@ -3089,8 +3146,9 @@ function onClick(e) {
       const dir = amount > 0 ? $('#efDir').value : 'none';
       const occasion = $('#efOccasion').value || '日常';
       const ev = { id: uid(), personId: pid, type: window.__modalType, title, time: t, weight: window.__modalWeight || 6, note: $('#efNote').value.trim(), amount, dir, occasion };
+      const before = snapshotState();
       state.events.push(ev); state.lastEventId = ev.id; state.evPersonId = pid;
-      invalidateCache(); store.save();
+      invalidateCache(); if (!saveOrRestore(before)) break;
       const fromDetail = window.__curPerson;
       closeModal(); render();
       if (fromDetail) openPerson(fromDetail);
@@ -3107,8 +3165,9 @@ function onClick(e) {
       const rsel = document.getElementById('rfPerson');
       if (!pid && rsel) pid = rsel.value;
       if (!pid) { toast('先选择关联人'); break; }
+      const before = snapshotState();
       state.reminders.push({ id: uid(), personId: pid, content, date: $('#rfDate').value || '', status: 'pending' });
-      store.save();
+      if (!saveOrRestore(before)) break;
       const wasDetail = window.__curPerson;
       closeModal(); render();
       if (wasDetail) openPerson(wasDetail);
@@ -3118,8 +3177,9 @@ function onClick(e) {
     case 'toggleReminder': {
       const r = state.reminders.find(x => x.id === arg);
       if (!r) break;
+      const before = snapshotState();
       r.status = r.status === 'done' ? 'pending' : 'done';
-      store.save();
+      if (!saveOrRestore(before)) break;
       toast(r.status === 'done' ? '已完成' : '已恢复为待办');
       const pid = r.personId;
       closeModal(); openPerson(pid);
@@ -3128,15 +3188,17 @@ function onClick(e) {
     case 'quickDone': case 'reminderDone': {
       const r = state.reminders.find(x => x.id === arg);
       if (!r) break;
-      r.status = 'done'; store.save(); render(); toast('提醒已完成');
+      const before = snapshotState();
+      r.status = 'done'; if (!saveOrRestore(before)) break; render(); toast('提醒已完成');
       break;
     }
     case 'delReminder': {
       confirmModal('删除这条提醒？', () => {
+        const before = snapshotState();
         const backup = state.reminders.find(x => x.id === arg);
         state.reminders = state.reminders.filter(x => x.id !== arg);
-        store.save(); render();
-        toastUndo('提醒已删除', () => { if (backup) state.reminders.push(backup); store.save(); render(); });
+        if (!saveOrRestore(before)) return; render();
+        toastUndo('提醒已删除', () => { const beforeUndo = snapshotState(); if (backup) state.reminders.push(backup); if (!saveOrRestore(beforeUndo)) return; render(); });
       }, true);
       break;
     }
@@ -3157,12 +3219,18 @@ function onClick(e) {
       const sc = SCENARIOS.find(x => x.id === sid);
       if (!sc) break;
       /* 连续修炼打卡 */
+      const before = snapshotState();
       const today = todayStr();
       const sk = state.streak || { n: 0, last: '' };
       if (sk.last !== today) {
         sk.n = sk.last === fmtDate(Date.now() - DAY) ? sk.n + 1 : 1;
-        sk.last = today; state.streak = sk; store.save();
+        sk.last = today; state.streak = sk;
       }
+      const choice = sc.choices[parseInt(i, 10)];
+      if (!choice) break;
+      const pr = state.progress[sc.id] || { best: 0, times: 0 };
+      if (choice.s > pr.best) state.progress[sc.id] = { best: choice.s, times: pr.times + 1 };
+      if (!saveOrRestore(before)) break;
       const idx = SCENARIOS.findIndex(x => x.id === sid);
       const nextId = SCENARIOS[(idx + 1) % SCENARIOS.length].id;
       render(); /* 刷新底层智慧值 / 段位 / 指数 */
@@ -3199,7 +3267,15 @@ function onClick(e) {
            直接 applyImport 会把 progress.best='oops' 之类的脏值带进 state。 */
         const clean = sanitizeImport(d);
         if (state.persons.length) {
-          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => store.applyImport(clean), true);
+          const importView = $('#modal-root').innerHTML;
+          confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => {
+            if (store.applyImport(clean) === false) {
+              $('#modal-root').innerHTML = importView;
+              const input = document.getElementById('cbText');
+              if (input) input.value = raw;
+              document.body.style.overflow = 'hidden';
+            }
+          }, true);
         } else {
           store.applyImport(clean);
         }
@@ -3209,43 +3285,48 @@ function onClick(e) {
     case 'import': { const f = $('#importFile'); if (f) f.click(); break; }
     case 'reset': {
       confirmModal('确定清空所有数据？此操作不可恢复，建议先导出备份。', () => {
+        const before = snapshotState();
         const backupPersons = state.persons.slice();
         const backupEvents = state.events.slice();
         const backupReminders = state.reminders.slice();
-        const backupProgress = Object.assign({}, state.progress);
+        const backupProgress = Object.assign(Object.create(null), state.progress);
         const backupStreak = Object.assign({}, state.streak);
         state.persons = []; state.events = []; state.reminders = []; state.progress = {};
         state.streak = { n: 0, last: '' }; state.lastEventId = null;
         state.filter = ''; state.identity = 'all'; state.sortBy = 'heat'; state.trainDiff = '全部'; state.tab = 'assistant';
+        invalidateCache(); if (!saveOrRestore(before)) return;
         try { localStorage.setItem('eqworker_tab', 'assistant'); } catch (e) {}
-        invalidateCache(); store.save(); closeModal(); render();
+        closeModal(); render();
         toastUndo('数据已清空', () => {
+          const beforeUndo = snapshotState();
           state.persons = backupPersons; state.events = backupEvents; state.reminders = backupReminders;
           state.progress = backupProgress; state.streak = backupStreak;
-          invalidateCache(); store.save(); render();
+          invalidateCache(); if (!saveOrRestore(beforeUndo)) return; render();
         });
       }, true);
       break;
     }
     case 'delEvent': {
       confirmModal('删除这条往来记录？删除后相关热度会重新计算。', () => {
+        const before = snapshotState();
         const backup = state.events.find(x => x.id === arg);
         state.events = state.events.filter(x => x.id !== arg);
         if (state.lastEventId === arg) state.lastEventId = null;
-        invalidateCache(); store.save();
+        invalidateCache(); if (!saveOrRestore(before)) return;
         const pid = window.__curPerson;
         closeModal();
         if (pid) openPerson(pid); else render();
         toastUndo('已删除这条记录', () => {
+          const beforeUndo = snapshotState();
           if (backup) state.events.push(backup);
-          invalidateCache(); store.save();
+          invalidateCache(); if (!saveOrRestore(beforeUndo)) return;
           const pid2 = window.__curPerson; if (pid2) openPerson(pid2); else render();
         });
       }, true);
       break;
     }
     case 'demo': loadDemo(); break;
-    case 'welcomeDemo': { try { localStorage.setItem('eqworker_welcomed', '1'); } catch (e) {} closeModal(); loadDemo(); break; }
+    case 'welcomeDemo': { if (!loadDemo()) break; try { localStorage.setItem('eqworker_welcomed', '1'); } catch (e) {} closeModal(); break; }
     case 'welcomeGo': { try { localStorage.setItem('eqworker_welcomed', '1'); } catch (e) {} closeModal(); state.tab = 'persons'; render(); break; }
     case 'closeModal': closeModal(); break;
     case 'confirmOk': confirmOk(); break;
@@ -3254,7 +3335,11 @@ function onClick(e) {
       const fn = window.__undoFn; window.__undoFn = null;
       clearTimeout(toastTimer);
       const t = $('#toast-root'); if (t) t.classList.remove('show');
-      if (fn) fn();
+      if (fn) {
+        lastSaveFailed = false;
+        fn();
+        if (lastSaveFailed && !store.locked) toastUndo('撤销保存失败，可重试', fn);
+      }
       break;
     }
     case 'closeToast': closeToast(); break;
@@ -3272,13 +3357,15 @@ function onChange(e) {
     const gt = document.getElementById('gfTier');
     const gc = document.getElementById('gfCity');
     if (!window.__gift) return;
+    const before = snapshotState();
+    const giftBefore = Object.assign({}, window.__gift);
     if (gp) window.__gift.personId = gp.value;
     if (go) window.__gift.occasion = go.value;
     if (gt) window.__gift.tier = gt.value;
     if (gc) window.__gift.city = gc.value;
     state.settings.giftTier = window.__gift.tier;
     state.settings.cityTier = window.__gift.city;
-    store.save();
+    if (!saveOrRestore(before)) { window.__gift = giftBefore; if (gp) gp.value = giftBefore.personId; if (go) go.value = giftBefore.occasion; if (gt) gt.value = giftBefore.tier; if (gc) gc.value = giftBefore.city; return; }
     renderGiftResult();
   }
   else if (act === 'scriptCalc') {

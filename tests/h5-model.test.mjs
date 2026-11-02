@@ -11,17 +11,17 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, '_app_dev.js');
 
-function loadH5() {
+function loadH5(mem = new Map(), options = {}) {
   let src = fs.readFileSync(SRC, 'utf8');
   const idx = src.lastIndexOf('\ninit();');
-  if (idx >= 0) src = src.slice(0, idx) + '\n';
+  if (idx >= 0 && !options.init) src = src.slice(0, idx) + '\n';
   src += `
 ;globalThis.__h5 = { state, computePerson, computedFor, overallMetrics, getLevel, getWisdom,
   relationRead, daysUntil, sanitizeImport, esc, clamp, uid, EVENT_TYPES, invalidateCache, store,
   highlightKw, SCENARIOS, lsSet, lsGet, personLedger, ledgerTotals, giftAdvice, personHealth,
   buildActions, buildICS, buildScripts, SCRIPT_SCENES, SCRIPT_TONES, GIFT_TIERS, CITY_TIERS,
   OCCASIONS, eventDir, niceAmount, upcomingDates, fmtMoney, ledgerNetShort, ledgerNetLabel,
-  ledgerInsights, settlePrefill, healthRanking };`;
+  ledgerInsights, settlePrefill, healthRanking, onClick, onChange, giftModal, gift: () => window.__gift, confirmOk, undo: () => window.__undoFn() };`;
 
   const el = () => ({
     innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, children: [],
@@ -33,14 +33,18 @@ function loadH5() {
     insertAdjacentHTML() {}, closest() { return null; }, contains() { return false; }
   });
 
-  const mem = new Map();
+  const elements = new Map();
+  const element = (key) => {
+    if (!elements.has(key)) elements.set(key, el());
+    return elements.get(key);
+  };
   const sandbox = {
-    console,
+    console, Date,
     navigator: { userAgent: 'node-test' },
     location: { protocol: 'https:', hostname: 'example.com', href: 'https://example.com/' },
     localStorage: {
-      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
-      setItem: (k, v) => mem.set(k, String(v)),
+      getItem: (k) => { if (options.readError?.(k)) throw new Error('read failed'); if (options.readValue) return options.readValue(k, mem); return mem.has(k) ? mem.get(k) : null; },
+      setItem: (k, v) => { if (options.writeError?.(k)) throw new Error('write failed'); mem.set(k, String(v)); },
       removeItem: (k) => mem.delete(k),
       clear: () => mem.clear()
     },
@@ -48,15 +52,15 @@ function loadH5() {
     setTimeout, clearTimeout, setInterval, clearInterval,
     requestAnimationFrame: (cb) => setTimeout(cb, 0),
     Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} },
-    FileReader: class {},
+    FileReader: class { readAsText(file) { this.result = file.text; this.onload(); } },
     echarts: { init: () => ({ setOption() {}, resize() {}, dispose() {}, on() {} }) }
   };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   sandbox.document = {
     documentElement: el(), body: el(), head: el(),
-    querySelector: () => el(), querySelectorAll: () => [],
-    getElementById: () => el(), createElement: () => el(),
+    querySelector: (key) => element(key), querySelectorAll: () => [],
+    getElementById: (key) => element('#' + key), createElement: () => el(),
     addEventListener() {}, removeEventListener() {}
   };
   sandbox.addEventListener = () => {};
@@ -64,6 +68,7 @@ function loadH5() {
 
   const ctx = vm.createContext(sandbox);
   vm.runInContext(src, ctx, { filename: '_app_dev.js' });
+  sandbox.__h5.element = element;
   return sandbox.__h5;
 }
 
@@ -105,7 +110,9 @@ test('[P0 回归] 冲突/摩擦必须降低热度与信任，不能反向升温'
   assert.ok(m.intimacy < 35, `冲突应使亲密下降，实际 intimacy=${m.intimacy}`);
 });
 
-test('正向事件提升热度（饭局 weight=7 → +7）', () => {
+test('正向事件提升热度（饭局 weight=7 → +7）', (t) => {
+  const now = Date.now();
+  t.mock.method(Date, 'now', () => now);
   const p = { id: 'p1', name: '张三', adjust: 0 };
   reset([p], [{ id: 'e1', personId: 'p1', type: 'meal', time: Date.now(), weight: 7 }]);
   const m = H.computePerson(p);
@@ -193,6 +200,218 @@ test('[P0 回归] 本地缓存损坏时 load() 仍得到干净状态', () => {
   assert.equal(H.state.events.length, 0);
   assert.ok(Number.isFinite(H.state.progress.s1.best));
   assert.equal(H.state.progress.s1.best, 0);
+});
+
+for (const raw of ['{bad', '', 'null', '{"schema":5,"persons":[]}', '{"schema":"4","persons":[]}', '{"persons":[{"id":"p","name":"甲","extra":"保留"}]}', '{"persons":[],"events":"bad"}']) {
+  test(`H5 初始化保护异常或有损数据 ${raw}`, () => {
+    const mem = new Map([['eqworker_db_v1', raw], ['eqworker_welcomed', '1']]);
+    const app = loadH5(mem, { init: true });
+    app.store.save();
+    assert.equal(mem.get('eqworker_db_v1'), raw);
+    assert.match(app.element('#toast-root').innerHTML, /保护|只读|无法保存/);
+    const restarted = loadH5(mem, { init: true });
+    restarted.store.save();
+    assert.equal(mem.get('eqworker_db_v1'), raw);
+  });
+}
+
+test('H5 主键读取失败时禁止覆盖并提示', () => {
+  const raw = '{"persons":[]}';
+  const mem = new Map([['eqworker_db_v1', raw], ['eqworker_welcomed', '1']]);
+  const app = loadH5(mem, { init: true, readError: k => k === 'eqworker_db_v1' });
+  app.store.save();
+  assert.equal(mem.get('eqworker_db_v1'), raw);
+  assert.match(app.element('#toast-root').innerHTML, /保护|只读|无法保存/);
+});
+
+test('H5 完整日期迁移备份原文并在保存重启后保留备份', () => {
+  const raw = JSON.stringify({ schema: 4, persons: [{ id: 'p', name: '甲', birthday: '1990-02-03', anniversary: '2020-05-20' }] });
+  const mem = new Map([['eqworker_db_v1', raw], ['eqworker_welcomed', '1']]);
+  const app = loadH5(mem, { init: true });
+  app.store.save();
+  assert.ok([...mem.entries()].some(([key, value]) => key !== 'eqworker_db_v1' && value === raw));
+  const restarted = loadH5(mem, { init: true });
+  assert.equal(restarted.state.persons[0].birthday, '02-03');
+  assert.equal(restarted.state.persons[0].anniversary, '05-20');
+  assert.ok([...mem.entries()].some(([key, value]) => key !== 'eqworker_db_v1' && value === raw));
+});
+
+test('H5 日期备份写入失败时保留原文并明确提示', () => {
+  const raw = JSON.stringify({ schema: 4, persons: [{ id: 'p', name: '甲', birthday: '1990-02-03' }] });
+  const mem = new Map([['eqworker_db_v1', raw], ['eqworker_welcomed', '1']]);
+  const app = loadH5(mem, { init: true, writeError: k => k !== 'eqworker_db_v1' });
+  app.store.save();
+  assert.equal(mem.get('eqworker_db_v1'), raw);
+  assert.match(app.element('#toast-root').innerHTML, /保护|只读|无法保存/);
+});
+
+test('H5 备份校验失败或已有不同备份时锁写', () => {
+  const raw = JSON.stringify({ schema: 4, persons: [{ id: 'p', name: '甲', birthday: '1990-02-03' }] });
+  for (const mode of ['mismatch', 'verify']) {
+    const mem = new Map([['eqworker_db_v1', raw], ['eqworker_welcomed', '1']]);
+    if (mode === 'mismatch') mem.set('eqworker_db_v1_date_backup', 'existing');
+    let backupReads = 0;
+    const app = loadH5(mem, { init: true, readValue: (k, m) => {
+      if (mode === 'verify' && k === 'eqworker_db_v1_date_backup' && ++backupReads > 1) return 'wrong';
+      return m.has(k) ? m.get(k) : null;
+    } });
+    app.store.save();
+    assert.equal(mem.get('eqworker_db_v1'), raw);
+    if (mode === 'mismatch') assert.equal(mem.get('eqworker_db_v1_date_backup'), 'existing');
+    assert.match(app.element('#toast-root').innerHTML, /保护|只读|无法保存/);
+  }
+});
+
+test('H5 旧键读取异常与无效日期不会覆盖原数据', () => {
+  for (const scenario of ['legacy', 'invalid-date']) {
+    const raw = JSON.stringify({ persons: [{ id: 'p', name: '甲', birthday: '2023-02-29' }] });
+    const mem = new Map([['eqworker_welcomed', '1']]);
+    if (scenario === 'invalid-date') mem.set('eqworker_db_v1', raw);
+    const app = loadH5(mem, { init: true, readError: k => scenario === 'legacy' && k === 'rqsg_radar_v2' });
+    app.store.save();
+    assert.equal(mem.get('eqworker_db_v1'), scenario === 'invalid-date' ? raw : undefined);
+    assert.match(app.element('#toast-root').innerHTML, /保护|只读|无法保存/);
+  }
+});
+
+test('H5 记录写入失败保留草稿并回滚，重试只保存一条', () => {
+  let fail = true;
+  const mem = new Map();
+  const app = loadH5(mem, { writeError: k => fail && k === 'eqworker_db_v1' });
+  app.state.persons = [{ id: 'p', name: '甲' }];
+  for (const [id, value] of Object.entries({ fPerson: 'p', fTitle: '草稿', fNote: '备注', fAmount: '30', fDir: 'out', fOccasion: '生日' })) app.element('#' + id).value = value;
+  app.element('#fWeight').textContent = '7';
+  const click = () => app.onClick({ target: { closest: () => ({ dataset: { act: 'eventSubmit' } }) } });
+  click();
+  assert.equal(app.element('#fTitle').value, '草稿');
+  assert.equal(app.state.events.length, 0);
+  assert.match(app.element('#toast-root').innerHTML, /保存失败/);
+  fail = false; click();
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).events.length, 1);
+});
+
+test('H5 人脉和提醒写入失败保留表单，可重试', () => {
+  let fail = true;
+  const mem = new Map();
+  const app = loadH5(mem, { writeError: k => fail && k === 'eqworker_db_v1' });
+  app.element('#pfName').value = '甲';
+  const click = (act, arg) => app.onClick({ target: { closest: () => ({ dataset: { act, arg } }) } });
+  click('personSubmit');
+  assert.equal(app.state.persons.length, 0);
+  assert.equal(app.element('#pfName').value, '甲');
+  assert.match(app.element('#toast-root').innerHTML, /保存失败/);
+  fail = false; click('personSubmit');
+  assert.equal(app.state.persons.length, 1);
+  fail = true;
+  app.element('#rfContent').value = '提醒草稿';
+  click('reminderSubmit', app.state.persons[0].id);
+  assert.equal(app.state.reminders.length, 0);
+  assert.equal(app.element('#rfContent').value, '提醒草稿');
+  fail = false; click('reminderSubmit', app.state.persons[0].id);
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).reminders.length, 1);
+});
+
+test('H5 导入写入失败回滚，重试后生效', () => {
+  let fail = true;
+  const mem = new Map();
+  const app = loadH5(mem, { writeError: k => fail && k === 'eqworker_db_v1' });
+  const clean = app.sanitizeImport({ persons: [{ id: 'p', name: '导入' }] });
+  app.store.applyImport(clean);
+  assert.equal(app.state.persons.length, 0);
+  assert.match(app.element('#toast-root').innerHTML, /保存失败/);
+  fail = false; app.store.applyImport(clean);
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).persons[0].name, '导入');
+});
+
+test('H5 提醒状态和删除写入失败后可重试', () => {
+  let fail = true;
+  const mem = new Map();
+  const app = loadH5(mem, { writeError: k => fail && k === 'eqworker_db_v1' });
+  app.state.reminders = [{ id: 'r', personId: 'p', content: '提醒', status: 'pending' }];
+  const click = (act, arg) => app.onClick({ target: { closest: () => ({ dataset: { act, arg } }) } });
+  click('quickDone', 'r');
+  assert.equal(app.state.reminders[0].status, 'pending');
+  assert.match(app.element('#toast-root').innerHTML, /保存失败/);
+  fail = false; click('quickDone', 'r');
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).reminders[0].status, 'done');
+  fail = true; click('delReminder', 'r'); app.confirmOk();
+  assert.equal(app.state.reminders.length, 1);
+  fail = false; click('delReminder', 'r'); app.confirmOk();
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).reminders.length, 0);
+});
+
+test('H5 修炼写入失败回滚打卡与分数，重试后持久化', () => {
+  let fail = true;
+  const mem = new Map();
+  const app = loadH5(mem, { writeError: k => fail && k === 'eqworker_db_v1' });
+  const sc = app.SCENARIOS[0];
+  const click = () => app.onClick({ target: { closest: () => ({ dataset: { act: 'choice', arg: sc.id + '|0' } }) } });
+  click();
+  assert.equal(app.state.streak.n, 0);
+  assert.equal(Object.keys(app.state.progress).length, 0);
+  assert.match(app.element('#toast-root').innerHTML, /保存失败/);
+  fail = false; click();
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).streak.n, 1);
+});
+
+test('H5 礼金选择写失败回滚四控件及建议，恢复后重试', () => {
+  let fail = false;
+  const mem = new Map();
+  const app = loadH5(mem, { writeError: k => fail && k === 'eqworker_db_v1' });
+  app.state.persons = [{ id: 'a', name: '甲', identity: '朋友' }, { id: 'b', name: '乙', identity: '领导' }];
+  app.giftModal('a');
+  const ids = ['gfPerson', 'gfOccasion', 'gfTier', 'gfCity'];
+  const original = ['a', '婚礼', 'standard', '二线'];
+  const changed = ['b', '生日', 'generous', '一线'];
+  ids.forEach((id, i) => { app.element('#' + id).value = original[i]; });
+  const result = app.element('#giftResult').innerHTML;
+  const change = () => app.onChange({ target: { closest: () => ({ dataset: { change: 'giftCalc' } }) } });
+  fail = true;
+  ids.forEach((id, i) => { app.element('#' + id).value = changed[i]; });
+  change();
+  assert.deepEqual(ids.map(id => app.element('#' + id).value), original);
+  assert.deepEqual([app.gift().personId, app.gift().occasion, app.gift().tier, app.gift().city], original);
+  assert.equal(app.state.settings.giftTier, original[2]);
+  assert.equal(app.state.settings.cityTier, original[3]);
+  assert.equal(app.element('#giftResult').innerHTML, result);
+  assert.match(app.element('#toast-root').innerHTML, /保存失败/);
+  fail = false;
+  ids.forEach((id, i) => { app.element('#' + id).value = changed[i]; });
+  change();
+  assert.deepEqual(ids.map(id => app.element('#' + id).value), changed);
+  assert.deepEqual([app.gift().personId, app.gift().occasion, app.gift().tier, app.gift().city], changed);
+  assert.equal(app.state.settings.giftTier, changed[2]);
+  assert.equal(app.state.settings.cityTier, changed[3]);
+  assert.equal(JSON.parse(mem.get('eqworker_db_v1')).settings.cityTier, changed[3]);
+  assert.notEqual(app.element('#giftResult').innerHTML, result);
+  assert.match(app.element('#giftResult').innerHTML, /领导.*生日/);
+});
+
+test('H5 文件导入特殊进度键后保存并重新加载', () => {
+  const mem = new Map();
+  const app = loadH5(mem);
+  const progress = JSON.parse('{"__proto__":{"best":91,"times":2},"constructor":{"best":82,"times":3},"toString":{"best":73,"times":4},"ordinary":{"best":64,"times":5}}');
+  app.store.import({ text: JSON.stringify({ persons: [], progress }) });
+  const saved = JSON.parse(mem.get('eqworker_db_v1'));
+  assert.deepEqual(saved.progress, progress);
+  const reloaded = loadH5(mem);
+  assert.equal(reloaded.store.load(), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(reloaded.state.progress)), progress);
+  assert.ok(Number.isFinite(reloaded.getWisdom()));
+  reloaded.onClick({ target: { closest: () => ({ dataset: { act: 'reset' } }) } });
+  reloaded.confirmOk();
+  reloaded.undo();
+  const restored = loadH5(mem);
+  assert.equal(restored.store.load(), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(restored.state.progress)), progress);
+});
+
+test('原型名称作为人脉、事件类型和场合时仍按普通数据计算', () => {
+  const app = loadH5();
+  app.store.import({ text: JSON.stringify({ persons: [{ id: '__proto__', name: '甲' }], events: [{ personId: '__proto__', type: 'constructor', time: Date.now(), amount: 100, dir: 'out', occasion: '__proto__' }] }) });
+  assert.ok(Number.isFinite(app.computedFor('__proto__').heat));
+  assert.equal(app.ledgerInsights().topOccasion, '__proto__');
+  assert.equal(app.ledgerInsights().topOccasionAmount, 100);
 });
 
 test('getWisdom：单题满分不会一次拉满（归一化到全部情景满分）', () => {

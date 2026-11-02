@@ -64,7 +64,7 @@ Page({
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
     const r = S.reminders.find(x => x.id === id);
-    if (r) { r.status = 'done'; engine.save(); this.onShow(); ui.toast(this, '已完成', { icon: '✓' }); }
+    if (r && engine.update(() => { r.status = 'done'; })) { this.onShow(); ui.toast(this, '已完成', { icon: '✓' }); }
   },
   /* ── UI handlers ── */
   onModalConfirm() { ui.modalClose(this, true); },
@@ -75,8 +75,7 @@ Page({
     const S = engine.getState();
     const id = e.currentTarget.dataset.id;
     ui.confirm(this, '删除这条提醒？', '', () => {
-      S.reminders = S.reminders.filter(x => x.id !== id);
-      engine.save();
+      if (!engine.update(() => { S.reminders = S.reminders.filter(x => x.id !== id); })) return;
       this.onShow();
     }, true);
   },
@@ -106,8 +105,7 @@ Page({
       confirmType: 'teal',
       onConfirm: (val) => {
         if (val && val.trim()) {
-          S.reminders.push({ id: engine.uid(), personId: S.persons[idx].id, content: val.trim(), date: '', status: 'pending' });
-          engine.save();
+          if (!engine.update(() => { S.reminders.push({ id: engine.uid(), personId: id, content: val.trim(), date: '', status: 'pending' }); })) return false;
           this.onShow();
           ui.toast(this, '已添加提醒', { icon: '✓' });
         }
@@ -149,7 +147,7 @@ Page({
     const txt = this.data.importText.trim();
     if (!txt) { ui.toast(this, '先粘贴备份内容', { icon: '×' }); return; }
     try {
-      engine.restoreText(txt);
+      if (!engine.restoreText(txt)) return;
       this.setData({ showImport: false });
       this.onShow();
       ui.toast(this, '导入成功', { icon: '✓' });
@@ -160,8 +158,7 @@ Page({
   clearAll() {
     ui.confirm(this, '清空所有数据？', '所有记录将永久删除，不可恢复。建议先「复制备份」。', () => {
       const S = engine.getState();
-      S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' };
-      engine.save();
+      if (!engine.update(() => { S.persons = []; S.events = []; S.reminders = []; S.progress = {}; S.streak = { n: 0, last: '' }; })) return;
       this.onShow();
     }, true);
   }

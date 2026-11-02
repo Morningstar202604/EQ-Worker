@@ -106,7 +106,7 @@ export function ledgerInsights(state: AppState, now: number = Date.now()): Ledge
   let totalGiven = 0;
   let givenCount = 0;
   let maxGift = 0;
-  const byOcc: Record<string, number> = {};
+  const byOcc: Record<string, number> = Object.create(null);
   for (const e of state.events) {
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;

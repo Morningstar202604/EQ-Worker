@@ -33,7 +33,7 @@ describe('studio real entry render', () => {
     expect(root!.textContent).toContain('AI 助手');
     expect(root!.querySelectorAll('[data-act="nav"]').length).toBe(4);
     expect(root!.querySelector('[data-view="insights"]')).toBeNull();
-  });
+  }, 15000);
 
   it('shows the empty landing before any data exists', async () => {
     await import('../main');

@@ -8,8 +8,9 @@ App({
   },
   onLaunch() {
     this.globalData.state = engine.load();
+    if (engine.isWriteProtected()) wx.showModal({ title: '数据保护提示', content: '本地数据异常或备份失败，已开启写保护。请保留原数据，暂勿清除小程序缓存。', showCancel: false });
   },
   save() {
-    engine.save(this.globalData.state);
+    return engine.save(this.globalData.state);
   }
 });

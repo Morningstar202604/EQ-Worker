@@ -1,4 +1,4 @@
-import { escapeHtml, lastSeen } from './html';
+import { clampPercent, escapeHtml, lastSeen } from './html';
 
 export interface ChartBlock {
   svg: string;
@@ -10,7 +10,7 @@ export function chartBlock(chart: ChartBlock, extraClass = ''): string {
 }
 
 export function metricCard(label: string, value: number, hint: string): string {
-  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const pct = clampPercent(value);
   return [
     `<div class="metric">`,
     `<div class="metric-head"><span>${escapeHtml(label)}</span><strong>${pct}</strong></div>`,
