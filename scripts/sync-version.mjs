@@ -78,6 +78,26 @@ const targets = [
     label: 'android assets sw.js CACHE_NAME'
   },
   {
+    // 扩展端（CLI / 后台 / MCP）各自持有一份对外声明的版本号。
+    // 不纳入校验的话，发版时必然出现「主版本 3.5.0，CLI 还报 3.4.0」的漂移。
+    file: 'apps/cli/src/cli.ts',
+    pattern: /const VERSION = '[^']*';/,
+    expected: `const VERSION = '${VERSION}';`,
+    label: 'CLI 版本号'
+  },
+  {
+    file: 'apps/mcp/src/server.ts',
+    pattern: /const VERSION = '[^']*';/,
+    expected: `const VERSION = '${VERSION}';`,
+    label: 'MCP 版本号'
+  },
+  {
+    file: 'apps/server/src/server.ts',
+    pattern: /version: '[0-9][^']*'/,
+    expected: `version: '${VERSION}'`,
+    label: '后台版本号'
+  },
+  {
     file: 'EQ-Worker-小程序/pages/me/me.js',
     pattern: /version: 'v[\d.]+',/,
     expected: `version: 'v${VERSION}',`,

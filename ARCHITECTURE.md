@@ -122,3 +122,42 @@ therefore treated as a severity-one defect.
   bugs must be tested at the page level, not inferred from core tests.
 - **`packages/viz` output is asserted as strings.** Cheap and deterministic, but it will not catch
   a chart that is technically valid and visually wrong. Visual review is still manual.
+
+---
+
+## 扩展端（v3.4.0）
+
+新增三个入口，共享同一个 `packages/core`：
+
+| 端 | 目录 | 为什么单独立端而不是塞进 Studio |
+| --- | --- | --- |
+| CLI | `apps/cli` | 面向脚本与自动化。要求零依赖、可管道、`--json` 稳定；这些诉求与 GUI 相反。 |
+| 本地后台 | `apps/server` | 面向「想在大屏上看全貌」的场景。需要 HTTP 与鉴权，这些不该进静态单页应用。 |
+| MCP | `apps/mcp` | 面向 AI 客户端。协议是 stdio JSON-RPC，生命周期由宿主控制，与浏览器端完全不同。 |
+
+### 分层边界（重要）
+
+`packages/core` **不得** import `node:fs`、`node:path` 等内置模块——它要进浏览器与微信小程序。
+凡是依赖文件系统的能力放 `packages/node`：
+
+```
+packages/core   ← 浏览器 / 小程序 / Node 都能用
+packages/node   ← 只在 Node 里用（文件存储、数据目录）
+```
+
+这条边界不是靠自觉，是靠构建强制：`vite build` 一旦在依赖图里遇到 `node:fs` 会直接报错。
+v3.3.0 开发时把文件适配器放进 core，构建立刻失败，才拆出 `packages/node`。
+
+### 存储一致性
+
+`createFileStore()` 会显式调用 `store.load()`。这不是冗余——`createStore()` 只建空状态，
+少了这一步，CLI 每次启动都是空库，写回时覆盖磁盘真实数据。同类问题在 v3.3.0 已经踩过一次
+（`Store` 缺 `setState` 导致成绩不持久化），因此两处都补了回归测试。
+
+### 为什么不引框架
+
+后台只有六个视图、一张表、两个弹窗。引入 React/Vue 会让产物体积翻十倍、多一条构建链，
+对一个本地工具是净损失。需要更复杂交互时再升级，不提前支付成本。
+
+MCP 则相反：协议由别人定义，必须用官方 SDK（`@modelcontextprotocol/sdk`），
+自己实现 JSON-RPC 握手与能力协商是重复造轮子且容易漏掉规范细节。

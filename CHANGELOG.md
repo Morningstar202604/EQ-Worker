@@ -1,5 +1,83 @@
 # Changelog
 
+## v3.4.0 — 2026-11-04
+
+从「一个应用」扩成「一个平台」：同一个引擎，五个入口，外加协议级集成。
+
+### 新增：CLI（`apps/cli`）
+
+15 个命令覆盖查看、参谋、写入、数据四条线：`overview` / `persons` / `person` / `ledger` /
+`gift` / `script` / `health` / `practice` / `achievements` / `report` / `actions` /
+`add-person` / `record` / `export` / `import` / `where` / `demo`。全部支持 `--json`。
+
+零运行时依赖，`esbuild` 打成单文件 `dist-cli/eqw.mjs`。数据目录遵循各平台惯例
+（Windows `%APPDATA%`、macOS `Application Support`、Linux `XDG_DATA_HOME`），
+可用 `--data` 或 `EQWORKER_DATA_DIR` 覆盖。
+
+### 新增：本地 Web 后台（`apps/server`）
+
+概览 / 人脉 / 账本 / 体检 / 参谋五个视图。**只绑 127.0.0.1**；除 `/api/health` 外全部接口
+要求 `Authorization: Bearer <token>`，令牌首次启动随机生成并打印在终端。静态资源做了目录
+穿越防护。零前端框架——六个视图不值得引入 React 的产物体积与构建链。
+
+### 新增：MCP 服务器（`apps/mcp`）
+
+基于官方 `@modelcontextprotocol/sdk` 1.32.2。供 Claude Desktop / Cursor / Cline 等直接读写
+本地人情数据（stdio 传输，无网络出站）。
+
+- **11 个工具**：9 个只读（总览、人脉、单人、账本、体检、随礼、话术、成就、年度）+ 2 个写入
+  （记一笔、加人脉）。
+- **2 个资源**：`eqworker://persons`、`eqworker://ledger`，可被客户端当上下文引用。
+- **2 个提示**：`weekly_review`（每周人情复盘）、`gift_decision`（随礼决策）。
+- 写工具按 MCP 规范声明 `readOnlyHint: false`，宿主据此先向用户确认；工具输出结构恒定
+  （空库也返回 `{总数:0, 人脉:[]}`），宿主可统一解析。
+
+### 新增：`packages/node`
+
+文件存储适配器，与 core 的 `StorageAdapter` 同接口，因此迁移、导入导出、写保护逻辑在三端
+复用同一份实现。**原子写**（写临时文件后 rename），断电不会留下半个文件。损坏的数据文件
+拒绝读取而不是当成空数据覆盖。
+
+放在独立包而非 core，是因为 core 要进浏览器与小程序，不能出现 `node:fs`——这条边界由构建
+强制：`vite build` 遇到 `node:fs` 会直接失败。
+
+### 新增：Windows 安装包
+
+改用 `electron-builder` 产出 NSIS `setup.exe`（116 MB）：开始菜单项、桌面快捷方式、卸载项、
+可选安装目录、`versionCode` 与产品名写入 PE 资源。此前的手工 zip 无法写 exe 图标与版本资源。
+另生成多尺寸 `.ico`（`scripts/make-ico.mjs`，PNG-in-ICO，不引图像库）。
+
+### 修复
+
+- **新用户走「我自己来」后演示数据入口消失**：人脉页空态只提供「添加第一个人」。补上演示入口，
+  并加 2 个回归测试。
+- **CLI 文件存储漏调 `store.load()`**：每次启动都是空库，写回时会把磁盘上真实数据覆盖掉。
+  这类「看起来能跑但会毁数据」的缺陷比崩溃更危险。已修，并由 `tests/cli.test.mjs` 的
+  「demo 写入后能读回」「损坏文件原样保留」两个用例锁死。
+- **后台把内部错误原文返回客户端**：Node 的 fs 错误带绝对路径，属本机信息。改为只回通用文案，
+  详情写服务端日志。
+- **CLI `persons --json` 与表格列不对应**：JSON 是 `computed.heat` 两层嵌套，脚本要钻两层；
+  改为扁平结构，字段与表格列一一对应。
+- **MCP `list_persons` 空库返回纯文本**：输出类型不固定会让宿主解析失败。改为恒定返回 JSON。
+- **三个新端版本号硬编码**：纳入 `sync-version` 校验，发版时不会再出现「主版本已升、CLI 还报旧号」。
+
+### 改进
+
+- parity 测试从 14 个函数扩到 16 个（补 `achievements` / `monthInsights`），仍为 6 组 fixture 全覆盖。
+- `pnpm run verify` 现在同时构建 CLI / 后台 / MCP，打包配置错误在门禁阶段就会暴露。
+- README 中英双语重写：以截图与对照表为主，讲清「解决什么」而不是罗列技术栈。
+
+### 质量
+
+- **454 个测试**：173 个 `node --test` + 281 个 Vitest（28 文件），`tsc --noEmit` 无错误。
+- 新增 42 个测试专测三个新端：CLI 13（真实子进程）、后台 16（真实 HTTP socket）、MCP 13（官方
+  SDK 真实 JSON-RPC 往返）。
+- 功能真实性核查 23/23：见 [`docs/AUDIT.md`](docs/AUDIT.md)。
+- Windows 安装包实测启动，窗口标题 `EQ-Worker · 人情世故助手`，无残留进程。
+- 依赖审计（官方源）：无已知漏洞。
+- 未验证：小程序真机、安卓 APK 本轮未重建、MCP 在真实 Claude Desktop 中的端到端表现
+  （仅用官方 SDK 客户端验证了协议层）。
+
 ## v3.3.0 — 2026-11-03
 
 把「能算」补齐到「能练、能看长线」：成就、修炼计分与年度回顾下沉到 core，三端共用同一份规则。

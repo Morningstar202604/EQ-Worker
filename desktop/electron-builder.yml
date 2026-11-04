@@ -1,0 +1,46 @@
+# EQ-Worker 桌面发行配置
+#
+# 目标：一个双击就能装的 setup.exe，以及一个免安装的 portable 包。
+# 为什么用 electron-builder 而不是继续手工拼 zip：
+#   - 手工包无法写 exe 内嵌图标与版本资源（文件名是 electron.exe）
+#   - 无法生成开始菜单/桌面快捷方式、卸载项、文件关联
+#   - 无法做增量更新与代码签名
+# 这些都是分发的基本要求，不该自己造。
+
+appId: com.eqworker.app
+productName: EQ-Worker
+copyright: EQ-Worker · CC BY-NC 4.0
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - main.js
+  - index.html
+  - icon.png
+  - sw.js
+  - sw-register.js
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: icon.ico
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  # 无代码签名证书时保持关闭，避免构建失败；有证书时设 CSC_LINK 环境变量即可
+  signAndEditExecutable: true
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: EQ-Worker
+  uninstallDisplayName: EQ-Worker 人情世故助手
+  deleteAppDataOnUninstall: false
+  installerLanguages:
+    - zh_CN
+  language: '2052'

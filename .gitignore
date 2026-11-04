@@ -21,6 +21,9 @@ android/build/
 node_modules/
 dist-vite/
 dist-studio/
+dist-cli/
+dist-server/
+dist-mcp/
 .aqg/
 
 # 本地 dev-server 地址（只提交 .example）

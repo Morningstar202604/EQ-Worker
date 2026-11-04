@@ -2119,7 +2119,8 @@ function viewPersons() {
       ? `<div class="empty"><div class="t">没有找到相关人脉</div><div class="d">换个关键词试试，或直接添加一位新的人脉。</div>
         <button class="btn primary" data-act="personForm">＋ 添加新朋友</button></div>`
       : `<div class="empty"><div class="t">还没有人脉</div><div class="d">把生命中重要的人记进来，雷达会自动生成为你经营人情的清单。</div>
-        <button class="btn primary" data-act="personForm">添加第一个人</button></div>`)}`;
+        <button class="btn primary" data-act="personForm">添加第一个人</button>
+        <button class="btn" data-act="demo" style="margin-left:8px">载入演示数据</button></div>`)}`;
 }
 
 /* ---------- 快速记录 ---------- */

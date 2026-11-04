@@ -42,6 +42,8 @@ export interface LegacyApi {
   ledgerInsights(): Record<string, unknown>;
   getWisdom(): number;
   getLevel(w: number): Record<string, unknown>;
+  achievementsList(): Array<{ t: string; d: string; cur: number; need: number; done: boolean }>;
+  monthInsights(): Record<string, unknown>;
   invalidateCache(): void;
 }
 
@@ -78,7 +80,8 @@ export function loadLegacy(now: number): LegacyApi {
   src += `
 ;globalThis.__h5 = { state, computePerson, personLedger, personHealth, overallMetrics,
   giftAdvice, buildActions, buildAlerts, getSuggestion, relationRead, buildScripts,
-  buildICS, upcomingDates, ledgerTotals, ledgerInsights, getWisdom, getLevel, invalidateCache };`;
+  buildICS, upcomingDates, ledgerTotals, ledgerInsights, getWisdom, getLevel, invalidateCache,
+  achievementsList, monthInsights };`;
 
   const mem = new Map<string, string>();
   const sandbox: Record<string, unknown> = {

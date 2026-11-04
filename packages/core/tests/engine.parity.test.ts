@@ -6,6 +6,7 @@ import { personHealth } from '../src/health';
 import { buildICS, upcomingDates } from '../src/ics';
 import { giftAdvice, ledgerInsights, ledgerTotals, personLedger } from '../src/ledger';
 import { buildScripts, SCRIPT_SCENES } from '../src/scripts';
+import { achievements, monthInsights } from '../src/achievements';
 import { createEmptyState, normalizeSettings } from '../src/sanitize';
 import type { AppState, CityTier, GiftTier, Person, PersonalEvent, Reminder } from '../src/types';
 
@@ -197,6 +198,15 @@ function assertParity(f: Fixture): void {
     compare(plain(getSuggestion(S, p, NOW)), plain(H.getSuggestion(p)), `${f.name} getSuggestion(${p.id})`);
     compare(plain(relationRead(S, p, NOW)), plain(H.relationRead(p)), `${f.name} relationRead(${p.id})`);
   }
+  // 成就与月度洞察：legacy 的 achievementsList / monthInsights 是同一套推导规则
+  compare(plain(achievements(S, NOW)), plain(H.achievementsList()), `${f.name} achievements`);
+  const legacyMonth = H.monthInsights();
+  const coreMonth = monthInsights(S, NOW);
+  // legacy 把 top/debts 拼成展示字符串，core 返回结构化数据；比对计数与新增人脉数
+  expect(coreMonth.count, `${f.name} monthInsights.count`).toBe(legacyMonth.count);
+  expect(coreMonth.newPersons, `${f.name} monthInsights.newPersons`).toBe(legacyMonth.np);
+  expect(coreMonth.ym, `${f.name} monthInsights.ym`).toBe(legacyMonth.ym);
+
   for (const scene of SCRIPT_SCENES) {
     compare(
       plain(buildScripts(S, scene.id, f.persons[0]?.id ?? '', '最近') ),

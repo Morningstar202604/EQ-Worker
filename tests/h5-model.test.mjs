@@ -21,7 +21,8 @@ function loadH5(mem = new Map(), options = {}) {
   highlightKw, SCENARIOS, lsSet, lsGet, personLedger, ledgerTotals, giftAdvice, personHealth,
   buildActions, buildICS, buildScripts, SCRIPT_SCENES, SCRIPT_TONES, GIFT_TIERS, CITY_TIERS,
   OCCASIONS, eventDir, niceAmount, upcomingDates, fmtMoney, ledgerNetShort, ledgerNetLabel,
-  ledgerInsights, settlePrefill, healthRanking, onClick, onChange, giftModal, gift: () => window.__gift, confirmOk, undo: () => window.__undoFn() };`;
+  ledgerInsights, settlePrefill, healthRanking, onClick, onChange, giftModal, gift: () => window.__gift, confirmOk, undo: () => window.__undoFn(),
+  viewPersons, viewAssistant, viewRadar, viewTrain, viewMe };`;
 
   const el = () => ({
     innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, children: [],
@@ -689,4 +690,25 @@ test('healthRanking：按健康度从低到高，并带账本信息', () => {
   assert.equal(r.length, 2);
   assert.ok(r[0].h.score <= r[1].h.score);
   assert.ok('l' in r[0]);
+});
+
+
+/* 新用户路径回归：欢迎页点「我自己来」后落在人脉页空态，
+   该空态必须保留「载入演示数据」入口——否则新用户想反悔试试效果就没有路径了。 */
+test('人脉页空态保留演示数据入口', () => {
+  const h5 = loadH5();
+  h5.state.persons = [];
+  h5.invalidateCache();
+  const html = h5.viewPersons();
+  assert.match(html, /还没有人脉/, '应有空态文案');
+  assert.match(html, /data-act="personForm"/, '应有添加入口');
+  assert.match(html, /data-act="demo"/, '必须有演示数据入口——这是新用户反悔的唯一路径');
+});
+
+test('助手页空态同样保留演示数据入口', () => {
+  const h5 = loadH5();
+  h5.state.persons = [];
+  h5.invalidateCache();
+  const html = h5.viewAssistant();
+  assert.match(html, /data-act="demo"/, '助手页空态也应有演示入口');
 });

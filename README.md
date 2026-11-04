@@ -4,281 +4,201 @@
 
 **Remember what you owe people. Never lose a relationship to a forgotten detail.**
 
-Daily actions · Relationship ledger · Gift advisor · Script advisor · Health check
+Relationship ledger · Gift advisor · Script advisor · Health check · Practice & achievements
 
-Local-first · No account · Optional AI you bring yourself
+Local-first · No account · No server · Optional AI with your own key
 
-<a href="README.md"><b>English</b></a> · <a href="README.zh.md">简体中文</a>
+<b>English</b> · <a href="README.zh.md">简体中文</a>
 
-[![Version](https://img.shields.io/badge/version-v3.2.0-orange)](https://gitcode.com/badhope/EQ-Worker)
+[![Version](https://img.shields.io/badge/version-v3.4.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-255%20passing-brightgreen)](https://github.com/badhope/EQ-Worker/actions)
-[![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20android%20%C2%B7%20windows%20%C2%B7%20wechat-blueviolet)](#which-client-should-i-use)
+[![Tests](https://img.shields.io/badge/tests-454%20passing-brightgreen)](tests/)
+[![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20windows%20%C2%B7%20android%20%C2%B7%20wechat%20%C2%B7%20cli%20%C2%B7%20mcp-blueviolet)](#five-ways-to-use-it)
 
 **Try it:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
-
 **Mirrors:** [GitCode](https://gitcode.com/badhope/EQ-Worker) · [Gitee](https://gitee.com/badhope/EQ-Worker) · [GitHub](https://github.com/badhope/EQ-Worker)
 
 </div>
 
 ---
 
-## The problem
+## What it solves
 
-Nobody forgets that relationships matter. People forget the specifics:
+Nobody forgets that relationships matter. People forget the specifics.
 
-- Who helped you last month, and what you still owe them
-- How much to give at a wedding, a baby shower, a housewarming, a hospital visit
-- How to decline a loan request, chase a repayment, or apologise — without the words coming out wrong
+| What you run into | What EQ-Worker gives you |
+| --- | --- |
+| Who helped you, whom you still owe a meal | A card per person: warmth, trust, social debt, last contact |
+| How much to give at a wedding, baby shower, housewarming | Three tiers **with the arithmetic shown**, not a number pulled from thin air |
+| Declining a loan, chasing a repayment, apologising — words that won't come out | 16 scenarios × 3 tones, copy and adjust |
+| Not noticing a relationship fading | Health check ranks every relationship; it tells you which to fix first |
+| No idea whether the year went well | 12-month review and 13 achievement badges |
 
-EQ-Worker is a workbench for those specifics. Open it and it tells you what to do today. Then it
-gives you the ledger, a gift range with the reasoning shown, and scripts you can copy and adjust.
-
-It is not a fancier contacts app. It is the assistant that thinks about your obligations before you do.
+> Not a fancier contacts app — the assistant that thinks about your obligations before you do.
 
 ---
 
-## What it does
+## Screens
 
-### Today's actions
-
-One ranked list combining upcoming dates, pending reminders, outstanding debts, relationships that
-have gone quiet, and thank-yous you owe. Every item carries two buttons that do the next thing —
-open the gift advisor, generate a script, or record the interaction in ten seconds.
-
-### Relationship ledger
-
-Record gifts given and received, loans, and repayments. See your net position per person and across
-everyone.
-
-- **One-tap settlement** turns a net balance into an actual record: repayment, return gift, or
-  incoming repayment. Partial settlement is supported.
-- **Ledger insights**: given this month, received this month, average gift, most-invested occasion.
-- **Amounts never affect relationship scores.** Money lives in the ledger; heat, trust, and
-  obligation are separate, so the two cannot contaminate each other.
-
-### Gift advisor
-
-Given relationship, occasion, tier, and city, it returns three amounts — modest, appropriate, and
-generous — and explains each one: the base reference, what they gave you before (a return gift
-should not be less), an upward adjustment when you owe them, and their stated preferences.
-
-> Gift amounts vary enormously by region and local custom. The advisor is a reference, not a rule.
-
-### Script advisor
-
-16 everyday situations, three tones each (steady, close, brief), with the person's name filled in.
-Some scripts also reference your recent history with that person. Copy, adjust, send.
-
-### Relationship health
-
-A composite score from relationship indicators, ledger reciprocity, and recent friction, with a
-ranked list so you fix the most neglected relationship first.
-
-### Everything else
-
-Contact profiles, quick record with undo, search and filters, scenario practice, monthly insights,
-annual report, relationship network, achievements, and offline PWA support.
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/v3/01-assistant.png" alt="Assistant" /><br /><sub><b>Daily actions</b> — open it and you know what to do today</sub></td>
+<td width="50%"><img src="docs/screenshots/v3/02-ledger.png" alt="Ledger" /><br /><sub><b>Ledger</b> — gifts given and received, net balance at a glance</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/v3/03-gift.png" alt="Gift advisor" /><br /><sub><b>Gift advisor</b> — three tiers plus the reasoning</sub></td>
+<td><img src="docs/screenshots/v3/04-script.png" alt="Script advisor" /><br /><sub><b>Script advisor</b> — three tones, personalised, copyable</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/v3/08-settlement.png" alt="Settlement" /><br /><sub><b>One-tap settle</b> — partial settlement supported</sub></td>
+<td><img src="docs/screenshots/v3/10-health.png" alt="Health check" /><br /><sub><b>Health check</b> — fix the relationship that needs it most</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/v3/13-studio-practice.png" alt="Practice" /><br /><sub><b>Practice arena</b> — rehearse real scenarios</sub></td>
+<td><img src="docs/screenshots/v3/15-studio-achievements.png" alt="Achievements" /><br /><sub><b>Achievements</b> — unlocked by real interactions</sub></td>
+</tr>
+</table>
 
 ---
 
-## Screenshots
+## Five ways to use it
 
-| Today's actions | Relationship ledger |
-| --- | --- |
-| ![Assistant](docs/screenshots/v3/01-assistant.png) | ![Ledger](docs/screenshots/v3/02-ledger.png) |
+One engine, five entry points. The data format is shared, so you can move between them with import/export.
 
-| Gift advisor | Script advisor |
-| --- | --- |
-| ![Gift](docs/screenshots/v3/03-gift.png) | ![Script](docs/screenshots/v3/04-script.png) |
+### 1 · Web (zero install)
 
-| Quick record | Mobile |
-| --- | --- |
-| ![Record](docs/screenshots/v3/05-record.png) | ![Mobile](docs/screenshots/v3/06-mobile.png) |
+Open `EQ-Worker.html` directly, or:
 
-| Ledger insights | One-tap settlement |
-| --- | --- |
-| ![Insights](docs/screenshots/v3/07-ledger-insights.png) | ![Settlement](docs/screenshots/v3/08-settlement.png) |
+```bash
+python3 -m http.server 8000   # then open http://localhost:8000
+```
 
-| Settlement history | Relationship health |
-| --- | --- |
-| ![History](docs/screenshots/v3/09-settlement-record.png) | ![Health](docs/screenshots/v3/10-health.png) |
+PWA-installable and works offline. The Android and Windows builds share this exact artifact.
 
-| Studio workbench | Studio AI (off by default) |
-| --- | --- |
-| ![Studio](docs/screenshots/v3/11-studio-overview.png) | ![Studio AI](docs/screenshots/v3/12-studio-ai.png) |
+### 2 · Windows desktop (installer)
 
-| Practice arena | Answer feedback |
-| --- | --- |
-| ![Practice](docs/screenshots/v3/13-studio-practice.png) | ![Result](docs/screenshots/v3/14-studio-practice-result.png) |
+Run `EQ-Worker-3.4.0-x64.exe`: Start-menu entry, desktop shortcut, uninstaller, selectable install directory.
 
-| Achievement badges | Twelve-month review |
-| --- | --- |
-| ![Achievements](docs/screenshots/v3/15-studio-achievements.png) | ![Annual](docs/screenshots/v3/16-studio-annual.png) |
+### 3 · CLI (manage relationships in a terminal)
+
+```bash
+eqw overview                        # index, ledger, what to do today
+eqw persons                         # contact list
+eqw person "Wang"                   # one person, full picture
+eqw gift "Chen" --occasion 婚礼      # gift advisor
+eqw script refuse_loan --to "Zhang"  # how to decline a loan
+eqw record --to "Wang" --type meal --title "dinner"
+eqw export --format csv > ledger.csv
+```
+
+Every command supports `--json` for piping into scripts or `jq`.
+
+### 4 · Local web console
+
+```bash
+node dist-server/server.mjs
+# → http://127.0.0.1:4317/  — the access token is printed in the terminal
+```
+
+Five views: overview, contacts, ledger, health, advisors. **Loopback-only**, and every endpoint except the health probe requires a Bearer token.
+
+### 5 · MCP (let AI read your relationship data)
+
+Any MCP-capable client (Claude Desktop, Cursor, Cline) can call it:
+
+```json
+{
+  "mcpServers": {
+    "eq-worker": {
+      "command": "node",
+      "args": ["/path/to/dist-mcp/eq-worker-mcp.mjs"]
+    }
+  }
+}
+```
+
+**11 tools** (overview, contacts, one person, ledger, health, gift, script, achievements, annual + record and add-contact), **2 resources**, **2 prompts**.
+
+Write tools declare `readOnlyHint: false` per the MCP spec, so the host asks the user before touching data.
 
 ---
 
-## Which client should I use?
+## Why it's trustworthy
 
-| Client | State | What you get |
+| Claim | How | How to check |
 | --- | --- | --- |
-| **Web (PWA)** | Complete | Every feature, installable, works offline |
-| **Android** | Complete | Native WebView shell around the web client; ~1.4 MB APK |
-| **Windows desktop** | Complete | Electron shell, portable zip, no installer |
-| **Studio** | Separate build | A denser workbench: overview, contacts, ledger and insights, practice, optional AI |
-| **WeChat Mini Program** | Lightweight | Radar, contacts, record, practice, profile, plus gift and script advisors |
+| Data never leaves the device | No server, no account, no telemetry; AI is off by default and **makes zero requests** while off | A test asserts the request count is 0 while disabled |
+| It won't silently destroy data | Unsafe migrations switch to write-protected; corrupt files are refused rather than overwritten; file storage writes atomically | `tests/cli.test.mjs` has a "corrupt file is preserved" case |
+| The maths is right | The core engine is compared **function by function** against the legacy implementation: 6 fixtures × 16 functions | `packages/core/tests/engine.parity.test.ts` |
+| It actually runs | Not just unit tests: CLI 13, server 16, MCP 13 — real processes, real sockets, real protocol | `node --test tests/**/*.test.mjs` |
 
-The web, Android, and desktop clients share **one** build artifact, so a fix lands everywhere at
-once. Studio is built separately and is not included in the release packages. The Mini Program is a
-deliberately smaller companion.
-
-### Feature coverage
-
-| Capability | Web / Android / Desktop | Studio | Mini Program |
-| --- | --- | --- | --- |
-| Daily actions and reminders | Yes | Yes (overview) | Yes |
-| Ledger and settlement | Yes | Yes | Yes |
-| Gift advisor | Yes | Yes | Yes |
-| Script advisor | Yes | Yes (inside AI view) | Yes |
-| Relationship health | Yes | Yes (ledger page) | Yes |
-| Practice arena | Yes | Yes | Yes |
-| Achievement badges | Yes | Yes | Yes |
-| Annual review | Yes | Yes (12-month review) | Yes |
-| Optional AI | No (rules only) | Yes, off by default | No |
-
-Achievement rules, practice scoring, and annual statistics all live in `packages/core`, so the three
-clients share one implementation instead of each carrying its own copy.
-
----
-
-## Quick start
-
-### Web
-
-Open `EQ-Worker.html` directly, or serve the directory:
-
-```bash
-python3 -m http.server 8000
-# open http://localhost:8000/
-```
-
-For PWA offline support, serve over HTTP(S) and keep `index.html`, `EQ-Worker.html`,
-`sw-register.js`, and `sw.js` together. Service workers require a secure context.
-
-### Build from source
-
-```bash
-pnpm install
-pnpm run dev:studio     # Studio dev server
-pnpm run build:studio   # build Studio to dist-studio/
-pnpm run test           # legacy node:test + Vitest
-pnpm run verify         # full gate: version, builds, tests, typecheck, dist
-```
-
-`pnpm run verify` is the definition of green. It checks version consistency, rebuilds every
-artifact, runs both test suites, type-checks, and builds both Vite targets.
-
-### Android and Windows
-
-See [`docs/双端构建与发布.md`](docs/双端构建与发布.md) (Chinese) and
-[`docs/RELEASE.md`](docs/RELEASE.md) (release checklist, signing, artifact verification).
-
-### WeChat Mini Program
-
-Import `EQ-Worker-小程序/` into WeChat DevTools.
+**454 tests**: 173 Node tests + 281 Vitest tests across 28 files.
 
 ---
 
 ## Architecture
 
-Four layers, one source of truth for the rules:
-
 ```
-shells     android/  desktop/            (embed the legacy build)
-UIs        _app_dev.js  apps/studio  EQ-Worker-小程序/
-packages   packages/ai  packages/viz
-core       packages/core                  (pure domain, no DOM)
+┌──────────────────────────────────────────────────────────┐
+│  packages/core · pure logic, zero deps, browser + WeChat  │
+│  engine · ledger · health · scripts · achievements        │
+└──────────────────────────────────────────────────────────┘
+        ▲            ▲            ▲            ▲
+        │            │            │            │
+ ┌──────┴───┐ ┌──────┴───┐ ┌──────┴───┐ ┌──────┴────┐
+ │ legacy   │ │  Studio  │ │ Mini     │ │ apps/*    │
+ │ single   │ │ Vite +TS │ │ Program  │ │ CLI·srv   │
+ │ file PWA │ │          │ │          │ │ ·MCP      │
+ └──────────┘ └──────────┘ └──────────┘ └───────────┘
+      localStorage                    JSON file (atomic write)
 ```
 
-`packages/core` holds the ledger math, health scoring, sanitization, and advice rules as pure
-functions. Every client consumes it, which is why the numbers agree across clients. Charts in
-`packages/viz` are deterministic SVG strings with no runtime dependencies, so the single-file build
-does not carry a charting library. AI in `packages/ai` is off by default and speaks to providers
-through a minimal fetch interface rather than an SDK.
-
-Full reasoning, including the trade-offs we accepted: [`ARCHITECTURE.md`](ARCHITECTURE.md) and
-[`docs/adr/`](docs/adr/).
+**Layering rule**: `packages/core` must never import `node:fs` — it has to run in a browser and in a
+WeChat Mini Program. Anything filesystem-bound lives in `packages/node`. The boundary is enforced by
+the build: `vite build` fails outright if `node:fs` leaks in.
 
 ---
 
-## Data and privacy
+## Quick start
 
-- **Local by default.** Records live in `localStorage`, WebView storage, or `wx.storage`. No account,
-  no server, no analytics.
-- **Exports are sanitized.** A JSON backup contains your relationship data and deliberately excludes
-  AI provider configuration and keys.
-- **AI is opt-in and previewed.** Disabled by default with zero network requests. When you enable it,
-  you see the exact text that will be sent and must confirm before anything leaves the device.
-  Changing the person, context, provider, or model invalidates that approval.
-- **Fail closed on storage trouble.** If a migration would lose data, the app refuses to write and
-  tells you, rather than overwriting. If a save fails, it says so instead of pretending success.
+```bash
+pnpm install
+pnpm run verify    # version check → build → 173 tests → typecheck → 281 tests → both bundles
+```
 
-Read [`docs/ai-privacy.md`](docs/ai-privacy.md) for the precise boundary, including what we cannot
-guarantee.
+Build one target at a time:
+
+```bash
+node build.js                     # legacy web app (synced to android / desktop)
+node scripts/build-cli.mjs         # CLI    → dist-cli/eqw.mjs
+node scripts/build-server.mjs      # server → dist-server/
+node scripts/build-mcp.mjs         # MCP    → dist-mcp/
+cd desktop && npx electron-builder --win nsis   # installer
+```
 
 ---
 
-## Project management
+## Docs
 
-| Document | Purpose |
+| | |
 | --- | --- |
-| [ROADMAP.md](ROADMAP.md) | What shipped, what's next, and what "done" means |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Layers, boundaries, trade-offs |
+| [docs/AUDIT.md](docs/AUDIT.md) | Feature reality-check report |
+| [docs/adr/](docs/adr/) | Five architecture decision records |
 | [CHANGELOG.md](CHANGELOG.md) | Version history with verification evidence |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, conventions, testing expectations |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Layers, boundaries, and why |
-| [docs/adr/](docs/adr/) | Decisions that are expensive to reverse |
-| [docs/RELEASE.md](docs/RELEASE.md) | Release checklist, signing, artifact parity |
-| [SECURITY.md](SECURITY.md) | Reporting, scope, AI red lines |
-| [SUPPORT.md](SUPPORT.md) | Where to ask what |
-| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
-
-Version numbers are single-sourced from `package.json`; `scripts/sync-version.mjs` derives and
-verifies every other location, and `pnpm run verify` fails on drift.
-
----
-
-## Tech stack
-
-| Layer | Choice |
-| --- | --- |
-| Language | TypeScript (packages, Studio) and JavaScript (legacy single-file client) |
-| Charts | Canvas 2D (Mini Program) · ECharts 5 (legacy) · deterministic SVG (packages/viz) |
-| Storage | `localStorage` · `wx.storage` · in-memory fallback |
-| Build | `build.js` (legacy) · Vite (Studio, web) |
-| Tests | `node:test` (legacy + cross-end parity) · Vitest |
-| Native shells | Android WebView + WebViewAssetLoader · Electron 44 |
-
----
-
-## Version 3.2.0
-
-- TypeScript core extracted to `packages/core`, parity-tested against the legacy engine
-- New `packages/viz` (SVG charts), `packages/ai` (opt-in), and `apps/studio`
-- Mini Program now consumes the core bundle; the duplicated engine is gone
-- Dual build chain with a single `verify` gate
-- Storage hardening: write protection, verified backups, in-memory fallback, save rollback
-- Version single-sourced and enforced
-
-Earlier releases: [CHANGELOG.md](CHANGELOG.md).
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development conventions |
+| [SECURITY.md](SECURITY.md) | Reporting and security boundaries |
+| [ROADMAP.md](ROADMAP.md) | Plans and definition of done |
 
 ---
 
 ## License
 
-Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). See [LICENSE](LICENSE).
+[CC BY-NC 4.0](LICENSE) — free for personal use and learning; commercial use requires permission.
 
 <div align="center">
 
-**Etiquette is not calculation. It is keeping people in mind.**
+**人情不是算计，是把别人放在心上。**
+*Relationships aren't transactions. They're people you keep in mind.*
 
 </div>

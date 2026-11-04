@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EQ-Worker · 后台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 29 16 16 29 3 16Z' fill='%235f8575'/%3E%3C/svg%3E" />
+<style>
+  :root{--paper:#f6f1e4;--card:#fffdf7;--teal:#5f8575;--gold:#c9a86a;--ink:#4a4238;--sub:#7d7263;--line:#ddd2bd;--red:#c97b7b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+  header{padding:20px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;background:var(--card)}
+  header h1{margin:0;font-size:18px;font-weight:600}
+  header .badge{font-size:12px;color:var(--sub);border:1px solid var(--line);padding:2px 8px;border-radius:99px}
+  header .spacer{flex:1}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 14px;border-radius:9px}
+  button:hover{border-color:var(--teal)}
+  button.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+  button.danger{color:var(--red);border-color:#e0c2c2}
+  input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+  main{padding:22px 28px;max-width:1180px;margin:0 auto}
+  .gate{max-width:420px;margin:12vh auto;padding:28px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+  .gate h2{margin:0 0 6px;font-size:17px}
+  .gate p{margin:0 0 16px;color:var(--sub);font-size:13px;line-height:1.7}
+  .grid{display:grid;gap:14px}
+  .cols-4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .cols-2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h3{margin:0 0 10px;font-size:14px;font-weight:600}
+  .stat .label{font-size:12px;color:var(--sub)}
+  .stat .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px}
+  .stat .hint{font-size:11px;color:var(--sub);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #efe7d8}
+  th{font-weight:600;color:var(--sub);font-size:12px}
+  td.num{font-variant-numeric:tabular-nums;text-align:right}
+  .chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#f0ece0;color:var(--sub)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .bar{height:6px;border-radius:3px;background:#eee5d4;overflow:hidden}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,#7da08f,#5f8575)}
+  .list{display:grid;gap:8px}
+  .item{padding:10px 12px;border:1px solid #efe7d8;border-radius:9px;font-size:13px}
+  .muted{color:var(--sub)}
+  .tiny{font-size:11px}
+  .err{color:var(--red);font-size:13px;margin-top:8px}
+  dialog{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--card);color:var(--ink);max-width:520px;width:92%}
+  dialog::backdrop{background:rgba(60,50,40,.35)}
+  .dlg-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+  .dlg-head h2{margin:0;font-size:16px}
+  .dlg-body{padding:18px 20px;display:grid;gap:12px}
+  .dlg-body label{display:grid;gap:5px;font-size:12px;color:var(--sub)}
+  .dlg-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+  .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .tabs button{border-radius:99px;padding:5px 14px;font-size:13px}
+  .tabs button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+</style>
+</head>
+<body>
+<header>
+  <h1>EQ-Worker 后台</h1>
+  <span class="badge">本地 · 不联网</span>
+  <span class="spacer"></span>
+  <button id="btn-export">导出备份</button>
+  <button id="btn-add-person" class="primary">添加人脉</button>
+  <button id="btn-lock">退出</button>
+</header>
+<main id="app"></main>
+
+<dialog id="dlg-person">
+  <div class="dlg-head"><h2>添加人脉</h2><span class="spacer" style="flex:1"></span><button data-close>×</button></div>
+  <div class="dlg-body">
+    <label>姓名<input id="f-name" maxlength="40" placeholder="张三" /></label>
+    <label>身份<select id="f-identity"></select></label>
+    <label>标签（逗号分隔）<input id="f-tags" placeholder="同事,球友" /></label>
+    <label>生日（MM-DD）<input id="f-birthday" placeholder="03-15" maxlength="5" /></label>
+    <label>备注<input id="f-note" maxlength="200" /></label>
+    <div class="err" id="person-err"></div>
+  </div>
+  <div class="dlg-foot"><button data-close>取消</button><button class="primary" id="btn-save-person">保存</button></div>
+</dialog>
+
+<dialog id="dlg-event">
+  <div class="dlg-head"><h2>记一笔往来</h2><span style="flex:1"></span><button data-close>×</button></div>
+  <div class="dlg-body">
+    <label>关联人脉<select id="e-person"></select></label>
+    <label>事件类型<select id="e-type"></select></label>
+    <label>一句话<input id="e-title" maxlength="80" placeholder="请老张吃了顿饭" /></label>
+    <label>日期<input id="e-date" type="date" /></label>
+    <label>金额（元，可选）<input id="e-amount" type="number" min="0" step="10" /></label>
+    <label>场合<select id="e-occasion"></select></label>
+    <div class="err" id="event-err"></div>
+  </div>
+  <div class="dlg-foot"><button data-close>取消</button><button class="primary" id="btn-save-event">保存</button></div>
+</dialog>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
