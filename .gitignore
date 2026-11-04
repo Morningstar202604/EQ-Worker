@@ -11,9 +11,9 @@ android/.gradle/
 android/captures/
 android/local.properties
 desktop/node_modules/
+coverage/
 desktop/dist/
 desktop/index.html
-desktop/icon.png
 brand/dist/
 android/build/
 

@@ -74,14 +74,14 @@ async function build() {
   ];
   const synced = [];
   for (const dir of SYNC_TARGETS) {
+    try {
+      await access(dir);               // 目录存在才同步，避免给无关目录凭空造文件
+    } catch (_e) { continue; }
     for (const name of SYNC_FILES) {
       const src = resolve(ROOT, name);
       const dst = resolve(dir, name);
-      try {
-        await access(dst);              // 目标已存在才同步，避免给无关目录凭空造文件
-        await copyFile(src, dst);
-        synced.push(dir.replace(ROOT + '/', '') + '/' + name);
-      } catch (_e) { /* 目标不存在则跳过 */ }
+      await copyFile(src, dst);        // 目标文件可能不存在（如桌面 index.html 不入库），必须能补建
+      synced.push(dir.replace(ROOT + '/', '') + '/' + name);
     }
   }
 

@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main, master]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -47,14 +48,15 @@ jobs:
         run: pnpm run typecheck
 
       - name: 单元测试（Node）
-        run: node --test "tests/**/*.test.mjs"
+        run: node scripts/run-tests.mjs --exclude-e2e
 
       - name: 单元测试（Vitest）+ 覆盖率门槛
         run: pnpm run test:coverage
 
       - name: 产物必须与源码同步
         run: |
-          FILES="index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html EQ-Worker-小程序/utils/core.bundle.js"
+          # 只核对入库的构建产物；desktop/index.html 是打包时才生成的，不在此列
+          FILES="index.html EQ-Worker.html android/app/src/main/assets/index.html EQ-Worker-小程序/utils/core.bundle.js"
           if ! git diff --quiet -- $FILES; then
             echo "::error::构建产物与源码不同步，请本地执行 node build.js 和 node scripts/build-mini-core.mjs 后一并提交"
             git diff --stat -- $FILES
@@ -82,11 +84,14 @@ jobs:
       - name: 硬编码密钥扫描
         run: |
           set +e
+          # vendor/ 是第三方发行版（html2canvas 等），压缩代码里会出现形似密钥的长串；
+          # 与我们自己的代码无关，排除掉才能让这条门禁只在自有代码上报警。
           HITS=$(grep -rniE "ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN.*PRIVATE KEY" \
             --include='*.ts' --include='*.js' --include='*.mjs' --include='*.json' --include='*.md' \
             --exclude-dir=node_modules --exclude-dir=dist-vite --exclude-dir=dist-studio \
             --exclude-dir=dist-cli --exclude-dir=dist-server --exclude-dir=dist-mcp \
-            . 2>/dev/null | grep -vE "index\.html|EQ-Worker\.html|LICENSES|vendor/")
+            --exclude-dir=vendor \
+            . 2>/dev/null | grep -vE "index\.html|EQ-Worker\.html|LICENSES")
           if [ -n "$HITS" ]; then
             echo "::error::检出疑似硬编码密钥"
             echo "$HITS"

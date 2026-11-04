@@ -117,7 +117,7 @@ Any MCP-capable client (Claude Desktop, Cursor, Cline) can call it:
 }
 ```
 
-**11 tools** (overview, contacts, one person, ledger, health, gift, script, achievements, annual + record and add-contact), **2 resources**, **2 prompts**.
+**15 tools** (overview, contacts, one person, ledger, health, gift, script, achievements, annual, search, reminders, practice + record, add-contact and add-reminder), **3 resources**, **2 prompts**.
 
 Write tools declare `readOnlyHint: false` per the MCP spec, so the host asks the user before touching data.
 
@@ -130,7 +130,7 @@ Write tools declare `readOnlyHint: false` per the MCP spec, so the host asks the
 | Data never leaves the device | No server, no account, no telemetry; AI is off by default and **makes zero requests** while off | A test asserts the request count is 0 while disabled |
 | It won't silently destroy data | Unsafe migrations switch to write-protected; corrupt files are refused rather than overwritten; file storage writes atomically | `tests/cli.test.mjs` has a "corrupt file is preserved" case |
 | The maths is right | The core engine is compared **function by function** against the legacy implementation: 6 fixtures × 16 functions | `packages/core/tests/engine.parity.test.ts` |
-| It actually runs | Not just unit tests: CLI 13, server 16, MCP 13 — real processes, real sockets, real protocol | `node --test tests/**/*.test.mjs` |
+| It actually runs | Not just unit tests: CLI 16, server 17, MCP 18 — real processes, real sockets, real protocol | `node scripts/run-tests.mjs` |
 
 **508 tests**: 190 Node tests + 318 Vitest tests across 30 files.
 

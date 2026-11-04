@@ -11,6 +11,7 @@
     "dist:win": "bash build-win.sh"
   },
   "devDependencies": {
-    "electron": "44.10.1"
+    "electron": "44.10.1",
+    "electron-builder": "26.18.0"
   }
 }

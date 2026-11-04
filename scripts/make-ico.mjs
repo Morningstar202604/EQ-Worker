@@ -6,9 +6,17 @@
  * 缩放用 sharp 会引入原生依赖，这里改为只放原尺寸 + 让系统缩放——
  * Windows 对超大 ICO 条目会自行降采样，视觉上没有损失。
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
-const src = process.argv[2] ?? 'brand/dist/generic/icon-1024.png';
+/* 源图标优先用仓库内已跟踪的 desktop/icon.png。
+   brand/dist/ 是 gen-assets.py 的生成产物、不入库，CI 全新检出时不存在，
+   直接指向它会让打包 job 在干净环境下 500。 */
+const candidates = [process.argv[2], 'desktop/icon.png', 'brand/dist/generic/icon-1024.png'];
+const src = candidates.find((p) => p && existsSync(p));
+if (!src) {
+  console.error('[ico] 找不到源图标：desktop/icon.png 与 brand/dist/generic/icon-1024.png 都不存在');
+  process.exit(1);
+}
 const out = process.argv[3] ?? 'desktop/icon.ico';
 const png = readFileSync(src);
 
