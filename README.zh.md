@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="brand/logo-icon.svg" alt="EQ-Worker" width="88" height="88" />
+
 # EQ-Worker
 
 **记住你欠谁的人情。别让关系输在忘记上。**
