@@ -150,9 +150,13 @@ jobs:
         run: node scripts/make-ico.mjs
       - name: 打包 NSIS
         working-directory: desktop
+        env:
+          # 显式指定 registry：runner 或本机若配了国内镜像，
+          # 锁文件里缺失的包会 404（实测 mirrors.tencent.com 缺 env-paths@3.1.0）。
+          npm_config_registry: https://registry.npmjs.org
         run: |
-          npm ci
-          npx electron-builder --win nsis --x64
+          npm ci --registry=https://registry.npmjs.org
+          npx --yes electron-builder@26.18.0 --win nsis --x64
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
