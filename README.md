@@ -79,7 +79,7 @@ PWA-installable and works offline. The Android and Windows builds share this exa
 
 ### 2 · Windows desktop (installer)
 
-Run `EQ-Worker-3.5.0-x64.exe`: Start-menu entry, desktop shortcut, uninstaller, selectable install directory.
+Grab `EQ-Worker-3.5.0-x64.exe` from [Releases](https://github.com/badhope/EQ-Worker/releases/tag/v3.5.0) (or the `EQ-Worker-windows-x64` artifact on the tag's CI run): Start-menu entry, desktop shortcut, uninstaller, selectable install directory.
 
 ### 3 · CLI (manage relationships in a terminal)
 

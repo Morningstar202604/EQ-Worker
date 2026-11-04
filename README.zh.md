@@ -79,7 +79,7 @@ python3 -m http.server 8000   # 打开 http://localhost:8000
 
 ### 2 · Windows 桌面（安装包）
 
-`EQ-Worker-3.5.0-x64.exe` 双击安装：有开始菜单项、桌面快捷方式、卸载项，可选安装目录。
+从 [Releases](https://github.com/badhope/EQ-Worker/releases/tag/v3.5.0) 下载 `EQ-Worker-3.5.0-x64.exe`（或取 tag 那次 CI 的 `EQ-Worker-windows-x64` artifact）双击安装：有开始菜单项、桌面快捷方式、卸载项，可选安装目录。
 
 ### 3 · CLI（终端里管人情）
 
