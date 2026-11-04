@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f6f1e4">
-<meta name="description" content="EQ-Worker 人情世故助手 —— 今日行动、人情账本、随礼参谋、话术参谋、关系体检。把人情顾好，不用靠记性。">
-<title>EQ-Worker · 人情世故助手</title>
+<meta name="description" content="EQ-Worker — remember what you owe people. Relationship ledger, gift advisor, script advisor, health check. Local-first, no account, no server.">
+<title>EQ-Worker · Relationship Ledger</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Cpath d='M16 3 29 16 16 29 3 16Z' stroke='%235f8575' stroke-width='1.8' stroke-linejoin='round' fill='rgba(95,133,117,.10)'/%3E%3Cpath d='M16 9.5 23 16l-7 6.5L9 16z' stroke='%239cbfa8' stroke-width='1.2' stroke-linejoin='round'/%3E%3Cpath d='M5 20.5c6-7.5 16-7.5 22 0' stroke='%23c9a86a' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='2.2' fill='%235f8575'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Ma+Shan+Zheng&display=swap">
 <style>
-/* ============ EQ-Worker · 官网 ============ */
+/* ============ EQ-Worker · official site ============ */
 :root{
   --paper:#f6f1e4; --paper2:#efe7d4; --card:#fffdf7; --card2:#fbf6ea;
   --line:rgba(185,164,128,.24); --line2:rgba(203,186,152,.3);
@@ -34,7 +34,7 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
 ::selection{background:rgba(95,133,117,.25)}
 a{color:inherit;text-decoration:none}
 
-/* ---------- 顶部导航 ---------- */
+/* ---------- nav ---------- */
 .nav{position:sticky;top:0;z-index:50;background:rgba(255,253,247,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav-in{max-width:1080px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:26px}
 .brand{display:flex;align-items:center;gap:9px;font-family:var(--kaiti);font-size:19px;font-weight:700;letter-spacing:1.5px;color:var(--inkdeep)}
@@ -42,61 +42,58 @@ a{color:inherit;text-decoration:none}
 .nav-links{display:flex;gap:20px;margin-left:auto;align-items:center}
 .nav-links a{font-size:14px;color:var(--sub);transition:color .15s}
 .nav-links a:hover{color:var(--teal)}
-.nav-cta{background:linear-gradient(135deg,#6f9c88,#5f8575);color:#fffdf6;border-radius:10px;padding:8px 18px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(95,133,117,.25)}
-.nav-cta:hover{box-shadow:0 6px 18px rgba(95,133,117,.35)}
-@media(max-width:760px){.nav-links a:not(.nav-cta){display:none}}
+/* 必须带 .nav-links 前缀：`.nav-links a` 是 (0,1,1)，单写 `.nav-cta`(0,1,0) 会被它压掉，
+   按钮文字会变成 --sub 灰褐色，白底字直接看不清。 */
+.nav-links .nav-cta{background:linear-gradient(135deg,#6f9c88,#5f8575);color:#fffdf6;border-radius:10px;padding:8px 18px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(95,133,117,.25)}
+.nav-links .nav-cta:hover{box-shadow:0 6px 18px rgba(95,133,117,.35);color:#fffdf6}
+.lang{display:flex;align-items:center;border:1px solid var(--line2);border-radius:20px;padding:3px;background:var(--card);gap:2px}
+.lang button{border:none;background:none;font-family:inherit;font-size:12px;color:var(--sub);padding:4px 11px;border-radius:16px;cursor:pointer;transition:all .15s}
+.lang button[aria-pressed="true"]{background:var(--teal);color:#fffdf6;font-weight:600}
+@media(max-width:820px){.nav-links a:not(.nav-cta){display:none}}
 
-/* ---------- Hero ---------- */
+/* ---------- hero ---------- */
 .hero{padding:76px 0 60px;text-align:center;position:relative}
 .hero-badge{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:3px;color:var(--amber);border:1px solid rgba(201,168,106,.4);border-radius:30px;padding:6px 16px;margin-bottom:26px;background:rgba(201,168,106,.07)}
 .hero h1{font-family:var(--kaiti);font-size:58px;font-weight:700;color:var(--inkdeep);letter-spacing:6px}
 .hero .slogan{font-family:var(--kaiti);font-size:25px;color:var(--teal);margin-top:16px;letter-spacing:2px}
-.hero .sub{font-size:16px;color:var(--sub);margin-top:14px;line-height:1.8;max-width:560px;margin-left:auto;margin-right:auto}
+.hero .sub{font-size:16px;color:var(--sub);margin-top:14px;line-height:1.8;max-width:600px;margin-left:auto;margin-right:auto}
 .hero-cta{display:flex;gap:14px;justify-content:center;margin-top:30px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:14px 26px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:transform .08s,box-shadow .18s;font-family:var(--serif)}
 .btn:active{transform:scale(.97)}
 .btn.p{background:linear-gradient(135deg,#6f9c88,#5f8575);color:#fffdf6;box-shadow:0 8px 22px rgba(95,133,117,.3)}
 .btn.s{background:var(--card);border:1px solid var(--line2);color:var(--text);box-shadow:0 4px 14px rgba(122,105,80,.08)}
 .hero-art{display:flex;align-items:center;justify-content:center;gap:34px;margin-top:52px;flex-wrap:wrap}
-.radar-wrap{width:220px;height:220px;position:relative;flex-shrink:0}
+.radar-wrap{position:relative;width:220px;height:220px}
 .radar-wrap svg{width:100%;height:100%}
-.radar-wrap .core{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--kaiti);font-size:15px;color:var(--inkdeep);letter-spacing:1px}
-.hero-stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-.hstat{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:16px 22px;min-width:128px;box-shadow:0 4px 14px rgba(122,105,80,.07);text-align:left}
-.hstat .n{font-size:26px;font-weight:700;color:var(--teal);font-variant-numeric:tabular-nums}
-.hstat .l{font-size:12.5px;color:var(--sub);margin-top:4px;line-height:1.5}
-@media(max-width:760px){
-  .hero{padding:54px 0 44px}
-  .hero h1{font-size:40px;letter-spacing:4px}
-  .hero .slogan{font-size:20px}
-}
+.radar-wrap .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:76px;font-family:var(--kaiti);font-size:12px;letter-spacing:1.5px;color:var(--teal);text-align:center;line-height:1.45;pointer-events:none;background:rgba(246,241,228,.86);border-radius:50%;padding:8px 0}
+.hero-stats{display:flex;gap:26px;text-align:left;flex-wrap:wrap;justify-content:center}
+.hstat .n{font-family:var(--kaiti);font-size:34px;color:var(--amber);line-height:1}
+.hstat .l{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6}
 
-/* ---------- 通用区块 ---------- */
-section{padding:64px 0}
-.sec-head{text-align:center;margin-bottom:40px}
-.sec-head .k{font-size:13px;letter-spacing:4px;color:var(--amber);font-weight:600}
-.sec-head h2{font-family:var(--kaiti);font-size:34px;color:var(--inkdeep);letter-spacing:3px;margin-top:10px}
-.sec-head p{font-size:14.5px;color:var(--sub);margin-top:10px;line-height:1.7;max-width:520px;margin-left:auto;margin-right:auto}
-
-/* 定位条 */
-.strip{background:rgba(95,133,117,.07);border-top:1px solid rgba(95,133,117,.16);border-bottom:1px solid rgba(95,133,117,.16)}
-.strip-in{max-width:1080px;margin:0 auto;padding:22px;display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:15px;color:var(--text)}
+/* ---------- strip ---------- */
+.strip{background:linear-gradient(90deg,rgba(95,133,117,.09),rgba(201,168,106,.09));border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0;margin-top:20px}
+.strip-in{max-width:1080px;margin:0 auto;padding:0 22px;display:flex;gap:22px;justify-content:center;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--sub)}
 .strip-in b{color:var(--teal)}
-.strip-x{display:inline-flex;align-items:center;gap:6px;color:var(--dim);font-size:13px}
+.strip-x{color:var(--dim)}
 
-/* 玩法五步 */
+/* ---------- sections ---------- */
+section{padding:64px 0}
+.sec-head{text-align:center;margin-bottom:36px}
+.sec-head .k{font-size:11px;letter-spacing:4px;color:var(--amber);margin-bottom:12px}
+.sec-head h2{font-family:var(--kaiti);font-size:30px;color:var(--inkdeep);letter-spacing:2px}
+.sec-head p{font-size:14px;color:var(--sub);margin-top:10px}
+
+/* how it works */
 .play-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-.pcard{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px 16px;position:relative;box-shadow:0 4px 14px rgba(122,105,80,.06)}
-.pcard .step{position:absolute;top:-11px;left:16px;width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--serif)}
-.pcard .ic{width:38px;height:38px;margin:8px 0 10px}
-.pcard .ic svg{width:100%;height:100%;stroke:var(--teal);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.pcard h3{font-size:15px;font-weight:700;color:var(--inkdeep)}
-.pcard p{font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.7}
-.pcard .arr{position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--amber);font-size:18px;z-index:2}
-@media(max-width:960px){.play-grid{grid-template-columns:repeat(2,1fr)}.pcard .arr{display:none}}
+.pcard{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px 16px;box-shadow:0 4px 14px rgba(122,105,80,.06);position:relative}
+.pcard .step{position:absolute;top:14px;right:16px;font-family:var(--kaiti);font-size:13px;color:var(--dim)}
+.pcard .ic svg{width:26px;height:26px;stroke:var(--teal);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pcard h3{font-size:14.5px;font-weight:700;color:var(--inkdeep);margin:12px 0 6px}
+.pcard p{font-size:12.5px;color:var(--sub);line-height:1.7}
+@media(max-width:960px){.play-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.play-grid{grid-template-columns:1fr}}
 
-/* 双端 */
+/* apps */
 .apps-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .app-card{background:var(--card);border:1px solid var(--line2);border-radius:18px;padding:28px;box-shadow:0 6px 18px rgba(122,105,80,.08);display:flex;flex-direction:column;gap:12px}
 .app-card .tag{display:inline-flex;align-self:flex-start;font-size:11.5px;letter-spacing:1px;border-radius:20px;padding:4px 12px;background:rgba(95,133,117,.1);color:var(--teal);border:1px solid rgba(95,133,117,.3)}
@@ -109,7 +106,7 @@ section{padding:64px 0}
 .app-card .go svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
 @media(max-width:760px){.apps-grid{grid-template-columns:1fr}}
 
-/* 亮点 */
+/* why */
 .why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .wcard{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:20px 16px;box-shadow:0 4px 14px rgba(122,105,80,.06)}
 .wcard svg{width:30px;height:30px;stroke:var(--teal);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -118,7 +115,7 @@ section{padding:64px 0}
 @media(max-width:960px){.why-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.why-grid{grid-template-columns:1fr}}
 
-/* 提醒示例 */
+/* reminders demo */
 .alert-demo{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
 .alertitem{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:12px 14px;box-shadow:0 3px 10px rgba(122,105,80,.06);font-size:13.5px}
 .alertitem .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -126,7 +123,7 @@ section{padding:64px 0}
 .alertitem b{font-weight:700}
 .alertitem .tag{font-size:11px;margin-left:auto;border-radius:20px;padding:3px 9px;white-space:nowrap}
 
-/* 隐私 */
+/* privacy */
 .priv{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line2);border-radius:18px;padding:30px 34px;box-shadow:0 6px 18px rgba(122,105,80,.07)}
 .priv .row{display:flex;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
 .priv .row:last-child{border-bottom:none}
@@ -134,9 +131,9 @@ section{padding:64px 0}
 .priv .row h3{font-size:14.5px;font-weight:700;color:var(--inkdeep)}
 .priv .row p{font-size:13px;color:var(--sub);margin-top:4px;line-height:1.7}
 
-/* 版本历程（时间轴） */
-.tl{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:0}
-.tlrow{display:grid;grid-template-columns:96px 30px 1fr;gap:14px;align-items:start;padding:14px 0}
+/* timeline */
+.tl{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:0}
+.tlrow{display:grid;grid-template-columns:86px 30px 1fr;gap:14px;align-items:start;padding:13px 0}
 .tlrow .date{font-size:13.5px;font-weight:700;color:var(--amber);text-align:right;padding-top:3px;font-variant-numeric:tabular-nums}
 .tlrow .axis{display:flex;flex-direction:column;align-items:center}
 .tlrow .dot{width:11px;height:11px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(95,133,117,.14);margin-top:4px}
@@ -144,9 +141,9 @@ section{padding:64px 0}
 .tlrow:last-child .line{display:none}
 .tlrow .body h3{font-size:15px;font-weight:700;color:var(--inkdeep)}
 .tlrow .body p{font-size:13px;color:var(--sub);margin-top:4px;line-height:1.7}
-@media(max-width:560px){.tlrow{grid-template-columns:76px 24px 1fr;gap:10px}}
+@media(max-width:560px){.tlrow{grid-template-columns:70px 24px 1fr;gap:10px}}
 
-/* 开源 */
+/* repos */
 .repo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .repo-card{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:20px;box-shadow:0 4px 14px rgba(122,105,80,.06);display:flex;flex-direction:column;gap:8px}
 .repo-card .name{font-size:15px;font-weight:700;color:var(--inkdeep);display:flex;align-items:center;gap:8px}
@@ -155,7 +152,6 @@ section{padding:64px 0}
 .repo-card a{font-size:13px;font-weight:600;color:var(--teal)}
 @media(max-width:760px){.repo-grid{grid-template-columns:1fr}}
 
-/* Footer */
 footer{border-top:1px solid var(--line);padding:44px 0 60px;text-align:center}
 .foot-brand{font-family:var(--kaiti);font-size:22px;color:var(--inkdeep);letter-spacing:3px;display:flex;align-items:center;justify-content:center;gap:10px}
 .foot-brand svg{width:26px;height:26px}
@@ -163,14 +159,32 @@ footer{border-top:1px solid var(--line);padding:44px 0 60px;text-align:center}
 .foot-en{font-size:11px;letter-spacing:3px;color:var(--dim);margin-top:14px}
 .foot-legal{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.8}
 
-/* 淡入动效 */
 .fade{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
 .fade.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.fade{opacity:1;transform:none;transition:none}}
+
+/* 中文楷书只适用于中文。Ma Shan Zheng 不含拉丁字形，英文会退化成系统手写体，
+   在标题与卡片名上明显发糊；英文态改用衬线族，字距也收回来。 */
+html[lang="en"] .hero h1,
+html[lang="en"] .hero .slogan,
+html[lang="en"] .sec-head h2,
+html[lang="en"] .pcard h3,
+html[lang="en"] .app-card h3,
+html[lang="en"] .foot-brand,
+html[lang="en"] .hstat .n,
+html[lang="en"] .pcard .step,
+html[lang="en"] .tlrow .date{
+  font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;
+  letter-spacing:.5px;
+}
+html[lang="en"] .hero h1{font-size:52px;letter-spacing:2px}
+html[lang="en"] .hero .slogan{font-size:24px;letter-spacing:.5px}
+html[lang="en"] .sec-head h2{font-size:29px;letter-spacing:.3px}
+html[lang="en"] .app-card h3{font-size:20px}
+html[lang="en"] .radar-wrap .core{font-family:Georgia,serif;font-size:11px;letter-spacing:1px}
 </style>
 </head>
 <body>
-<!-- 导航 -->
 <nav class="nav">
   <div class="nav-in">
     <a class="brand" href="#top">
@@ -178,26 +192,34 @@ footer{border-top:1px solid var(--line);padding:44px 0 60px;text-align:center}
       EQ-Worker
     </a>
     <div class="nav-links">
-      <a href="#play">玩法</a><a href="#apps">双端</a><a href="#why">亮点</a><a href="#privacy">隐私</a><a href="#history">历程</a><a href="#opensource">开源</a>
-      <a class="nav-cta" href="https://x33834.github.io/EQ-Worker/" target="_blank" rel="noopener">开始使用</a>
+      <a href="#play" data-i18n="nav.play"></a>
+      <a href="#apps" data-i18n="nav.apps"></a>
+      <a href="#why" data-i18n="nav.why"></a>
+      <a href="#privacy" data-i18n="nav.privacy"></a>
+      <a href="#history" data-i18n="nav.history"></a>
+      <a href="#opensource" data-i18n="nav.open"></a>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+      </div>
+      <a class="nav-cta" href="https://x33834.github.io/EQ-Worker/" target="_blank" rel="noopener" data-i18n="nav.cta"></a>
     </div>
   </div>
 </nav>
 
 <div id="top" class="wrap">
-  <!-- Hero -->
   <header class="hero">
     <div class="hero-badge">EQ · WORKER</div>
     <h1>EQ-Worker</h1>
-    <div class="slogan">把人情顾好，不用靠记性</div>
-    <p class="sub">每天打开先告诉你「今天该联系谁、该还谁的人情、该准备多少礼」，再给你能直接复制的话术。本地优先，数据默认存本机。</p>
+    <div class="slogan" data-i18n="hero.slogan"></div>
+    <p class="sub" data-i18n="hero.sub"></p>
     <div class="hero-cta">
-      <a class="btn p" href="https://x33834.github.io/EQ-Worker/" target="_blank" rel="noopener">立即开始使用</a>
-      <a class="btn s" href="#play">看看怎么用</a>
+      <a class="btn p" href="https://x33834.github.io/EQ-Worker/" target="_blank" rel="noopener" data-i18n="hero.cta1"></a>
+      <a class="btn s" href="#play" data-i18n="hero.cta2"></a>
     </div>
     <div class="hero-art">
       <div class="radar-wrap">
-        <svg viewBox="0 0 220 220">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
           <g transform="translate(110 110)">
             <circle r="96" fill="none" stroke="rgba(95,133,117,.22)" stroke-width="1.2"/>
             <circle r="64" fill="none" stroke="rgba(95,133,117,.22)" stroke-width="1.2"/>
@@ -209,195 +231,299 @@ footer{border-top:1px solid var(--line);padding:44px 0 60px;text-align:center}
             <path d="M-72 62c8-60 60-78 110-50" fill="none" stroke="#c9a86a" stroke-width="2.4" stroke-linecap="round"/>
           </g>
         </svg>
-        <div class="core">今日<br>行动</div>
+        <div class="core" data-i18n="hero.core"></div>
       </div>
       <div class="hero-stats">
-        <div class="hstat"><div class="n">1</div><div class="l">份今日清单<br>该联系谁 · 该还谁 · 该做什么</div></div>
-        <div class="hstat"><div class="n">3</div><div class="l">档随礼建议<br>从简 · 得体 · 重视</div></div>
-        <div class="hstat"><div class="n">16</div><div class="l">个话术场景<br>拒绝 · 催还 · 道歉 · 敬酒…</div></div>
+        <div class="hstat"><div class="n">1</div><div class="l" data-i18n="hero.s1"></div></div>
+        <div class="hstat"><div class="n">3</div><div class="l" data-i18n="hero.s2"></div></div>
+        <div class="hstat"><div class="n">16</div><div class="l" data-i18n="hero.s3"></div></div>
       </div>
     </div>
   </header>
 </div>
 
-<!-- 定位条 -->
 <div class="strip">
   <div class="strip-in">
-    <span>不是更复杂的通讯录，是<b>人情世故助手</b></span>
+    <span data-i18n="strip.a"></span>
     <span class="strip-x">—</span>
-    <span>每天打开，先看今天该做什么</span>
+    <span data-i18n="strip.b"></span>
     <span class="strip-x">—</span>
-    <span>本地优先，数据默认存本机</span>
+    <span data-i18n="strip.c"></span>
   </div>
 </div>
 
-<!-- 玩法 -->
 <section id="play" class="wrap">
   <div class="sec-head">
     <div class="k">HOW IT WORKS</div>
-    <h2>从今天该做什么，到把人情记明白</h2>
-    <p>一条行动清单，一本账，两个参谋。</p>
+    <h2 data-i18n="play.h"></h2>
+    <p data-i18n="play.sub"></p>
   </div>
   <div class="play-grid">
     <div class="pcard fade"><span class="step">1</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M5 6h14v13H5z"/><path d="M8 3v3m8-3v3"/><path d="M5 10h14"/></svg></div>
-      <h3>今日行动</h3><p>生日、待办、断联、欠人情、该道谢，按紧急度排好，每条都带下一步按钮。</p></div>
+      <h3 data-i18n="play.1t"></h3><p data-i18n="play.1d"></p></div>
     <div class="pcard fade"><span class="step">2</span>
       <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-      <h3>人情账本</h3><p>送礼、收礼、借款分开记；谁欠谁、欠多少，一眼看清。</p></div>
+      <h3 data-i18n="play.2t"></h3><p data-i18n="play.2d"></p></div>
     <div class="pcard fade"><span class="step">3</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 4v4m8-4v4"/><path d="M8 12l3 3 5-5"/></svg></div>
-      <h3>随礼参谋</h3><p>关系 × 场合 × 档位 × 城市，给出从简 / 建议 / 重视三档，并说明依据。</p></div>
+      <h3 data-i18n="play.3t"></h3><p data-i18n="play.3d"></p></div>
     <div class="pcard fade"><span class="step">4</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 2.4 3.2-.3.3 3.2L20.3 11l-2.4 2.4.3 3.2-3.2.3L12 19.5l-2.4-2.4-3.2.3-.3-3.2L3.7 13l2.4-2.4-.3-3.2 3.2-.3z"/><path d="M9.5 12.2l1.7 1.7 3.3-3.8"/></svg></div>
-      <h3>话术参谋</h3><p>拒绝借钱、催还、道歉、敬酒……16 个场景，稳妥 / 亲近 / 简短三版直接复制。</p></div>
+      <h3 data-i18n="play.4t"></h3><p data-i18n="play.4d"></p></div>
     <div class="pcard fade"><span class="step">5</span>
       <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4z"/><path d="M8 8v6m4-6v9m4-9v4"/></svg></div>
-      <h3>年度报告</h3><p>月度节奏、最常走动的人、人情债复盘，一年一本自己的关系账。</p></div>
+      <h3 data-i18n="play.5t"></h3><p data-i18n="play.5d"></p></div>
   </div>
 </section>
 
-<!-- 双端 -->
 <section id="apps" class="wrap">
   <div class="sec-head">
     <div class="k">AVAILABLE NOW</div>
-    <h2>四种形态，同一本账</h2>
-    <p>网页即开即用，安卓随身记，Windows 大屏理，小程序随手记 —— 数据格式互通，随时迁移。</p>
+    <h2 data-i18n="apps.h"></h2>
+    <p data-i18n="apps.sub"></p>
   </div>
   <div class="apps-grid">
     <div class="app-card fade">
-      <span class="tag">网页版 · PWA</span>
-      <h3>EQ-Worker 网页版</h3>
-      <div class="d">单文件自包含，零安装零构建。可添加到主屏幕，像 App 一样全屏离线使用；内置开源 ECharts 绘制雷达。</div>
-      <div class="feats"><span>离线可用</span><span>可装主屏</span><span>自动更新</span><span>ECharts 可视化</span></div>
-      <div class="go"><a href="https://x33834.github.io/EQ-Worker/" target="_blank" rel="noopener">打开网页版 <svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
+      <span class="tag" data-i18n="apps.1tag"></span>
+      <h3 data-i18n="apps.1t"></h3>
+      <div class="d" data-i18n="apps.1d"></div>
+      <div class="feats"><span data-i18n="apps.1f1"></span><span data-i18n="apps.1f2"></span><span data-i18n="apps.1f3"></span></div>
+      <div class="go"><a href="https://x33834.github.io/EQ-Worker/" target="_blank" rel="noopener"><span data-i18n="apps.1go"></span> <svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
     </div>
     <div class="app-card fade">
-      <span class="tag">微信小程序</span>
-      <h3>EQ-Worker 小程序</h3>
-      <div class="d">微信开发者工具导入即用，Canvas 手绘雷达零依赖，与网页版引擎和数据格式完全互通。</div>
-      <div class="feats"><span>随手记录</span><span>本机存储</span><span>数据互通</span><span>Canvas 雷达</span></div>
-      <div class="go"><a href="#opensource">源码在开源仓库 <svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
+      <span class="tag" data-i18n="apps.2tag"></span>
+      <h3 data-i18n="apps.2t"></h3>
+      <div class="d" data-i18n="apps.2d"></div>
+      <div class="feats"><span data-i18n="apps.2f1"></span><span data-i18n="apps.2f2"></span><span data-i18n="apps.2f3"></span></div>
+      <div class="go"><a href="https://github.com/badhope/EQ-Worker/releases" target="_blank" rel="noopener"><span data-i18n="apps.2go"></span> <svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
     </div>
     <div class="app-card fade">
-      <span class="tag">安卓 App · APK</span>
-      <h3>EQ-Worker 安卓版</h3>
-      <div class="d">原生 WebView 壳，安装包仅 1.4MB。装好即用、数据默认存本机，无账号；正式签名，可持续更新。</div>
-      <div class="feats"><span>1.4MB 轻装</span><span>离线可用</span><span>本机存储</span><span>数据互通</span></div>
-      <div class="go"><a href="https://github.com/badhope/EQ-Worker/releases" target="_blank" rel="noopener">查看 APK 发布<svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
+      <span class="tag" data-i18n="apps.3tag"></span>
+      <h3 data-i18n="apps.3t"></h3>
+      <div class="d" data-i18n="apps.3d"></div>
+      <div class="feats"><span data-i18n="apps.3f1"></span><span data-i18n="apps.3f2"></span><span data-i18n="apps.3f3"></span></div>
+      <div class="go"><a href="https://github.com/badhope/EQ-Worker/releases" target="_blank" rel="noopener"><span data-i18n="apps.3go"></span> <svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
     </div>
     <div class="app-card fade">
-      <span class="tag">Windows 桌面版</span>
-      <h3>EQ-Worker 桌面端</h3>
-      <div class="d">Electron 免安装包，解压即用、不写注册表。大屏录入与翻看往来更顺手，备份文件与手机端互相导入。</div>
-      <div class="feats"><span>免安装</span><span>大屏视图</span><span>本机存储</span><span>数据互通</span></div>
-      <div class="go"><a href="https://github.com/badhope/EQ-Worker/releases" target="_blank" rel="noopener">查看桌面版发布<svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
+      <span class="tag" data-i18n="apps.4tag"></span>
+      <h3 data-i18n="apps.4t"></h3>
+      <div class="d" data-i18n="apps.4d"></div>
+      <div class="feats"><span data-i18n="apps.4f1"></span><span data-i18n="apps.4f2"></span><span data-i18n="apps.4f3"></span></div>
+      <div class="go"><a href="#opensource"><span data-i18n="apps.4go"></span> <svg viewBox="0 0 24 24"><path d="M7 17L17 7m0 0H9m8 0v8"/></svg></a></div>
     </div>
   </div>
 </section>
 
-<!-- 亮点 -->
 <section id="why" class="wrap">
   <div class="sec-head">
     <div class="k">WHY IT</div>
-    <h2>为什么值得每天 10 秒</h2>
+    <h2 data-i18n="why.h"></h2>
   </div>
   <div class="why-grid">
-    <div class="wcard fade"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h5"/></svg><h3>本地优先</h3><p>数据默认存于本机；AI 默认关闭，启用 AI 时所选上下文会发送至用户配置的提供商。</p></div>
-    <div class="wcard fade"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3>热度会衰减</h3><p>人情热度按 90 天半衰期衰减，太久不走动，雷达会自动提醒你。</p></div>
-    <div class="wcard fade"><svg viewBox="0 0 24 24"><path d="M4 9h16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9V5m8 4V5"/></svg><h3>农历节日</h3><p>春节、端午、中秋按农历提醒（1900–2100 内置换算），祝福不迟到。</p></div>
-    <div class="wcard fade"><svg viewBox="0 0 24 24"><path d="M4 19V5m16 14V5M4 12h16"/></svg><h3>账本美学</h3><p>暖纸、莫兰迪、楷书——用记日记的心情记人情，打开就想写一笔。</p></div>
+    <div class="wcard fade"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h5"/></svg><h3 data-i18n="why.1t"></h3><p data-i18n="why.1d"></p></div>
+    <div class="wcard fade"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3 data-i18n="why.2t"></h3><p data-i18n="why.2d"></p></div>
+    <div class="wcard fade"><svg viewBox="0 0 24 24"><path d="M4 9h16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9V5m8 4V5"/></svg><h3 data-i18n="why.3t"></h3><p data-i18n="why.3d"></p></div>
+    <div class="wcard fade"><svg viewBox="0 0 24 24"><path d="M4 19V5m16 14V5M4 12h16"/></svg><h3 data-i18n="why.4t"></h3><p data-i18n="why.4d"></p></div>
   </div>
 </section>
 
-<!-- 提醒示例 -->
 <section class="wrap" style="padding-top:8px">
   <div class="sec-head">
     <div class="k">SMART REMINDERS</div>
-    <h2>提醒长这样</h2>
-    <p>按紧急度配色，一眼分清该先还谁的人情。</p>
+    <h2 data-i18n="rem.h"></h2>
+    <p data-i18n="rem.sub"></p>
   </div>
   <div class="alert-demo">
-    <div class="alertitem"><div class="ic" style="background:#c97b7b22;color:#c97b7b"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>李叔</b>：已 120 天没往来，逢年过节走动一下</div><span class="tag" style="background:rgba(201,123,123,.12);color:#b25d5d">紧急</span></div>
-    <div class="alertitem"><div class="ic" style="background:#c9a86a22;color:#c9a86a"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/></svg></div><div><b>陈姐</b>：你欠着人情债（86），建议近期请顿饭或回个礼</div><span class="tag" style="background:rgba(201,168,106,.14);color:#a3822f">该还了</span></div>
-    <div class="alertitem"><div class="ic" style="background:#5f857522;color:#5f8575"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M4 9h16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9V5m8 4V5"/><path d="M6 15v4m12-4v4"/></svg></div><div><b>王总</b>：生日还有 3 天，记得送上祝福</div><span class="tag" style="background:rgba(95,133,117,.1);color:#5f8575">生日</span></div>
+    <div class="alertitem"><div class="ic" style="background:#c97b7b22;color:#c97b7b"><svg viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div data-i18n="rem.1"></div><span class="tag" style="background:rgba(201,123,123,.12);color:#b25d5d" data-i18n="rem.1t"></span></div>
+    <div class="alertitem"><div class="ic" style="background:#c9a86a22;color:#c9a86a"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/></svg></div><div data-i18n="rem.2"></div><span class="tag" style="background:rgba(201,168,106,.14);color:#a3822f" data-i18n="rem.2t"></span></div>
+    <div class="alertitem"><div class="ic" style="background:#5f857522;color:#5f8575"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M4 9h16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 9V5m8 4V5"/><path d="M6 15v4m12-4v4"/></svg></div><div data-i18n="rem.3"></div><span class="tag" style="background:rgba(95,133,117,.1);color:#5f8575" data-i18n="rem.3t"></span></div>
   </div>
 </section>
 
-<!-- 隐私 -->
 <section id="privacy" class="wrap">
   <div class="sec-head">
     <div class="k">PRIVACY FIRST</div>
-    <h2>你的数据，由你掌控</h2>
+    <h2 data-i18n="priv.h"></h2>
   </div>
   <div class="priv fade">
-    <div class="row"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><h3>数据默认存本机</h3><p>人脉、往来、提醒默认保存在本地；AI 默认关闭，用户选择启用时，所选上下文会发送至其配置的提供商。无账号、无追踪。</p></div></div>
-    <div class="row"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg><div><h3>备份由你掌控</h3><p>换设备用「导出备份 / 复制剪贴板 → 新设备粘贴导入」，一份文本搞定迁移。</p></div></div>
-    <div class="row"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 2.4 3.2-.3.3 3.2L20.3 11l-2.4 2.4.3 3.2-3.2.3L12 19.5l-2.4-2.4-3.2.3-.3-3.2L3.7 13l2.4-2.4-.3-3.2 3.2-.3z"/><path d="M9.5 12.2l1.7 1.7 3.3-3.8"/></svg><div><h3>离线可用</h3><p>网页版单文件自包含，断网也能记；小程序同样本地缓存，随时打开。</p></div></div>
+    <div class="row"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><h3 data-i18n="priv.1t"></h3><p data-i18n="priv.1d"></p></div></div>
+    <div class="row"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg><div><h3 data-i18n="priv.2t"></h3><p data-i18n="priv.2d"></p></div></div>
+    <div class="row"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 2.4 3.2-.3.3 3.2L20.3 11l-2.4 2.4.3 3.2-3.2.3L12 19.5l-2.4-2.4-3.2.3-.3-3.2L3.7 13l2.4-2.4-.3-3.2 3.2-.3z"/><path d="M9.5 12.2l1.7 1.7 3.3-3.8"/></svg><div><h3 data-i18n="priv.3t"></h3><p data-i18n="priv.3d"></p></div></div>
   </div>
 </section>
 
-<!-- 版本历程 -->
 <section id="history" class="wrap">
   <div class="sec-head">
     <div class="k">CHANGELOG</div>
-    <h2>版本历程</h2>
-    <p>从答题测评，到人脉经营，一路打磨。</p>
+    <h2 data-i18n="hist.h"></h2>
+    <p data-i18n="hist.sub"></p>
   </div>
   <div class="tl">
-    <div class="tlrow fade"><div class="date">v3.2</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>可维护的地基</h3><p>抽出 TypeScript 核心引擎（core / viz / ai 三包）与独立 Studio 工作台；小程序改用共享引擎；存储加固为「迁移不安全就拒绝写入」；版本号统一为单一来源，构建与测试纳入同一道门禁。</p></div></div>
-    <div class="tlrow fade"><div class="date">v3.1</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>把账结清</h3><p>一键结清（还款/回礼/收款）、账本洞察、关系体检总览；键盘焦点圈定与弹层体验修复。</p></div></div>
-    <div class="tlrow fade"><div class="date">v3.0</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>人情世故助手</h3><p>助手首页 / 今日行动、人情账本、随礼参谋、话术参谋、关系体检、重要日子 .ics；数据结构升级并自动迁移旧数据。</p></div></div>
-    <div class="tlrow fade"><div class="date">v2.8</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>经营闭环</h3><p>提醒直通记录、全部往来总览、最值得经营的人 Top3、往来类型分布图；记住上次页面、搜索空态优化。</p></div></div>
-    <div class="tlrow fade"><div class="date">v2.7</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>品牌体系</h3><p>Logo / Slogan / 欢迎引导 / 关于页品牌化；修复提醒紧急度颜色映射。</p></div></div>
-    <div class="tlrow fade"><div class="date">v2.6</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>年度报告</h3><p>12 个月滚动复盘：月度节奏、最常走动的人、人情债；剪贴板备份与粘贴导入。</p></div></div>
-    <div class="tlrow fade"><div class="date">v2.4–v2.5</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>解读与趋势</h3><p>雷达维度点击解读、指数算法说明、近 6 月趋势图、关系解读卡、CSV 导出。</p></div></div>
-    <div class="tlrow fade"><div class="date">v2.1–v2.3</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>提醒与待办</h3><p>农历节日提醒、安装引导、待办统一管理、月度洞察、修炼连击。</p></div></div>
-    <div class="tlrow fade"><div class="date">v2.0</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3>玩法重构</h3><p>弃答题测评，重构为「记录 → 画像 → 提醒 → 修炼 → 报告」的经营闭环。</p></div></div>
+    <div class="tlrow fade"><div class="date">v3.5</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.35t"></h3><p data-i18n="hist.35d"></p></div></div>
+    <div class="tlrow fade"><div class="date">v3.4</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.34t"></h3><p data-i18n="hist.34d"></p></div></div>
+    <div class="tlrow fade"><div class="date">v3.3</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.33t"></h3><p data-i18n="hist.33d"></p></div></div>
+    <div class="tlrow fade"><div class="date">v3.2</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.32t"></h3><p data-i18n="hist.32d"></p></div></div>
+    <div class="tlrow fade"><div class="date">v3.0</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.30t"></h3><p data-i18n="hist.30d"></p></div></div>
+    <div class="tlrow fade"><div class="date">v2.7</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.27t"></h3><p data-i18n="hist.27d"></p></div></div>
+    <div class="tlrow fade"><div class="date">v2.0</div><div class="axis"><div class="dot"></div><div class="line"></div></div><div class="body"><h3 data-i18n="hist.20t"></h3><p data-i18n="hist.20d"></p></div></div>
   </div>
 </section>
 
-<!-- 开源 -->
 <section id="opensource" class="wrap">
   <div class="sec-head">
     <div class="k">OPEN SOURCE</div>
-    <h2>开源 · 非商业 · 欢迎使用</h2>
-    <p>网页版 + 小程序完整源码，多平台镜像同步，CC BY-NC 4.0 许可。</p>
+    <h2 data-i18n="os.h"></h2>
+    <p data-i18n="os.sub"></p>
   </div>
   <div class="repo-grid">
     <div class="repo-card fade">
       <div class="name"><svg viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>GitHub</div>
-      <div class="d">X33834 / EQ-Worker<br>Morningstar202604 镜像同步</div>
-      <a href="https://github.com/X33834/EQ-Worker" target="_blank" rel="noopener">访问仓库 →</a>
+      <div class="d">X33834 / EQ-Worker<br>Morningstar202604 · badhope</div>
+      <a href="https://github.com/X33834/EQ-Worker" target="_blank" rel="noopener" data-i18n="os.go"></a>
     </div>
     <div class="repo-card fade">
       <div class="name"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8m-8 4h5"/></svg>Gitee</div>
-      <div class="d">badhope / EQ-Worker<br>国内镜像，访问更稳</div>
-      <a href="https://gitee.com/badhope/EQ-Worker" target="_blank" rel="noopener">访问仓库 →</a>
+      <div class="d">badhope / EQ-Worker<br><span data-i18n="os.gitee"></span></div>
+      <a href="https://gitee.com/badhope/EQ-Worker" target="_blank" rel="noopener" data-i18n="os.go"></a>
     </div>
     <div class="repo-card fade">
       <div class="name"><svg viewBox="0 0 24 24"><path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/></svg>GitCode</div>
-      <div class="d">badhope / EQ-Worker<br>国内镜像，同步更新</div>
-      <a href="https://gitcode.com/badhope/EQ-Worker" target="_blank" rel="noopener">访问仓库 →</a>
+      <div class="d">badhope / EQ-Worker<br><span data-i18n="os.gitcode"></span></div>
+      <a href="https://gitcode.com/badhope/EQ-Worker" target="_blank" rel="noopener" data-i18n="os.go"></a>
     </div>
   </div>
 </section>
 
-<!-- Footer -->
 <footer>
   <div class="wrap">
     <div class="foot-brand">
       <svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>
       EQ-Worker
     </div>
-    <div class="foot-slogan">把人情账记明白，把关系经营成细水长流</div>
-    <div class="foot-en">EQ · WORKER · 本地优先 · 离线可用</div>
-    <div class="foot-legal">© 2026 EQ-Worker · Licensed under CC BY-NC 4.0 · 网页版与小程序数据格式互通</div>
+    <div class="foot-slogan" data-i18n="foot.slogan"></div>
+    <div class="foot-en" data-i18n="foot.en"></div>
+    <div class="foot-legal" data-i18n="foot.legal"></div>
   </div>
 </footer>
 
 <script>
-/* 轻量淡入 */
+const TEXT = {
+  en: {
+    'nav.play':'How it works','nav.apps':'Platforms','nav.why':'Why','nav.privacy':'Privacy','nav.history':'Changelog','nav.open':'Open source','nav.cta':'Open app',
+    'hero.slogan':'Remember what you owe people.',
+    'hero.sub':'Open it and it tells you who to reach out to, whose favour you still owe, and how much to give — then hands you the words to send. Local-first; your data stays on your device.',
+    'hero.cta1':'Open the app','hero.cta2':'See how it works','hero.core':'TODAY',
+    'hero.s1':'today list<br>who to call · what to repay · what to do','hero.s2':'gift tiers<br>modest · fitting · generous','hero.s3':'script scenarios<br>decline · chase · apologise · toast',
+    'strip.a':'Not a fancier address book — an <b>assistant for social obligations</b>','strip.b':'Open it and you know what to do today','strip.c':'Local-first, data stays on your device',
+    'play.h':'From "what do I do today" to a ledger you understand','play.sub':'One action list, one ledger, two advisors.',
+    'play.1t':'Today','play.1d':'Birthdays, overdue tasks, fading contacts, favours owed — sorted by urgency, each with a next step.',
+    'play.2t':'Ledger','play.2d':'Gifts given, gifts received and loans kept apart. Who owes whom, and how much, at a glance.',
+    'play.3t':'Gift advisor','play.3d':'Relationship × occasion × tier × city. Three tiers with the arithmetic shown, not a number pulled from thin air.',
+    'play.4t':'Script advisor','play.4d':'Declining a loan, chasing a repayment, apologising, toasting — 16 scenarios, 3 tones, copy and send.',
+    'play.5t':'Annual report','play.5d':'Monthly rhythm, the people you saw most, favours replayed. One year, one account.',
+    'apps.h':'Five entry points, one ledger','apps.sub':'Web, Windows, Android, WeChat Mini Program, CLI — the data format is shared, so you can move between them any time.',
+    'apps.1tag':'Web · PWA','apps.1t':'EQ-Worker for the web','apps.1d':'One self-contained file. Zero install, zero build. Add to home screen and it runs full-screen offline.','apps.1f1':'Works offline','apps.1f2':'Installable','apps.1f3':'Single file','apps.1go':'Open the web app',
+    'apps.2tag':'Windows · installer','apps.2t':'EQ-Worker for Windows','apps.2d':'Installer with Start-menu entry, desktop shortcut and a real uninstaller. Big screen, easier data entry.','apps.2f1':'Start menu','apps.2f2':'Uninstaller','apps.2f3':'Offline','apps.2go':'Download for Windows',
+    'apps.3tag':'Android · APK','apps.3t':'EQ-Worker for Android','apps.3d':'Native WebView shell, 1.5 MB. Install and go — no account, data on device.','apps.3f1':'1.5 MB','apps.3f2':'Offline','apps.3f3':'No account','apps.3go':'Download the APK',
+    'apps.4tag':'CLI + MCP','apps.4t':'EQ-Worker in your terminal','apps.4d':'18 commands with --json, a loopback-only local console with token auth, and an MCP server your AI client can call.','apps.4f1':'18 commands','apps.4f2':'MCP server','apps.4f3':'Local console','apps.4go':'See the source',
+    'why.h':'Why it earns ten seconds a day',
+    'why.1t':'Local first','why.1d':'Data lives on your device. No account, no server, no telemetry. AI is off by default and only sends what you approve.',
+    'why.2t':'Warmth decays','why.2d':'Relationship warmth halves every 90 days. Go quiet too long and the radar tells you before the person does.',
+    'why.3t':'Lunar festivals','why.3d':'Spring Festival, Dragon Boat and Mid-Autumn are computed on the lunar calendar, 1900–2100. No late greetings.',
+    'why.4t':'Ledger, not spreadsheet','why.4d':'Warm paper, muted tones, a hand-written feel. It reads like a diary, so you actually write in it.',
+    'rem.h':'What a reminder looks like','rem.sub':'Coloured by urgency, so you know whose favour to return first.',
+    'rem.1':'<b>Uncle Li</b> — 120 days without contact. Reach out around the holidays.','rem.1t':'Urgent',
+    'rem.2':'<b>Sister Chen</b> — you owe a favour (86). Consider a meal or a gift soon.','rem.2t':'Owed',
+    'rem.3':'<b>Mr Wang</b> — birthday in 3 days. Send your wishes.','rem.3t':'Birthday',
+    'priv.h':'Your data, under your control',
+    'priv.1t':'Stays on your device','priv.1d':'Contacts, events and reminders are stored locally. No account, no tracking. AI is off unless you turn it on and supply your own key.',
+    'priv.2t':'Backups you control','priv.2d':'Move devices with export/import — one text blob, no cloud account in between.',
+    'priv.3t':'Works offline','priv.3d':'The web build is a single self-contained file. The Mini Program caches locally too.',
+    'hist.h':'Release history','hist.sub':'From a quiz app to a relationship practice.',
+    'hist.35t':'Delivery, not just demo','hist.35d':'ESLint, coverage gate, 11 performance benchmarks, 8 end-to-end tests, one-command release with SHA-256 sums. Four real defects fixed on the way.',
+    'hist.34t':'A platform','hist.34d':'CLI with 18 commands, loopback-only local console with token auth, and an MCP server exposing 15 tools to AI clients.',
+    'hist.33t':'Practice and achievements','hist.33d':'13 badges, 12-month review, practice arena in Studio, gift and script advisors in the Mini Program.',
+    'hist.32t':'A maintainable base','hist.32d':'TypeScript core extracted into core / viz / ai packages. Storage refuses unsafe migrations. One source of truth for the version.',
+    'hist.30t':'The assistant','hist.30d':'Today list, ledger, gift advisor, script advisor, health check, calendar export. Schema upgrade with automatic migration.',
+    'hist.27t':'Brand','hist.27d':'Logo, slogan, welcome flow, branded about page. Reminder urgency colours fixed.',
+    'hist.20t':'Rebuilt around practice','hist.20d':'Dropped the quiz format for record → profile → remind → practise → report.',
+    'os.h':'Open source · non-commercial · yours to use','os.sub':'Full source for web, Mini Program, CLI, server and MCP. Mirrored across three platforms. CC BY-NC 4.0.',
+    'os.go':'Visit repository →','os.gitee':'China mirror, faster access','os.gitcode':'China mirror, kept in sync',
+    'foot.slogan':'Keep the ledger straight. Let the relationships run long.',
+    'foot.en':'EQ · WORKER · LOCAL-FIRST · OFFLINE',
+    'foot.legal':'© 2026 EQ-Worker · Licensed under CC BY-NC 4.0 · Web and Mini Program share one data format'
+  },
+  zh: {
+    'nav.play':'玩法','nav.apps':'多端','nav.why':'亮点','nav.privacy':'隐私','nav.history':'历程','nav.open':'开源','nav.cta':'开始使用',
+    'hero.slogan':'把人情顾好，不用靠记性',
+    'hero.sub':'每天打开先告诉你「今天该联系谁、该还谁的人情、该准备多少礼」，再给你能直接复制的话术。本地优先，数据默认存本机。',
+    'hero.cta1':'立即开始使用','hero.cta2':'看看怎么用','hero.core':'今日<br>行动',
+    'hero.s1':'份今日清单<br>该联系谁 · 该还谁 · 该做什么','hero.s2':'档随礼建议<br>从简 · 得体 · 重视','hero.s3':'个话术场景<br>拒绝 · 催还 · 道歉 · 敬酒…',
+    'strip.a':'不是更复杂的通讯录，是<b>人情世故助手</b>','strip.b':'每天打开，先看今天该做什么','strip.c':'本地优先，数据默认存本机',
+    'play.h':'从今天该做什么，到把人情记明白','play.sub':'一条行动清单，一本账，两个参谋。',
+    'play.1t':'今日行动','play.1d':'生日、待办、断联、欠人情、该道谢，按紧急度排好，每条都带下一步按钮。',
+    'play.2t':'人情账本','play.2d':'送礼、收礼、借款分开记；谁欠谁、欠多少，一眼看清。',
+    'play.3t':'随礼参谋','play.3d':'关系 × 场合 × 档位 × 城市，给出三档建议并说明依据，不是拍脑袋一个数。',
+    'play.4t':'话术参谋','play.4d':'拒绝借钱、催还、道歉、敬酒……16 个场景，三种语气，直接复制。',
+    'play.5t':'年度报告','play.5d':'月度节奏、最常走动的人、人情债复盘，一年一本自己的关系账。',
+    'apps.h':'五种形态，同一本账','apps.sub':'网页、Windows、安卓、微信小程序、CLI——数据格式互通，随时迁移。',
+    'apps.1tag':'网页版 · PWA','apps.1t':'EQ-Worker 网页版','apps.1d':'单文件自包含，零安装零构建。可添加到主屏幕，像 App 一样全屏离线使用。','apps.1f1':'离线可用','apps.1f2':'可装主屏','apps.1f3':'单文件','apps.1go':'打开网页版',
+    'apps.2tag':'Windows · 安装包','apps.2t':'EQ-Worker 桌面端','apps.2d':'安装程序带开始菜单、桌面快捷方式与卸载项。大屏录入与翻看往来更顺手。','apps.2f1':'开始菜单','apps.2f2':'可卸载','apps.2f3':'离线','apps.2go':'下载 Windows 版',
+    'apps.3tag':'安卓 · APK','apps.3t':'EQ-Worker 安卓版','apps.3d':'原生 WebView 壳，1.5MB。装好即用，无账号，数据存本机。','apps.3f1':'1.5MB','apps.3f2':'离线可用','apps.3f3':'无账号','apps.3go':'下载 APK',
+    'apps.4tag':'CLI + MCP','apps.4t':'命令行里的 EQ-Worker','apps.4d':'18 个命令全部支持 --json；只绑本机的令牌鉴权后台；以及可被 AI 客户端调用的 MCP 服务器。','apps.4f1':'18 个命令','apps.4f2':'MCP 服务器','apps.4f3':'本地后台','apps.4go':'查看源码',
+    'why.h':'为什么值得每天 10 秒',
+    'why.1t':'本地优先','why.1d':'数据存在你的设备上。无账号、无服务器、无埋点。AI 默认关闭，只发送你确认过的内容。',
+    'why.2t':'热度会衰减','why.2d':'人情热度按 90 天半衰期衰减。太久不走动，雷达会先于对方提醒你。',
+    'why.3t':'农历节日','why.3d':'春节、端午、中秋按农历换算（1900–2100），祝福不迟到。',
+    'why.4t':'是账本，不是表格','why.4d':'暖纸、莫兰迪、楷书。读起来像日记，所以你才愿意写。',
+    'rem.h':'提醒长这样','rem.sub':'按紧急度配色，一眼分清该先还谁的人情。',
+    'rem.1':'<b>李叔</b>：已 120 天没往来，逢年过节走动一下','rem.1t':'紧急',
+    'rem.2':'<b>陈姐</b>：你欠着人情债（86），建议近期请顿饭或回个礼','rem.2t':'该还了',
+    'rem.3':'<b>王总</b>：生日还有 3 天，记得送上祝福','rem.3t':'生日',
+    'priv.h':'你的数据，由你掌控',
+    'priv.1t':'数据默认存本机','priv.1d':'人脉、往来、提醒默认保存在本地。无账号、无追踪。AI 默认关闭，除非你启用并自备 Key。',
+    'priv.2t':'备份由你掌控','priv.2d':'换设备用导出/导入，一份文本搞定迁移，中间不经过任何云账号。',
+    'priv.3t':'离线可用','priv.3d':'网页版是单文件自包含，断网也能记；小程序同样本地缓存。',
+    'hist.h':'版本历程','hist.sub':'从答题测评，到人脉经营。',
+    'hist.35t':'能持续交付，不只能跑','hist.35d':'ESLint、覆盖率门禁、11 项性能基准、8 项端到端测试、一键发布并生成 SHA-256 校验和。途中修掉 4 个真实缺陷。',
+    'hist.34t':'扩成一个平台','hist.34d':'18 个命令的 CLI、只绑本机的令牌鉴权后台、向 AI 客户端暴露 15 个工具的 MCP 服务器。',
+    'hist.33t':'修炼与成就','hist.33d':'13 枚徽章、近 12 个月回顾、Studio 修炼场，小程序补齐随礼与话术参谋。',
+    'hist.32t':'可维护的地基','hist.32d':'抽出 TypeScript 核心（core / viz / ai 三包）；存储加固为「迁移不安全就拒绝写入」；版本号单一来源。',
+    'hist.30t':'人情世故助手','hist.30d':'今日行动、人情账本、随礼参谋、话术参谋、关系体检、日历导出；数据结构升级并自动迁移。',
+    'hist.27t':'品牌体系','hist.27d':'Logo、Slogan、欢迎引导、品牌化关于页；修复提醒紧急度配色。',
+    'hist.20t':'围绕经营重构','hist.20d':'弃答题测评，改为「记录 → 画像 → 提醒 → 修炼 → 报告」。',
+    'os.h':'开源 · 非商业 · 欢迎使用','os.sub':'网页、小程序、CLI、后台与 MCP 完整源码，三平台镜像同步，CC BY-NC 4.0。',
+    'os.go':'访问仓库 →','os.gitee':'国内镜像，访问更稳','os.gitcode':'国内镜像，同步更新',
+    'foot.slogan':'把人情账记明白，把关系经营成细水长流',
+    'foot.en':'EQ · WORKER · 本地优先 · 离线可用',
+    'foot.legal':'© 2026 EQ-Worker · CC BY-NC 4.0 许可 · 网页版与小程序数据格式互通'
+  }
+};
+
+const STORE_KEY = 'eqw_site_lang';
+
+function applyLang(lang) {
+  const dict = TEXT[lang];
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const v = dict[el.dataset.i18n];
+    if (v) el.innerHTML = v;
+  });
+  document.querySelectorAll('[data-lang]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.lang === lang));
+  });
+  try { localStorage.setItem(STORE_KEY, lang); } catch (_e) { /* 隐私模式下忽略 */ }
+}
+
+document.querySelectorAll('[data-lang]').forEach((b) => {
+  b.addEventListener('click', () => applyLang(b.dataset.lang));
+});
+
+let initial = 'en';
+try { initial = localStorage.getItem(STORE_KEY) || 'en'; } catch (_e) { /* 隐私模式下忽略 */ }
+applyLang(TEXT[initial] ? initial : 'en');
+
 const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
 document.querySelectorAll('.fade').forEach(el => io.observe(el));
 </script>
