@@ -230,3 +230,59 @@ test('损坏的数据文件不会让服务崩成不可用，也不会覆盖原�
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('search 工具跨人脉与往来命中', async () => {
+  await withMcp(async ({ client }) => {
+    await client.callTool({ name: 'add_person', arguments: { name: '搜索目标', identity: '客户' } });
+    await client.callTool({ name: 'record_event', arguments: { personName: '搜索目标', type: 'meal', title: '一起吃了火锅' } });
+
+    const r = parseJson(await client.callTool({ name: 'search', arguments: { keyword: '搜索目标' } }));
+    assert.ok(r.命中联系人.length >= 1);
+    assert.ok(r.命中往来.length >= 1);
+
+    const miss = parseJson(await client.callTool({ name: 'search', arguments: { keyword: 'zzz不存在' } }));
+    assert.equal(miss.命中联系人.length, 0);
+    assert.equal(miss.命中往来.length, 0);
+  });
+});
+
+test('reminders 工具：添加后可列出', async () => {
+  await withMcp(async ({ client }) => {
+    await client.callTool({ name: 'add_person', arguments: { name: '提醒对象' } });
+    const add = parseJson(await client.callTool({ name: 'add_reminder', arguments: { personName: '提醒对象', content: '记得回礼' } }));
+    assert.equal(add.ok, true);
+
+    const list = parseJson(await client.callTool({ name: 'get_reminders', arguments: {} }));
+    assert.equal(list.length, 1);
+    assert.equal(list[0].内容, '记得回礼');
+    assert.equal(list[0].状态, '待办');
+    assert.equal(list[0].对象, '提醒对象');
+  });
+});
+
+test('add_reminder 指向不存在的人时拒绝', async () => {
+  await withMcp(async ({ client }) => {
+    const r = await client.callTool({ name: 'add_reminder', arguments: { personName: '查无此人', content: 'x' } });
+    assert.match(parse(r), /找不到/);
+  });
+});
+
+test('get_practice_progress 返回段位与进度', async () => {
+  await withMcp(async ({ client }) => {
+    const p = parseJson(await client.callTool({ name: 'get_practice_progress', arguments: {} }));
+    assert.equal(typeof p.段位, 'string');
+    assert.equal(typeof p.智慧值, 'number');
+    assert.equal(typeof p.连续修炼天数, 'number');
+  });
+});
+
+test('reminders 资源可读且为合法 JSON', async () => {
+  await withMcp(async ({ client }) => {
+    await client.callTool({ name: 'add_person', arguments: { name: '资源对象' } });
+    await client.callTool({ name: 'add_reminder', arguments: { personName: '资源对象', content: 'r' } });
+    const res = await client.readResource({ uri: 'eqworker://reminders' });
+    const parsed = JSON.parse(res.contents[0].text);
+    assert.ok(Array.isArray(parsed));
+    assert.equal(parsed.length, 1);
+  });
+});

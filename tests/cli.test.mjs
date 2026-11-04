@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -181,5 +181,59 @@ test('--json 输出始终是合法 JSON（便于脚本管道）', () => {
       assert.equal(code, 0, `${cmd} 应成功`);
       assert.doesNotThrow(() => JSON.parse(out), `${cmd} --json 必须是合法 JSON`);
     }
+  } finally { s.cleanup(); }
+});
+
+test('search 跨人脉与往来匹配，无结果时明确提示', () => {
+  const s = sandbox();
+  try {
+    run(['demo'], { EQWORKER_DATA_DIR: s.dir });
+    const hit = run(['search', '王总', '--json'], { EQWORKER_DATA_DIR: s.dir });
+    assert.equal(hit.code, 0);
+    const d = JSON.parse(hit.out);
+    assert.ok(d.persons.length >= 1, '应命中王总');
+    assert.ok(d.events.length >= 1, '应命中王总的往来');
+
+    const miss = run(['search', '绝对不存在的关键词xyz'], { EQWORKER_DATA_DIR: s.dir });
+    assert.equal(miss.code, 0, '无结果不应报错');
+    assert.match(miss.out, /没有匹配/);
+  } finally { s.cleanup(); }
+});
+
+test('reminders 列出待办并可标记完成', () => {
+  const s = sandbox();
+  try {
+    run(['demo'], { EQWORKER_DATA_DIR: s.dir });
+    const list = run(['reminders', '--json'], { EQWORKER_DATA_DIR: s.dir });
+    const all = JSON.parse(list.out);
+    const pending = all.filter((r) => r.status === 'pending');
+    assert.ok(pending.length >= 1, '演示数据应有待办');
+
+    const done = run(['reminders', '--done', pending[0].id], { EQWORKER_DATA_DIR: s.dir });
+    assert.equal(done.code, 0);
+    const after = JSON.parse(run(['reminders', '--json'], { EQWORKER_DATA_DIR: s.dir }).out);
+    assert.equal(after.find((r) => r.id === pending[0].id).status, 'done');
+  } finally { s.cleanup(); }
+});
+
+test('doctor 对健康数据通过，对孤立记录报警', () => {
+  const s = sandbox();
+  try {
+    run(['demo'], { EQWORKER_DATA_DIR: s.dir });
+    const ok = run(['doctor', '--json'], { EQWORKER_DATA_DIR: s.dir });
+    assert.equal(ok.code, 0, '健康数据应通过');
+    assert.equal(JSON.parse(ok.out).issues.length, 0);
+
+    // 人为制造孤立记录
+    const file = join(s.dir, 'eq-worker.json');
+    const raw = JSON.parse(readFileSync(file, 'utf8'));
+    const db = JSON.parse(raw.eqworker_db_v1);
+    db.events.push({ id: 'orphan', personId: 'nobody', type: 'meal', title: 'x', time: Date.now(), weight: 7, note: '', amount: 0, dir: 'none', occasion: '日常' });
+    raw.eqworker_db_v1 = JSON.stringify(db);
+    writeFileSync(file, JSON.stringify(raw), 'utf8');
+
+    const bad = run(['doctor', '--json'], { EQWORKER_DATA_DIR: s.dir });
+    assert.equal(bad.code, 1, '有问题时退出码应为 1');
+    assert.ok(JSON.parse(bad.out).issues.some((i) => i.includes('孤立')), '应报告孤立记录');
   } finally { s.cleanup(); }
 });

@@ -106,9 +106,11 @@ export function annualReport(state: AppState, now: number = Date.now()): AnnualR
   const peak = Math.max(...months.map((x) => x.count), 1);
   const bestMonths = months.filter((x) => x.count === peak).map((x) => x.label);
 
-  const yStart = `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  // 12 个月窗口的起点必须是「11 个月前的 1 号」，而不是「去年同月的 1 号」。
+  // 后者会把第 13 个月的数据也算进来，和上面 months 数组统计的区间对不上。
+  const windowStart = new Date(d.getFullYear(), d.getMonth() - 11, 1).getTime();
   const byPerson = new Map<string, number>();
-  for (const e of state.events) if (fmtDate(e.time) >= yStart) byPerson.set(e.personId, (byPerson.get(e.personId) || 0) + 1);
+  for (const e of state.events) if (e.time >= windowStart) byPerson.set(e.personId, (byPerson.get(e.personId) || 0) + 1);
   const topPersons = [...byPerson.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)

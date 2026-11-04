@@ -24,6 +24,8 @@ dist-studio/
 dist-cli/
 dist-server/
 dist-mcp/
+# 发布产物（由 scripts/release.mjs 生成，不入库）
+release/
 .aqg/
 
 # 本地 dev-server 地址（只提交 .example）

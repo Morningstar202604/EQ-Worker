@@ -6,7 +6,8 @@ import type {
   AppState,
   ComputedPerson,
   LevelResult,
-  Person
+  Person,
+  PersonalEvent
 } from './types';
 
 export const PLACEHOLDER = {
@@ -24,8 +25,33 @@ export const PLACEHOLDER = {
 
 export const PLACEHOLDERS = PLACEHOLDER;
 
-export function computePerson(state: AppState, p: Person, now: number = Date.now()): ComputedPerson {
-  const evs = state.events.filter((e) => e.personId === p.id);
+/**
+ * 事件按人分组。
+ *
+ * 之前的实现每次 computePerson 都 state.events.filter() 全表扫描，
+ * 500 人场景是 500 × 事件总数 次遍历，实测接近 O(n²)。
+ *
+ * 这里不再做跨调用缓存——原地 push / splice 会让「引用+长度」判断失效，
+ * 宁可每次重算索引（仍是 O(n) 一次）也不冒读到脏数据的风险。
+ * 需要批量计算的调用方用 computeAll()，只建一次索引。
+ */
+function groupEvents(events: PersonalEvent[]): Map<string, PersonalEvent[]> {
+  const byPerson = new Map<string, PersonalEvent[]>();
+  for (const ev of events) {
+    let list = byPerson.get(ev.personId);
+    if (!list) { list = []; byPerson.set(ev.personId, list); }
+    list.push(ev);
+  }
+  return byPerson;
+}
+
+/** 手动失效接口保留用于兼容；当前实现无缓存，空操作。 */
+export function invalidateEventIndex(): void {
+  /* 无缓存，保留接口避免调用方改动 */
+}
+
+/** 计算主体：接收已分组的事件，避免重复索引。 */
+function computeWithEvents(evs: PersonalEvent[], p: Person, now: number): ComputedPerson {
   let heat = 50;
   let trust = 40;
   let intim = 35;
@@ -54,6 +80,19 @@ export function computePerson(state: AppState, p: Person, now: number = Date.now
     lastDays,
     eventCount: evs.length
   };
+}
+
+export function computePerson(state: AppState, p: Person, now: number = Date.now()): ComputedPerson {
+  return computeWithEvents(groupEvents(state.events).get(p.id) ?? [], p, now);
+}
+
+/**
+ * 批量计算：只建一次事件索引。
+ * 报表类调用（总览、体检、成就）必须用它，否则 N 个人就是 N 次全表扫描。
+ */
+export function computeAll(state: AppState, now: number = Date.now()): ComputedPerson[] {
+  const byPerson = groupEvents(state.events);
+  return state.persons.map((p) => computeWithEvents(byPerson.get(p.id) ?? [], p, now));
 }
 
 export function computedFor(state: AppState, personId: string, now: number = Date.now()): ComputedPerson | null {
@@ -94,7 +133,7 @@ export function overallMetrics(state: AppState, now: number = Date.now()): {
 } | null {
   const n = state.persons.length;
   if (!n) return null;
-  const pms = state.persons.map((p) => computePerson(state, p, now));
+  const pms = computeAll(state, now);
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map((p) => p.heat));
   const n30 = state.events.filter((e) => now - e.time < 30 * DAY).length;

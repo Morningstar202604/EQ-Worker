@@ -54,6 +54,7 @@ __export(index_exports, {
   buildScripts: () => buildScripts,
   clamp: () => clamp,
   commitPractice: () => commitPractice,
+  computeAll: () => computeAll,
   computePerson: () => computePerson,
   computedFor: () => computedFor,
   createEmptyState: () => createEmptyState,
@@ -72,6 +73,7 @@ __export(index_exports, {
   getWisdom: () => getWisdom,
   giftAdvice: () => giftAdvice,
   healthRanking: () => healthRanking,
+  invalidateEventIndex: () => invalidateEventIndex,
   ledgerInsights: () => ledgerInsights,
   ledgerNetLabel: () => ledgerNetLabel,
   ledgerNetShort: () => ledgerNetShort,
@@ -691,13 +693,17 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 function clamp(v, a, b) {
+  if (Number.isNaN(v)) return a;
+  if (v === Infinity) return b;
+  if (v === -Infinity) return a;
+  return Math.max(a, Math.min(b, v));
   return Math.max(a, Math.min(b, v));
 }
 function avg(arr) {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 }
 function esc(s) {
-  return String(s == null ? "" : s).replace(
+  return String(s === null || s === void 0 ? "" : s).replace(
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
   );
@@ -767,7 +773,7 @@ function createEmptyState() {
 }
 function sanitizeImport(d) {
   const warn = [];
-  let rawPersons = Array.isArray(d.persons) ? d.persons : [];
+  const rawPersons = Array.isArray(d.persons) ? d.persons : [];
   const nP = rawPersons.length;
   const persons = rawPersons.filter((p) => isObj(p) && typeof p.name === "string" && !!p.name.trim()).map((p) => ({
     id: typeof p.id === "string" && p.id ? p.id : uid(),
@@ -843,8 +849,21 @@ var PLACEHOLDER = {
   other: "\u5468\u672B\u4E00\u8D77\u901B\u4E86\u8D9F\u8857"
 };
 var PLACEHOLDERS = PLACEHOLDER;
-function computePerson(state, p, now = Date.now()) {
-  const evs = state.events.filter((e) => e.personId === p.id);
+function groupEvents(events) {
+  const byPerson = /* @__PURE__ */ new Map();
+  for (const ev of events) {
+    let list = byPerson.get(ev.personId);
+    if (!list) {
+      list = [];
+      byPerson.set(ev.personId, list);
+    }
+    list.push(ev);
+  }
+  return byPerson;
+}
+function invalidateEventIndex() {
+}
+function computeWithEvents(evs, p, now) {
   let heat = 50;
   let trust = 40;
   let intim = 35;
@@ -874,6 +893,17 @@ function computePerson(state, p, now = Date.now()) {
     eventCount: evs.length
   };
 }
+function computePerson(state, p, now = Date.now()) {
+  var _a;
+  return computeWithEvents((_a = groupEvents(state.events).get(p.id)) != null ? _a : [], p, now);
+}
+function computeAll(state, now = Date.now()) {
+  const byPerson = groupEvents(state.events);
+  return state.persons.map((p) => {
+    var _a;
+    return computeWithEvents((_a = byPerson.get(p.id)) != null ? _a : [], p, now);
+  });
+}
 function computedFor(state, personId, now = Date.now()) {
   const p = state.persons.find((x) => x.id === personId);
   return p ? computePerson(state, p, now) : null;
@@ -901,7 +931,7 @@ function getLevel(w) {
 function overallMetrics(state, now = Date.now()) {
   const n = state.persons.length;
   if (!n) return null;
-  const pms = state.persons.map((p) => computePerson(state, p, now));
+  const pms = computeAll(state, now);
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map((p) => p.heat));
   const n30 = state.events.filter((e) => now - e.time < 30 * DAY).length;
@@ -1131,7 +1161,8 @@ function settlePrefill(state, personId, kind) {
   };
 }
 function niceAmount(n) {
-  const v = Math.max(0, Number(n) || 0);
+  const raw = Number(n);
+  const v = Number.isFinite(raw) ? Math.max(0, raw) : 0;
   if (v > 1e4) return Math.round(v / 1e3) * 1e3;
   return NICE_AMOUNTS.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a, 0);
 }
@@ -1576,7 +1607,7 @@ function buildScripts(state, sceneId, personId, context) {
 
 // packages/core/src/ics.ts
 function icsEscape(s) {
-  return String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  return String(s === null || s === void 0 ? "" : s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
 function icsDate(d) {
   return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
@@ -1741,9 +1772,9 @@ function annualReport(state, now = Date.now()) {
   const total = months.reduce((s, x) => s + x.count, 0);
   const peak = Math.max(...months.map((x) => x.count), 1);
   const bestMonths = months.filter((x) => x.count === peak).map((x) => x.label);
-  const yStart = `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  const windowStart = new Date(d.getFullYear(), d.getMonth() - 11, 1).getTime();
   const byPerson = /* @__PURE__ */ new Map();
-  for (const e of state.events) if (fmtDate(e.time) >= yStart) byPerson.set(e.personId, (byPerson.get(e.personId) || 0) + 1);
+  for (const e of state.events) if (e.time >= windowStart) byPerson.set(e.personId, (byPerson.get(e.personId) || 0) + 1);
   const topPersons = [...byPerson.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, count]) => {
     var _a;
     return { id, name: ((_a = state.persons.find((p) => p.id === id)) == null ? void 0 : _a.name) || "", count };

@@ -15,7 +15,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { extname, join, resolve, normalize, sep } from 'node:path';
 import { createFileStore } from '../../../packages/node/src/index';
-import { resolveDataFile, dataDir } from '../../../packages/node/src/index';
+import { resolveDataFile } from '../../../packages/node/src/index';
 import {
   overallMetrics,
   buildActions,
@@ -35,7 +35,6 @@ import {
   EVENT_TYPES,
   OCCASIONS,
   upcomingDates,
-  fmtMoney,
   uid,
   sanitizeImport,
   type AppState,
@@ -158,7 +157,7 @@ export function createAppServer(options: ServerOptions = {}) {
 
     // 健康检查不需要令牌：让 CLI/脚本能探活
     if (path === '/health') {
-      json(res, 200, { ok: true, version: '3.4.0', dataFile });
+      json(res, 200, { ok: true, version: '3.5.0', dataFile });
       return;
     }
     if (!authed(req)) {
@@ -329,6 +328,32 @@ export function createAppServer(options: ServerOptions = {}) {
       if (!s.save()) { json(res, 500, { error: '保存失败' }); return; }
       const st = s.getState();
       json(res, 200, { ok: true, persons: st.persons.length, events: st.events.length, warnings: clean.warn });
+      return;
+    }
+
+    if (req.method === 'GET' && path === '/doctor') {
+      const st = s.getState();
+      const issues: string[] = [];
+      const orphan = st.events.filter((e) => !st.persons.some((p) => p.id === e.personId));
+      if (orphan.length) issues.push(`${orphan.length} 条往来指向不存在的联系人`);
+      const seen = new Set<string>();
+      for (const p of st.persons) {
+        if (seen.has(p.id)) issues.push(`联系人 id 重复：${p.id}`);
+        seen.add(p.id);
+      }
+      const badAmount = st.events.filter((e) => !Number.isFinite(Number(e.amount)) || Number(e.amount) < 0);
+      if (badAmount.length) issues.push(`${badAmount.length} 条往来金额非法`);
+      const badBirthday = st.persons.filter((p) => p.birthday && !/^\d{2}-\d{2}$/.test(p.birthday));
+      if (badBirthday.length) issues.push(`${badBirthday.length} 位联系人生日格式非 MM-DD`);
+      const future = st.events.filter((e) => e.time > Date.now() + 86400000);
+      if (future.length) issues.push(`${future.length} 条往来时间在未来`);
+      json(res, 200, {
+        ok: issues.length === 0,
+        issues,
+        stats: { persons: st.persons.length, events: st.events.length, reminders: st.reminders.length },
+        writeProtected: s.isWriteProtected(),
+        dataFile
+      });
       return;
     }
 

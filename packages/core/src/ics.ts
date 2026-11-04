@@ -2,7 +2,7 @@ import { DAY, daysUntil, nextMMDD } from './date';
 import type { AppState, UpcomingDate } from './types';
 
 function icsEscape(s: unknown): string {
-  return String(s == null ? '' : s)
+  return String((s === null || s === undefined) ? '' : s)
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')

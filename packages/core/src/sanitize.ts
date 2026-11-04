@@ -19,6 +19,12 @@ export function uid(): string {
 }
 
 export function clamp(v: number, a: number, b: number): number {
+  // NaN 会沿着算术一路传播，最终把所有指标变成 NaN 显示成「—」。
+  // 退化到下界是唯一合理选择：它保证调用方拿到可用数字。
+  if (Number.isNaN(v)) return a;
+  if (v === Infinity) return b;
+  if (v === -Infinity) return a;
+  return Math.max(a, Math.min(b, v));
   return Math.max(a, Math.min(b, v));
 }
 
@@ -27,7 +33,7 @@ export function avg(arr: number[]): number {
 }
 
 export function esc(s: unknown): string {
-  return String(s == null ? '' : s).replace(
+  return String((s === null || s === undefined) ? '' : s).replace(
     /[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string
   );
@@ -113,7 +119,7 @@ export function createEmptyState(): AppState {
 export function sanitizeImport(d: Raw): SanitizeResult {
   const warn: string[] = [];
 
-  let rawPersons: unknown[] = Array.isArray(d.persons) ? d.persons : [];
+  const rawPersons: unknown[] = Array.isArray(d.persons) ? d.persons : [];
   const nP = rawPersons.length;
   const persons: Person[] = rawPersons
     .filter((p): p is Raw => isObj(p) && typeof p.name === 'string' && !!p.name.trim())

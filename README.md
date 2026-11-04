@@ -10,9 +10,9 @@ Local-first · No account · No server · Optional AI with your own key
 
 <b>English</b> · <a href="README.zh.md">简体中文</a>
 
-[![Version](https://img.shields.io/badge/version-v3.4.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.5.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-454%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-508%20passing-brightgreen)](tests/)
 [![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20windows%20%C2%B7%20android%20%C2%B7%20wechat%20%C2%B7%20cli%20%C2%B7%20mcp-blueviolet)](#five-ways-to-use-it)
 
 **Try it:** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
@@ -77,7 +77,7 @@ PWA-installable and works offline. The Android and Windows builds share this exa
 
 ### 2 · Windows desktop (installer)
 
-Run `EQ-Worker-3.4.0-x64.exe`: Start-menu entry, desktop shortcut, uninstaller, selectable install directory.
+Run `EQ-Worker-3.5.0-x64.exe`: Start-menu entry, desktop shortcut, uninstaller, selectable install directory.
 
 ### 3 · CLI (manage relationships in a terminal)
 
@@ -132,7 +132,7 @@ Write tools declare `readOnlyHint: false` per the MCP spec, so the host asks the
 | The maths is right | The core engine is compared **function by function** against the legacy implementation: 6 fixtures × 16 functions | `packages/core/tests/engine.parity.test.ts` |
 | It actually runs | Not just unit tests: CLI 13, server 16, MCP 13 — real processes, real sockets, real protocol | `node --test tests/**/*.test.mjs` |
 
-**454 tests**: 173 Node tests + 281 Vitest tests across 28 files.
+**508 tests**: 190 Node tests + 318 Vitest tests across 30 files.
 
 ---
 
@@ -163,7 +163,7 @@ the build: `vite build` fails outright if `node:fs` leaks in.
 
 ```bash
 pnpm install
-pnpm run verify    # version check → build → 173 tests → typecheck → 281 tests → both bundles
+pnpm run verify    # version check → 7 builds → lint → 190 tests → typecheck → 318 tests → both bundles
 ```
 
 Build one target at a time:

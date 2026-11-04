@@ -39,12 +39,11 @@ import {
   upcomingDates,
   fmtMoney,
   uid,
-  sanitizeImport,
   type AppState,
   type EventType
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.4.0';
+const VERSION = '3.5.0';
 const file = resolveDataFile();
 const store = createFileStore(file);
 const state = (): AppState => store.getState();
@@ -410,6 +409,120 @@ server.registerResource(
             return { name: p.name, given: l.given, received: l.received, net: l.net };
           })
         }, null, 2)
+      }]
+    };
+  }
+);
+
+
+server.registerTool(
+  'search',
+  {
+    title: '搜索',
+    description: '按关键词跨联系人姓名、标签、备注与往来标题搜索。用户问「关于 X 我记过什么」时使用。',
+    inputSchema: { keyword: z.string().describe('关键词') },
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  async ({ keyword }) => {
+    const s = state();
+    const kw = keyword.toLowerCase();
+    const persons = s.persons.filter((p) =>
+      `${p.name} ${p.identity} ${(p.tags || []).join(' ')} ${p.note}`.toLowerCase().includes(kw)
+    );
+    const events = s.events
+      .filter((e) => {
+        const p = s.persons.find((x) => x.id === e.personId);
+        return `${e.title} ${e.note} ${e.occasion} ${p ? p.name : ''}`.toLowerCase().includes(kw);
+      })
+      .map((e) => ({
+        日期: new Date(e.time).toISOString().slice(0, 10),
+        对象: s.persons.find((x) => x.id === e.personId)?.name ?? '',
+        标题: e.title,
+        金额: e.amount || null
+      }));
+    return json({ 关键词: keyword, 命中联系人: persons.map((p) => ({ 姓名: p.name, 身份: p.identity })), 命中往来: events });
+  }
+);
+
+server.registerTool(
+  'get_reminders',
+  {
+    title: '待办提醒',
+    description: '列出待办提醒（谁、什么事、什么时候）。',
+    inputSchema: {},
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  async () => {
+    const s = state();
+    return json(s.reminders.map((r) => ({
+      id: r.id,
+      对象: s.persons.find((p) => p.id === r.personId)?.name ?? '',
+      内容: r.content,
+      日期: r.date || null,
+      状态: r.status === 'pending' ? '待办' : '已完成'
+    })));
+  }
+);
+
+server.registerTool(
+  'add_reminder',
+  {
+    title: '添加待办',
+    description: '给某位联系人添加一条待办提醒。写操作。',
+    inputSchema: {
+      personName: z.string().describe('关联联系人姓名'),
+      content: z.string().describe('待办内容'),
+      date: z.string().optional().describe('日期 YYYY-MM-DD，可选')
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
+  },
+  async ({ personName, content, date }) => {
+    const s = state();
+    const p = s.persons.find((x) => x.name === personName || x.id === personName);
+    if (!p) return text(`找不到「${personName}」。`);
+    const reminder = { id: uid(), personId: p.id, content: content.slice(0, 200), date: date ?? '', status: 'pending' as const };
+    s.reminders.push(reminder);
+    store.setState(s);
+    if (!store.save()) return text('保存失败：数据文件不可写。');
+    return json({ ok: true, 已添加: reminder });
+  }
+);
+
+server.registerTool(
+  'get_practice_progress',
+  {
+    title: '修炼进度',
+    description: '查看人情修炼场的段位、智慧值、已完成题目与连续天数。',
+    inputSchema: {},
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  async () => {
+    const s = state();
+    const w = getWisdom(s);
+    const lv = getLevel(w);
+    return json({
+      段位: lv.cur.name,
+      段位说明: lv.cur.desc,
+      智慧值: w,
+      下一段位: lv.nxt ? { 名称: lv.nxt.name, 还差: Math.max(0, lv.nxt.min - w) } : null,
+      连续修炼天数: s.streak.n,
+      已练习题: Object.keys(s.progress).filter((k) => s.progress[k].times > 0).length,
+      明细: s.progress
+    });
+  }
+);
+
+server.registerResource(
+  'reminders',
+  'eqworker://reminders',
+  { title: '待办提醒', description: '当前待办与已完成提醒', mimeType: 'application/json' },
+  async () => {
+    const s = state();
+    return {
+      contents: [{
+        uri: 'eqworker://reminders',
+        mimeType: 'application/json',
+        text: JSON.stringify(s.reminders, null, 2)
       }]
     };
   }

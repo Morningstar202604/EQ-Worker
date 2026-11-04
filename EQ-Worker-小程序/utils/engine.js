@@ -164,14 +164,14 @@ function load() {
     }
     writeProtected = false;
     return S;
-  } catch (e) { return S; }
+  } catch (_e) { return S; }
 }
 
 function save() {
   invalidateCache();
   if (writeProtected) { wx.showToast({ title: '数据异常，禁止覆盖', icon: 'none' }); return false; }
   try { wx.setStorageSync(DB_KEY, { schema: SCHEMA_VERSION, ...S }); return true; }
-  catch (e) { wx.showToast({ title: '保存失败', icon: 'none' }); return false; }
+  catch (_e) { wx.showToast({ title: '保存失败', icon: 'none' }); return false; }
 }
 function update(change) {
   const before = JSON.stringify(S);

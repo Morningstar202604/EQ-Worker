@@ -6,7 +6,7 @@ const DURATION = 220; // 动效毫秒
 /* 页面可能已被销毁（navigateBack / switchTab / 关闭），此时 setData 会抛异常并中断
    后续逻辑（尤其是 toast/modal 的延时回调里）。统一兜底，避免控制台报错与状态错乱。 */
 function safeSet(page, data) {
-  try { page.setData(data); } catch (e) {}
+  try { page.setData(data); } catch (_e) {}
 }
 
 /* ───────── Toast ───────── */

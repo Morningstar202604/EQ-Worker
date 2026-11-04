@@ -174,12 +174,32 @@ async function viewAdvisors() {
     </div>`;
 }
 
+async function viewDoctor() {
+  const d = await api('/doctor');
+  const stat = (k, v) => `<div class="card stat"><div class="label">${esc(k)}</div><div class="value">${v}</div></div>`;
+  return `
+    <div class="grid cols-4" style="margin-bottom:14px">
+      ${stat('人脉', d.stats.persons)}
+      ${stat('往来', d.stats.events)}
+      ${stat('提醒', d.stats.reminders)}
+      ${stat('写保护', d.writeProtected ? '是' : '否')}
+    </div>
+    <div class="card">
+      <h3>${d.ok ? '数据检查通过' : '发现 ' + d.issues.length + ' 个问题'}</h3>
+      ${d.ok
+        ? '<p class="muted">孤立记录、重复 id、非法金额、生日格式与未来时间均未检出异常。</p>'
+        : `<ul style="margin:8px 0 0;padding-left:18px;line-height:1.9">${d.issues.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`}
+      <p class="muted tiny" style="margin-top:12px">数据文件：${esc(d.dataFile)}</p>
+    </div>`;
+}
+
 const VIEWS = {
   overview: ['概览', viewOverview],
   persons: ['人脉', viewPersons],
   ledger: ['账本', viewLedger],
   health: ['关系体检', viewHealth],
-  advisors: ['参谋', viewAdvisors]
+  advisors: ['参谋', viewAdvisors],
+  doctor: ['数据体检', viewDoctor]
 };
 let current = 'overview';
 

@@ -160,7 +160,10 @@ export function settlePrefill(state: AppState, personId: string, kind: 'loan' | 
 }
 
 export function niceAmount(n: unknown): number {
-  const v = Math.max(0, Number(n) || 0);
+  const raw = Number(n);
+  // Infinity 会一路传进金额字段，写入 JSON 时变成 null，读回来又当 0 —— 静默丢数。
+  // 非有限数直接归零，让问题在写入前就消失。
+  const v = Number.isFinite(raw) ? Math.max(0, raw) : 0;
   if (v > 10000) return Math.round(v / 1000) * 1000;
   return NICE_AMOUNTS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), 0);
 }

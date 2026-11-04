@@ -6,7 +6,7 @@ import type {
   LevelDef,
   Occasion,
   Scenario,
-  ScriptScene,
+  
   Settings
 } from './types';
 

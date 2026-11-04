@@ -41,7 +41,7 @@ import {
   type CityTier
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.4.0';
+const VERSION = '3.5.0';
 
 type Flags = {
   data?: string;
@@ -148,7 +148,7 @@ function cmdOverview(flags: Flags): number {
   const actions = buildActions(state, 5);
   if (actions.length) {
     console.log(c('今天值得做', 'bold'));
-    for (const a of actions) console.log(`  · ${a.title}${a.reason ? c(`　${a.reason}`, 'dim') : ''}`);
+    for (const a of actions) console.log(`  · ${a.title}${a.reason ? c(` ${a.reason}`, 'dim') : ''}`);
     console.log('');
   }
   const up = upcomingDates(state, 30);
@@ -212,19 +212,19 @@ function cmdPerson(flags: Flags): number {
     console.log(JSON.stringify({ person: p, computed: cp, ledger: l, events }, null, 2));
     return 0;
   }
-  console.log(c(`${p.name}`, 'bold') + c(`　${p.identity || ''}`, 'dim'));
+  console.log(c(`${p.name}`, 'bold') + c(` ${p.identity || ''}`, 'dim'));
   if (p.tags.length) console.log(c(`标签：${p.tags.join('、')}`, 'dim'));
   if (p.note) console.log(c(`备注：${p.note}`, 'dim'));
   console.log('');
   console.log(`  热度 ${num(cp.heat)}   信任 ${num(cp.trust)}   亲密 ${num(cp.intimacy)}   活跃 ${num(cp.activity)}   人情债 ${num(cp.debt)}`);
-  console.log(`  账本：${ledgerNetLabel(l.net)}　给出 ${fmtMoney(l.given)}　收到 ${fmtMoney(l.received)}`);
+  console.log(`  账本：${ledgerNetLabel(l.net)} 给出 ${fmtMoney(l.given)} 收到 ${fmtMoney(l.received)}`);
   if (cp.lastDays !== null) console.log(`  最后往来：${cp.lastDays} 天前`);
   console.log('');
   if (events.length) {
     console.log(c('往来记录', 'bold'));
     for (const e of events.slice(0, 10)) {
       const t = EVENT_TYPES[e.type]?.label ?? e.type;
-      const amt = e.amount > 0 ? `　${fmtMoney(e.amount)}` : '';
+      const amt = e.amount > 0 ? ` ${fmtMoney(e.amount)}` : '';
       console.log(`  ${fmtDate(e.time)}  ${t.padEnd(6)}  ${e.title}${c(amt, 'dim')}`);
     }
     if (events.length > 10) console.log(c(`  …还有 ${events.length - 10} 条`, 'dim'));
@@ -269,7 +269,7 @@ function cmdGift(flags: Flags): number {
   }
   const advice = giftAdvice(state, p ? p.id : '', occasion, { tier, city });
   if (flags.json) { console.log(JSON.stringify(advice, null, 2)); return 0; }
-  console.log(c('随礼参谋', 'bold') + c(`　${p ? p.name : '通用'} · ${occasion}`, 'dim'));
+  console.log(c('随礼参谋', 'bold') + c(` ${p ? p.name : '通用'} · ${occasion}`, 'dim'));
   console.log('');
   console.log(`  从简 ${c(fmtMoney(advice.low), 'dim')}      建议 ${c(fmtMoney(advice.mid), 'teal')}      重视 ${c(fmtMoney(advice.high), 'dim')}`);
   console.log('');
@@ -287,7 +287,7 @@ function cmdScript(flags: Flags): number {
   if (flags.opts.get('list')) {
     if (flags.json) { console.log(JSON.stringify(SCRIPT_SCENES.map((s) => ({ id: s.id, label: s.label, hint: s.hint })), null, 2)); return 0; }
     console.log(c('可用场景', 'bold'));
-    for (const s of SCRIPT_SCENES) console.log(`  ${s.id.padEnd(18)} ${s.label}　${c(s.hint, 'dim')}`);
+    for (const s of SCRIPT_SCENES) console.log(`  ${s.id.padEnd(18)} ${s.label} ${c(s.hint, 'dim')}`);
     return 0;
   }
   const scene = sceneArg ? SCRIPT_SCENES.find((s) => s.id === sceneArg || s.label === sceneArg) : SCRIPT_SCENES[0];
@@ -295,7 +295,7 @@ function cmdScript(flags: Flags): number {
   const p = name ? state.persons.find((x) => x.name === name || x.id === name) : null;
   const r = buildScripts(state, scene.id, p ? p.id : '', flags.opts.get('context') ?? '');
   if (flags.json) { console.log(JSON.stringify(r, null, 2)); return 0; }
-  console.log(c(`${scene.label}`, 'bold') + (p ? c(`　对 ${p.name}`, 'dim') : ''));
+  console.log(c(`${scene.label}`, 'bold') + (p ? c(` 对 ${p.name}`, 'dim') : ''));
   console.log(c(scene.hint, 'dim'));
   console.log('');
   for (const v of r.variants) {
@@ -401,10 +401,10 @@ function cmdPractice(flags: Flags): number {
     return 0;
   }
   console.log(c('人情修炼场', 'bold'));
-  console.log(`  段位 ${c(lv.cur.name, 'teal')}　智慧值 ${w}`);
+  console.log(`  段位 ${c(lv.cur.name, 'teal')} 智慧值 ${w}`);
   console.log(c(`  ${lv.cur.desc}`, 'dim'));
   if (lv.nxt) console.log(`  距「${lv.nxt.name}」还差 ${lv.nxt.min - w} 分`);
-  console.log(`  已完成 ${done} 题　连续修炼 ${state.streak.n} 天`);
+  console.log(`  已完成 ${done} 题 连续修炼 ${state.streak.n} 天`);
   return 0;
 }
 
@@ -413,7 +413,7 @@ function cmdAchievements(flags: Flags): number {
   const list = achievements(store.getState());
   const got = list.filter((a) => a.done).length;
   if (flags.json) { console.log(JSON.stringify({ got, total: list.length, list }, null, 2)); return 0; }
-  console.log(c(`成就徽章　${got}/${list.length} 已达成`, 'bold'));
+  console.log(c(`成就徽章 ${got}/${list.length} 已达成`, 'bold'));
   console.log('');
   for (const a of list) {
     const mark = a.done ? c('●', 'gold') : c('○', 'dim');
@@ -429,7 +429,7 @@ function cmdReport(flags: Flags): number {
   const r = annualReport(state);
   const m = monthInsights(state);
   if (flags.json) { console.log(JSON.stringify({ annual: r, month: m }, null, 2)); return 0; }
-  console.log(c('近 12 个月回顾', 'bold') + c(`　共 ${r.total} 笔往来`, 'dim'));
+  console.log(c('近 12 个月回顾', 'bold') + c(` 共 ${r.total} 笔往来`, 'dim'));
   console.log('');
   const peak = r.peak || 1;
   for (const mo of r.months) {
@@ -553,6 +553,111 @@ function cmdActions(flags: Flags): number {
   return 0;
 }
 
+
+/** 搜索：跨姓名、标签、备注、往来标题模糊匹配。 */
+function cmdSearch(flags: Flags): number {
+  const kw = (flags.positional[1] ?? '').trim().toLowerCase();
+  if (!kw) { console.error('用法：eqw search <关键词>'); return 2; }
+  const { store } = openStore(flags);
+  const state = store.getState();
+
+  const persons = state.persons.filter((p) =>
+    `${p.name} ${p.identity} ${(p.tags || []).join(' ')} ${p.note}`.toLowerCase().includes(kw)
+  );
+  const events = state.events.filter((e) => {
+    const p = state.persons.find((x) => x.id === e.personId);
+    return `${e.title} ${e.note} ${e.occasion} ${p ? p.name : ''}`.toLowerCase().includes(kw);
+  });
+
+  if (flags.json) { console.log(JSON.stringify({ persons, events }, null, 2)); return 0; }
+  if (!persons.length && !events.length) { console.log(c(`没有匹配「${kw}」的记录`, 'dim')); return 0; }
+
+  if (persons.length) {
+    console.log(c(`人脉（${persons.length}）`, 'bold'));
+    for (const p of persons) console.log(`  ${p.name} ${c(p.identity || '', 'dim')} ${c((p.tags || []).join('、'), 'dim')}`);
+    console.log('');
+  }
+  if (events.length) {
+    console.log(c(`往来（${events.length}）`, 'bold'));
+    for (const e of events.slice(0, 20)) {
+      const p = state.persons.find((x) => x.id === e.personId);
+      console.log(`  ${fmtDate(e.time)}  ${p ? p.name : '?'}  ${e.title}${e.amount ? c(` ${fmtMoney(e.amount)}`, 'dim') : ''}`);
+    }
+    if (events.length > 20) console.log(c(`  …还有 ${events.length - 20} 条`, 'dim'));
+  }
+  return 0;
+}
+
+/** 待办：列出与完成提醒。 */
+function cmdReminders(flags: Flags): number {
+  const { store } = openStore(flags);
+  const state = store.getState();
+  const pending = state.reminders.filter((r) => r.status === 'pending');
+
+  if (flags.opts.has('done')) {
+    const id = flags.opts.get('done');
+    const r = state.reminders.find((x) => x.id === id);
+    if (!r) { console.error(c(`找不到提醒 ${id}`, 'red')); return 1; }
+    r.status = 'done';
+    store.setState(state);
+    if (!store.save()) { console.error(c('保存失败', 'red')); return 1; }
+    console.log(c('已完成', 'green'));
+    return 0;
+  }
+
+  if (flags.json) { console.log(JSON.stringify(state.reminders, null, 2)); return 0; }
+  if (!pending.length) { console.log(c('没有待办。', 'dim')); return 0; }
+  console.log(c(`待办（${pending.length}）`, 'bold'));
+  for (const r of pending) {
+    const p = state.persons.find((x) => x.id === r.personId);
+    console.log(`  ${c(r.id, 'dim')}  ${p ? p.name + ' · ' : ''}${r.content}${r.date ? c(` ${r.date}`, 'dim') : ''}`);
+  }
+  console.log('');
+  console.log(c('完成：eqw reminders --done <id>', 'dim'));
+  return 0;
+}
+
+/** 校验：检查数据文件完整性与一致性问题。 */
+function cmdDoctor(flags: Flags): number {
+  const { store, file } = openStore(flags);
+  const state = store.getState();
+  const issues: string[] = [];
+  const info: string[] = [];
+
+  info.push(`数据文件：${file}`);
+  info.push(`人脉 ${state.persons.length} 位，往来 ${state.events.length} 条，提醒 ${state.reminders.length} 条`);
+
+  // 孤立事件：指向不存在的人
+  const orphan = state.events.filter((e) => !state.persons.some((p) => p.id === e.personId));
+  if (orphan.length) issues.push(`${orphan.length} 条往来指向不存在的联系人（孤立记录）`);
+
+  // 重复 id
+  const ids = new Set<string>();
+  for (const p of state.persons) {
+    if (ids.has(p.id)) issues.push(`联系人 id 重复：${p.id}`);
+    ids.add(p.id);
+  }
+
+  // 非法数值
+  const badAmount = state.events.filter((e) => !Number.isFinite(Number(e.amount)) || Number(e.amount) < 0);
+  if (badAmount.length) issues.push(`${badAmount.length} 条往来金额非法（负数或非数字）`);
+
+  const badBirthday = state.persons.filter((p) => p.birthday && !/^\d{2}-\d{2}$/.test(p.birthday));
+  if (badBirthday.length) issues.push(`${badBirthday.length} 位联系人生日格式非 MM-DD`);
+
+  // 未来时间的事件（可能是录入错误）
+  const future = state.events.filter((e) => e.time > Date.now() + 86400000);
+  if (future.length) issues.push(`${future.length} 条往来的时间在明天之后（可能录错）`);
+
+  if (flags.json) { console.log(JSON.stringify({ file, info, issues }, null, 2)); return issues.length ? 1 : 0; }
+  for (const i of info) console.log(c(i, 'dim'));
+  console.log('');
+  if (!issues.length) { console.log(c('✓ 数据检查通过，未发现问题', 'green')); return 0; }
+  console.log(c(`发现 ${issues.length} 个问题：`, 'gold'));
+  for (const i of issues) console.log(`  ! ${i}`);
+  return 1;
+}
+
 function cmdWhere(flags: Flags): number {
   const file = resolveDataFile(flags.data);
   const dir = dataDir(flags.data);
@@ -580,6 +685,9 @@ ${c('查看', 'bold')}
   practice                修炼进度与段位
   achievements            成就徽章
   report                  近 12 个月回顾
+  search <关键词>         跨姓名/标签/备注/往来搜索
+  reminders               待办列表    --done <id> 标记完成
+  doctor                  数据体检（孤立记录、非法金额、格式错误）
 
 ${c('参谋', 'bold')}
   gift [姓名]             随礼参谋    --occasion 婚礼 --tier standard --city 二线
@@ -634,6 +742,9 @@ function main(argv: string[]): number {
     case 'export': return cmdExport(flags);
     case 'import': return cmdImport(flags);
     case 'demo': return cmdDemo(flags);
+    case 'search': return cmdSearch(flags);
+    case 'reminders': return cmdReminders(flags);
+    case 'doctor': return cmdDoctor(flags);
     case 'where': return cmdWhere(flags);
     case 'version': case '-v': console.log(VERSION); return 0;
     default:

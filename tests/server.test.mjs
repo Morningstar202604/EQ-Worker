@@ -222,3 +222,18 @@ test('数据写入后进程重启仍能读到（文件持久化）', async () =>
     s.cleanup();
   }
 });
+
+test('doctor 接口报告数据健康状况', async () => {
+  await withServer(async ({ url, token }) => {
+    const empty = await (await api(url, '/doctor', token)).json();
+    assert.equal(empty.ok, true, '空库应通过检查');
+    assert.deepEqual(empty.issues, []);
+    assert.equal(empty.stats.persons, 0);
+
+    await api(url, '/persons', token, { method: 'POST', body: JSON.stringify({ name: '体检甲' }) });
+    const after = await (await api(url, '/doctor', token)).json();
+    assert.equal(after.stats.persons, 1);
+    assert.equal(after.ok, true);
+    assert.equal(typeof after.dataFile, 'string');
+  });
+});

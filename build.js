@@ -46,7 +46,7 @@ async function build() {
   let html0 = template;
   try {
     h2c = await readFile(resolve(ROOT, 'vendor/html2canvas.min.js'), 'utf8');
-  } catch (e) {
+  } catch (_e) {
     console.warn('[build] 未找到 vendor/html2canvas.min.js，年报导出将退回 CDN 方案');
   }
   if (template.includes('/*__HTML2CANVAS__*/')) {
@@ -81,7 +81,7 @@ async function build() {
         await access(dst);              // 目标已存在才同步，避免给无关目录凭空造文件
         await copyFile(src, dst);
         synced.push(dir.replace(ROOT + '/', '') + '/' + name);
-      } catch (e) { /* 目标不存在则跳过 */ }
+      } catch (_e) { /* 目标不存在则跳过 */ }
     }
   }
 
@@ -103,7 +103,7 @@ async function build() {
         console.error(`[build] FAILED: ${dir.replace(ROOT + '/', '')}/index.html 与最新构建不一致`);
         process.exit(1);
       }
-    } catch (e) { /* 不存在则跳过 */ }
+    } catch (_e) { /* 不存在则跳过 */ }
   }
   console.log(`[build] done in ${dt}ms  @ ${ts}`);
 }

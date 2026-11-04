@@ -15,7 +15,7 @@ Page({
     showImport: false,
     importText: '',
     picker: { show: false, options: [] },
-    version: 'v3.4.0',
+    version: 'v3.5.0',
     _modal: { show: false, anim: '' },
     _toast: { show: false, anim: '' }
   },
@@ -153,7 +153,7 @@ Page({
       this.setData({ showImport: false });
       this.onShow();
       ui.toast(this, '导入成功', { icon: '✓' });
-    } catch (err) {
+    } catch (_err) {
       ui.toast(this, '导入失败：格式不对', { icon: '×' });
     }
   },

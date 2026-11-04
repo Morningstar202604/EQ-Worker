@@ -10,9 +10,9 @@
 
 <a href="README.md">English</a> · <b>简体中文</b>
 
-[![Version](https://img.shields.io/badge/version-v3.4.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.5.0-orange)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-454%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-508%20passing-brightgreen)](tests/)
 [![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20windows%20%C2%B7%20android%20%C2%B7%20wechat%20%C2%B7%20cli%20%C2%B7%20mcp-blueviolet)](#五种用法)
 
 **在线试用：** [X33834](https://x33834.github.io/EQ-Worker/) · [badhope](https://badhope.github.io/EQ-Worker/) · [Morningstar202604](https://morningstar202604.github.io/EQ-Worker/)
@@ -77,7 +77,7 @@ python3 -m http.server 8000   # 打开 http://localhost:8000
 
 ### 2 · Windows 桌面（安装包）
 
-`EQ-Worker-3.4.0-x64.exe` 双击安装：有开始菜单项、桌面快捷方式、卸载项，可选安装目录。
+`EQ-Worker-3.5.0-x64.exe` 双击安装：有开始菜单项、桌面快捷方式、卸载项，可选安装目录。
 
 ### 3 · CLI（终端里管人情）
 
@@ -130,9 +130,9 @@ Claude Desktop / Cursor / Cline 等支持 MCP 的客户端可以直接调用：
 | 数据不离开设备 | 无服务器、无账号、无埋点；AI 默认关闭，关闭时**零网络请求** | 有测试断言关闭状态下请求数 = 0 |
 | 不会悄悄毁数据 | 迁移不安全就进写保护；损坏文件拒绝读取而非覆盖；文件存储用原子写 | `tests/cli.test.mjs` 有「损坏文件原样保留」用例 |
 | 算得对 | core 引擎与 legacy 实现**逐函数对照**，6 组 fixture × 16 个函数 | `packages/core/tests/engine.parity.test.ts` |
-| 真的能跑 | 不只跑单测：CLI 13 项、后台 16 项、MCP 13 项都是真实进程 / 真实 socket / 真实协议 | `node --test tests/**/*.test.mjs` |
+| 真的能跑 | 不只跑单测：CLI 16 项、后台 17 项、MCP 18 项、E2E 8 项都是真实进程 / 真实 socket / 真实协议 / 真实浏览器 | `node --test tests/**/*.test.mjs` |
 
-**454 个测试**：173 个 Node 测试 + 281 个 Vitest（28 文件）。
+**508 个测试**：190 个 Node 测试 + 318 个 Vitest（30 文件）。
 
 ---
 
@@ -161,7 +161,7 @@ Claude Desktop / Cursor / Cline 等支持 MCP 的客户端可以直接调用：
 
 ```bash
 pnpm install
-pnpm run verify    # 版本一致性 → 构建 → 173 测试 → 类型检查 → 281 测试 → 双端构建
+pnpm run verify    # 版本一致性 → 七套构建 → lint → 190 测试 → 类型检查 → 318 测试 → 双端构建
 ```
 
 单独构建某端：

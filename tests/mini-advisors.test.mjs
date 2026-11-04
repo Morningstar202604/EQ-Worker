@@ -14,7 +14,6 @@ function setup(initial = {}) {
   const navigation = [];
   const clipboard = [];
   let page;
-  let app;
   const wx = {
     getStorageInfoSync: () => ({ keys: [...storage.keys()] }),
     getStorageSync: (k) => (storage.has(k) ? structuredClone(storage.get(k)) : ''),
@@ -40,7 +39,7 @@ function setup(initial = {}) {
       `(function(require,module,exports,wx,Page,App,setTimeout,clearTimeout){${fs.readFileSync(file, 'utf8')}\n})`,
       { filename: file }
     );
-    fn((p) => load(path.resolve(path.dirname(file), p)), module, module.exports, wx, (p) => { page = p; }, (a) => { app = a; }, (f) => { f(); return 1; }, () => {});
+    fn((p) => load(path.resolve(path.dirname(file), p)), module, module.exports, wx, (p) => { page = p; }, () => {}, (f) => { f(); return 1; }, () => {});
     return module.exports;
   };
   const engine = load(path.join(root, 'utils/engine'));

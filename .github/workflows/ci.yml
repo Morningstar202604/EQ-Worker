@@ -4,10 +4,15 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
-    name: 构建 + 单测 + 产物一致性
+    name: 构建 + 测试 + 产物一致性
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,18 +29,39 @@ jobs:
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
 
-      - name: 默认工程门禁
-        run: pnpm run verify
+      - name: 版本一致性（防漂移）
+        run: node scripts/sync-version.mjs
 
-      - name: 产物必须与源码同步（防止「改了 _app_dev.js 却忘了重新构建」）
+      - name: Lint
+        run: pnpm run lint
+
+      - name: 构建全部产物
         run: |
-          if ! git diff --quiet -- index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html EQ-Worker-小程序/utils/core.bundle.js; then
+          node build.js
+          node scripts/build-mini-core.mjs
+          node scripts/build-cli.mjs
+          node scripts/build-server.mjs
+          node scripts/build-mcp.mjs
+
+      - name: 类型检查
+        run: pnpm run typecheck
+
+      - name: 单元测试（Node）
+        run: node --test "tests/**/*.test.mjs"
+
+      - name: 单元测试（Vitest）+ 覆盖率门槛
+        run: pnpm run test:coverage
+
+      - name: 产物必须与源码同步
+        run: |
+          FILES="index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html EQ-Worker-小程序/utils/core.bundle.js"
+          if ! git diff --quiet -- $FILES; then
             echo "::error::构建产物与源码不同步，请本地执行 node build.js 和 node scripts/build-mini-core.mjs 后一并提交"
-            git diff --stat -- index.html EQ-Worker.html android/app/src/main/assets/index.html desktop/index.html EQ-Worker-小程序/utils/core.bundle.js
+            git diff --stat -- $FILES
             exit 1
           fi
 
-      - name: 小程序配置文件 JSON 合法性
+      - name: 小程序配置 JSON 合法性
         run: |
           python3 - <<'PY'
           import json, glob, sys
@@ -47,16 +73,81 @@ jobs:
               except Exception as e:
                   bad.append(f'{f}: {e}')
           if bad:
-              print('::error::以下 JSON 文件非法:'); [print(' -', b) for b in bad]; sys.exit(1)
-          print('小程序 JSON 校验通过')
+              print('::error::以下 JSON 文件非法:')
+              [print(' -', b) for b in bad]
+              sys.exit(1)
+          print('小程序 JSON 全部合法')
           PY
 
-      - name: 密钥泄漏自查
+      - name: 硬编码密钥扫描
         run: |
-          if grep -rInE "(ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)" \
-               --include="*.js" --include="*.html" --include="*.md" --include="*.json" --include="*.yml" \
-               --exclude-dir=node_modules . ; then
-            echo "::error::检测到疑似密钥，请立即吊销并改用环境变量/凭据存储"
+          set +e
+          HITS=$(grep -rniE "ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN.*PRIVATE KEY" \
+            --include='*.ts' --include='*.js' --include='*.mjs' --include='*.json' --include='*.md' \
+            --exclude-dir=node_modules --exclude-dir=dist-vite --exclude-dir=dist-studio \
+            --exclude-dir=dist-cli --exclude-dir=dist-server --exclude-dir=dist-mcp \
+            . 2>/dev/null | grep -vE "index\.html|EQ-Worker\.html|LICENSES|vendor/")
+          if [ -n "$HITS" ]; then
+            echo "::error::检出疑似硬编码密钥"
+            echo "$HITS"
             exit 1
           fi
           echo "未发现硬编码密钥"
+
+      - name: 依赖审计
+        run: pnpm audit --registry=https://registry.npmjs.org --audit-level=high
+
+  e2e:
+    name: E2E（${{ matrix.os }}）
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 安装浏览器
+        run: npx playwright install --with-deps chromium
+      - name: 构建被测产物
+        run: |
+          node build.js
+          npx vite build --config vite.studio.config.ts
+      - name: 运行 E2E
+        run: node --test tests/e2e.test.mjs
+
+  desktop:
+    name: Windows 安装包
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node build.js
+      - name: 生成图标
+        run: node scripts/make-ico.mjs
+      - name: 打包 NSIS
+        working-directory: desktop
+        run: |
+          npm ci
+          npx electron-builder --win nsis --x64
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: EQ-Worker-windows-x64
+          path: desktop/dist/*.exe
+          retention-days: 30
