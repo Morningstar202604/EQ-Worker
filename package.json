@@ -1,6 +1,6 @@
 {
   "name": "eq-worker",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.15.0",
@@ -14,7 +14,7 @@
     "test": "node scripts/run-tests.mjs && vitest run --config vitest.config.ts",
     "verify:legacy": "node build.js && node scripts/run-tests.mjs",
     "verify:vite": "tsc --noEmit && vitest run --config vitest.config.ts && vite build --config vite.config.ts",
-    "verify": "node scripts/sync-version.mjs && node build.js && node scripts/build-mini-core.mjs && node scripts/build-cli.mjs && node scripts/build-server.mjs && node scripts/build-mcp.mjs && eslint . && tsc --noEmit && vitest run --config vitest.config.ts && vite build --config vite.config.ts && vite build --config vite.studio.config.ts && node scripts/run-tests.mjs",
+    "verify": "node scripts/sync-version.mjs && node build.js && node scripts/build-mini-core.mjs && node scripts/build-cli.mjs && node scripts/build-server.mjs && node scripts/build-mcp.mjs && node scripts/build-sdk.mjs && eslint . && tsc --noEmit && vitest run --config vitest.config.ts && vite build --config vite.config.ts && vite build --config vite.studio.config.ts && node scripts/run-tests.mjs",
     "build:mini-core": "node scripts/build-mini-core.mjs",
     "dev:vite": "vite --config vite.config.ts",
     "build:vite": "vite build --config vite.config.ts",
@@ -27,7 +27,8 @@
     "build:all": "node scripts/build-cli.mjs && node scripts/build-server.mjs && node scripts/build-mcp.mjs",
     "start:server": "node dist-server/server.mjs",
     "lint": "eslint .",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "build:sdk": "node scripts/build-sdk.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

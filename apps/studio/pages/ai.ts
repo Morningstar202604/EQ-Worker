@@ -2,6 +2,7 @@ import type { StudioStore } from '../state';
 import { policyEntries } from '../assistant';
 import type { AIPolicyView, AIViewData } from '../views/ai';
 import { renderAI } from '../views/ai';
+import { validateSearchSettings } from '../../../packages/ai/src/search';
 
 export function buildAIViewData(studio: StudioStore): AIViewData {
   const settings = studio.getAISettings();
@@ -38,7 +39,21 @@ export function buildAIViewData(studio: StudioStore): AIViewData {
     persons: studio.getState().persons.map((item) => ({ id: item.id, name: item.name })),
     selectedPersonId: studio.getSelectedId(),
     hasPerson: !!person,
-    offline: studio.getAIStatus() === 'offline'
+    offline: studio.getAIStatus() === 'offline',
+    search: (() => {
+      const ss = studio.getSearchSettings();
+      return {
+        backend: ss.backend,
+        endpoint: ss.endpoint ?? '',
+        hasKey: !!(ss.apiKey && ss.apiKey.trim()),
+        count: ss.count ?? 5,
+        errors: validateSearchSettings(ss)
+      };
+    })(),
+    knowledge: (() => {
+      const kb = studio.getKnowledge();
+      return { packCount: kb.packs.length + 1, rateCount: kb.rates.length };
+    })()
   };
 }
 

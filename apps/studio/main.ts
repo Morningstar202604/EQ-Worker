@@ -393,6 +393,26 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
       studio.setAIPerson(target.value);
       return;
     }
+    /* 联网搜索：切换后端、填地址/Key、调条数。
+       任何一项变化都会立即重渲染，让用户始终看到「是否联网」的真实状态。 */
+    if (act === 'search-backend') {
+      const backend = target.value === 'builtin' || target.value === 'endpoint' ? target.value : 'none';
+      studio.updateSearchSettings({ backend });
+      return;
+    }
+    if (act === 'search-endpoint') {
+      studio.updateSearchSettings({ endpoint: target.value });
+      return;
+    }
+    if (act === 'search-key') {
+      studio.updateSearchSettings({ apiKey: target.value });
+      return;
+    }
+    if (act === 'search-count') {
+      const n = Number(target.value);
+      studio.updateSearchSettings({ count: Number.isFinite(n) ? n : 5 });
+      return;
+    }
     /* 随礼参谋切换场合时重算：金额量级随场合变化，不能让用户自己心算。 */
     const giftFor = target.dataset.giftOccasion;
     if (giftFor) {

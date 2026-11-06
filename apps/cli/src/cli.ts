@@ -41,7 +41,7 @@ import {
   type CityTier
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.7.0';
+const VERSION = '3.8.0';
 
 type Flags = {
   data?: string;

@@ -22,6 +22,7 @@ node_modules/
 dist-vite/
 dist-studio/
 dist-cli/
+dist-sdk/
 dist-server/
 dist-mcp/
 # 发布产物（由 scripts/release.mjs 生成，不入库）

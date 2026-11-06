@@ -43,6 +43,61 @@ export interface AIViewData extends AIData {
   selectedPersonId: string | null;
   hasPerson: boolean;
   offline: boolean;
+  /** 联网搜索配置。默认关闭，UI 必须显式展示当前状态。 */
+  search: {
+    backend: 'none' | 'builtin' | 'endpoint';
+    endpoint: string;
+    hasKey: boolean;
+    count: number;
+    errors: string[];
+  };
+  /** 知识库摘要：内置包 + 已导入包数量与行情条数。 */
+  knowledge: { packCount: number; rateCount: number };
+}
+
+/**
+ * 联网搜索面板。
+ * 这里刻意把「关闭」做成默认且视觉上最弱的状态：
+ * 联网会打破本地优先的承诺，必须在用户主动开启后才出现。
+ */
+function renderSearchPanel(data: AIViewData): string {
+  const s = data.search;
+  const isOff = s.backend === 'none';
+  const statusText = isOff
+    ? '未开启（所有数据留在本机）'
+    : s.backend === 'builtin'
+      ? '已开启：由模型侧联网，查询会发往你配置的模型服务'
+      : '已开启：查询会发往你填写的搜索接口';
+  const errors = s.errors.length
+    ? `<p class="error">${s.errors.map((e) => escapeHtml(e)).join('；')}</p>`
+    : '';
+  return [
+    '<section class="card">',
+    '<h2>联网搜索</h2>',
+    `<p class="muted">${escapeHtml(statusText)}</p>`,
+    '<label class="field"><span>后端</span>',
+    '<select data-act="search-backend" aria-label="联网搜索后端">',
+    ['none', 'builtin', 'endpoint']
+      .map((k) => `<option value="${k}"${k === s.backend ? ' selected' : ''}>${
+        k === 'none' ? '不联网' : k === 'builtin' ? '模型自带联网' : '独立搜索接口'
+      }</option>`)
+      .join(''),
+    '</select></label>',
+    s.backend === 'endpoint'
+      ? `<label class="field"><span>搜索地址</span><input type="url" value="${escapeHtml(s.endpoint)}" data-act="search-endpoint" placeholder="https://open.bigmodel.cn/api/paas/v4/web_search" aria-label="搜索接口地址"></label>`
+      : '',
+    s.backend === 'endpoint'
+      ? `<label class="field"><span>搜索 Key</span><input type="password" value="" data-act="search-key" placeholder="${s.hasKey ? '已配置，重新输入可替换' : '填写搜索服务 Key'}" autocomplete="off" aria-label="搜索服务 Key"></label>`
+      : '',
+    s.backend !== 'none'
+      ? `<label class="field"><span>返回条数</span><input type="number" min="1" max="20" value="${s.count}" data-act="search-count" aria-label="返回条数"></label>`
+      : '',
+    errors,
+    '<p class="risk">开启后，搜索查询会离开本机。查询只包含你输入的关键词，<strong>不会</strong>携带联系人姓名、备注或金额。每次搜索前都会先给你看将要发送的内容。</p>',
+    `<div class="chips"><span class="chip">礼俗包 ${data.knowledge.packCount} 份</span><span class="chip">本地行情 ${data.knowledge.rateCount} 条</span></div>`,
+    '<button type="button" class="btn ghost small" data-act="knowledge-import" aria-label="导入礼俗包或本地行情">导入礼俗 / 行情</button>',
+    '</section>'
+  ].join('');
 }
 
 function renderMessages(messages: AIMessage[]): string {
@@ -180,6 +235,7 @@ export function renderAI(data: AIViewData): string {
     '<p class="risk">Key 只写入 sessionStorage，关闭标签页即清除；不要使用长期有效的生产密钥。已配置的 Key 不回填到 DOM，重新输入可替换；点击清除按钮会删除现有 Key。</p>',
     '<label class="check"><input type="checkbox" data-act="ai-mock"' + (data.mock ? ' checked' : '') + '><span><strong>使用离线 Mock Provider</strong><em>不需要真实 Key，适合演示</em></span></label>',
     '</section>',
+    renderSearchPanel(data),
     '<section class="card">',
     '<h2>发送内容</h2>',
     '<label class="field"><span>对象</span>',

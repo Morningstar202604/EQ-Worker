@@ -66,6 +66,18 @@ export {
 } from './pipelines';
 export type { GiftAdviceOutput, ReviewOutput, SceneId, ScriptOutput, ScriptVariant } from './pipelines';
 
+/* 联网搜索与工具调用（v3.8.0）。两者默认关闭，不开启时不发任何网络请求。 */
+export {
+  DEFAULT_SEARCH_SETTINGS,
+  builtinSearchTool,
+  searchWeb,
+  validateSearchSettings,
+  willUseNetwork
+} from './search';
+export type { SearchBackend, SearchHit, SearchOutcome, SearchResult, SearchSettings } from './search';
+export { MAX_TOOL_CALLS, TOOL_DEFINITIONS, runTool, toolCatalog } from './tools';
+export type { ToolCallResult, ToolContext, ToolDefinition } from './tools';
+
 export { MemoryStore, createLocalStorageAdapter } from './memory';
 export type {
   MemoryEntry,

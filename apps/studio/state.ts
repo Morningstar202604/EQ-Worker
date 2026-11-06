@@ -16,7 +16,9 @@ import {
 } from '../../packages/core/src/index';
 import {
   defaultAISettings,
+  DEFAULT_SEARCH_SETTINGS,
   type AISettings,
+  type SearchSettings,
   type ContextPolicy,
   type FetchLike,
   type RedactedPreview
@@ -82,6 +84,10 @@ export class StudioStore {
   private identityFilter = 'all';
   private aiSettings: AISettings = defaultAISettings();
   private aiForm: AssistantForm;
+  /** 联网搜索配置。默认关闭；开启前必须由用户预览将要发送的查询。 */
+  private searchSettings: SearchSettings = { ...DEFAULT_SEARCH_SETTINGS };
+  /** 知识库（礼俗包 + 本地行情）。默认只有内置包。 */
+  private knowledge: { packs: unknown[]; rates: unknown[] } = { packs: [], rates: [] };
   private aiPreview: RedactedPreview | null = null;
   private aiResult: AssistantDisplay | null = null;
   private aiStatus: AIStatus = 'idle';
@@ -150,6 +156,8 @@ export class StudioStore {
       apiKey: this.readKey(),
       mock: true
     };
+    this.searchSettings = this.readSearchSettings();
+    this.knowledge = this.readKnowledge();
   }
 
   now(): number {
@@ -405,6 +413,58 @@ export class StudioStore {
     this.aiStatus = 'disabled';
     this.aiMessage = 'AI 已关闭';
     this.notify();
+  }
+
+  getSearchSettings(): SearchSettings {
+    return { ...this.searchSettings };
+  }
+
+  /** 更新搜索配置。Key 单独存 sessionStorage，不落盘到导出文件。 */
+  updateSearchSettings(patch: Partial<SearchSettings>): void {
+    this.searchSettings = { ...this.searchSettings, ...patch };
+    try {
+      const { apiKey, ...safe } = this.searchSettings;
+      window.localStorage.setItem('eqworker_search_v1', JSON.stringify(safe));
+      if (apiKey) window.sessionStorage.setItem('eqworker_search_key', apiKey);
+      else window.sessionStorage.removeItem('eqworker_search_key');
+    } catch {
+      /* 存储不可用时保持内存态 */
+    }
+    this.notify();
+  }
+
+  getKnowledge(): { packs: unknown[]; rates: unknown[] } {
+    return this.knowledge;
+  }
+
+  setKnowledge(next: { packs: unknown[]; rates: unknown[] }): void {
+    this.knowledge = next;
+    try {
+      window.localStorage.setItem('eqworker_knowledge_v1', JSON.stringify(next));
+    } catch {
+      /* 存储不可用时保持内存态 */
+    }
+    this.notify();
+  }
+
+  private readSearchSettings(): SearchSettings {
+    try {
+      const raw = window.localStorage.getItem('eqworker_search_v1');
+      const key = window.sessionStorage.getItem('eqworker_search_key') || '';
+      const base = raw ? (JSON.parse(raw) as Partial<SearchSettings>) : {};
+      return { ...DEFAULT_SEARCH_SETTINGS, ...base, apiKey: key } as SearchSettings;
+    } catch {
+      return { ...DEFAULT_SEARCH_SETTINGS };
+    }
+  }
+
+  private readKnowledge(): { packs: unknown[]; rates: unknown[] } {
+    try {
+      const raw = window.localStorage.getItem('eqworker_knowledge_v1');
+      return raw ? (JSON.parse(raw) as { packs: unknown[]; rates: unknown[] }) : { packs: [], rates: [] };
+    } catch {
+      return { packs: [], rates: [] };
+    }
   }
 
   updateAIForm(patch: Partial<AssistantForm>): void {

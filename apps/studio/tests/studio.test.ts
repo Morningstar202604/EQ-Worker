@@ -242,6 +242,41 @@ describe('AI red lines', () => {
     expect(html).not.toContain('data-act="ai-disable"');
   });
 
+  /* 联网默认关闭是产品红线，必须有断言守住。
+     没有这条测试时，把 search 面板强制改成「已开启」也能全绿。 */
+  it('联网搜索默认关闭，且未开启时不渲染 Key/地址输入框', () => {
+    const store = makeStore();
+    store.loadDemo();
+    const html = renderAI(buildAIViewData(store));
+
+    expect(html).toContain('data-act="search-backend"');
+    expect(html).toContain('未开启（所有数据留在本机）');
+    // 未开启时不得出现任何会收集凭据的输入框
+    expect(html).not.toContain('data-act="search-key"');
+    expect(html).not.toContain('data-act="search-endpoint"');
+    // 不得声称已联网
+    expect(html).not.toContain('已开启：查询会发往');
+  });
+
+  it('切到独立搜索接口后才出现地址与 Key 输入框，并提示查询会离开本机', () => {
+    const store = makeStore();
+    store.loadDemo();
+    store.updateSearchSettings({ backend: 'endpoint' });
+    const html = renderAI(buildAIViewData(store));
+
+    expect(html).toContain('data-act="search-endpoint"');
+    expect(html).toContain('data-act="search-key"');
+    expect(html).toContain('搜索查询会离开本机');
+  });
+
+  it('知识库摘要显示内置包数量', () => {
+    const store = makeStore();
+    store.loadDemo();
+    const data = buildAIViewData(store);
+    expect(data.knowledge.packCount).toBeGreaterThanOrEqual(1);
+    expect(data.knowledge.rateCount).toBe(0);
+  });
+
   it('is disabled by default and never calls fetch through runAssistant', async () => {
     const store = makeStore();
     store.loadDemo();

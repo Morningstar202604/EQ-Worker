@@ -24,6 +24,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var index_exports = {};
 __export(index_exports, {
   AI_KEY: () => AI_KEY,
+  BASE_PACK: () => BASE_PACK,
   CITY_TIERS: () => CITY_TIERS,
   CONDOLENCE_AMOUNTS: () => CONDOLENCE_AMOUNTS,
   DAY: () => DAY,
@@ -66,6 +67,7 @@ __export(index_exports, {
   createStore: () => createStore,
   daysUntil: () => daysUntil,
   detectSchema: () => detectSchema,
+  emptyKnowledgeBase: () => emptyKnowledgeBase,
   esc: () => esc,
   etiquetteTips: () => etiquetteTips,
   eventDir: () => eventDir,
@@ -78,11 +80,14 @@ __export(index_exports, {
   giftAdvice: () => giftAdvice,
   giftAvoidTips: () => giftAvoidTips,
   healthRanking: () => healthRanking,
+  importKnowledge: () => importKnowledge,
   invalidateEventIndex: () => invalidateEventIndex,
   ledgerInsights: () => ledgerInsights,
   ledgerNetLabel: () => ledgerNetLabel,
   ledgerNetShort: () => ledgerNetShort,
   ledgerTotals: () => ledgerTotals,
+  localMarketRate: () => localMarketRate,
+  mergePacks: () => mergePacks,
   migrate: () => migrate,
   monthInsights: () => monthInsights,
   nextMMDD: () => nextMMDD,
@@ -93,6 +98,7 @@ __export(index_exports, {
   personLedger: () => personLedger,
   recordPractice: () => recordPractice,
   relationRead: () => relationRead,
+  rulesFor: () => rulesFor,
   sanitizeImport: () => sanitizeImport,
   settlePrefill: () => settlePrefill,
   solarToLunar: () => solarToLunar,
@@ -103,6 +109,8 @@ __export(index_exports, {
   uid: () => uid,
   upcomingDates: () => upcomingDates,
   upcomingFestival: () => upcomingFestival,
+  validatePack: () => validatePack,
+  validateRate: () => validateRate,
   wisdomFull: () => wisdomFull
 });
 module.exports = __toCommonJS(index_exports);
@@ -2019,6 +2027,155 @@ var RULES = [
 function etiquetteTips(occasion, identity = "") {
   const risky = ["\u9886\u5BFC", "\u5BA2\u6237"].includes(identity);
   return RULES.filter((r) => r.match(occasion)).filter((r) => r.id !== "leader-cash" || risky).map((r) => ({ id: r.id, scene: r.scene, severity: r.severity, text: r.text }));
+}
+
+// packages/core/src/knowledge.ts
+var BASE_PACK_RAW = {
+  id: "base",
+  name: "\u5168\u56FD\u901A\u884C",
+  scope: "\u5168\u56FD",
+  priority: 0,
+  rules: [
+    { id: "funeral-red", occasions: ["\u767D\u4E8B"], severity: "high", text: "\u767D\u4E8B\u4E0D\u7A7F\u7EA2\u3001\u4E0D\u6234\u559C\u8272\u9996\u9970\uFF1B\u5E1B\u91D1\u7528\u7D20\u8272\uFF08\u767D/\u7D20\uFF09\u4FE1\u5C01\uFF0C\u522B\u7528\u7EA2\u5C01\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "funeral-congrats", occasions: ["\u767D\u4E8B"], severity: "high", text: "\u5FCC\u8BF4\u300C\u606D\u559C\u300D\u300C\u597D\u65E5\u5B50\u300D\u300C\u518D\u89C1\u300D\uFF0C\u5FCC\u5728\u7075\u524D\u5BD2\u6684\u592A\u4E45\uFF1B\u300C\u8282\u54C0\u300D\u4E8C\u5B57\u8DB3\u591F\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "funeral-parity", occasions: ["\u767D\u4E8B"], severity: "normal", text: "\u5E1B\u91D1\u591A\u53D6\u5355\u6570\uFF08\u5982 301\u3001501\uFF09\uFF0C\u5404\u5730\u6709\u5DEE\u5F02\uFF1B\u559C\u4E8B\u7684\u53CC\u6570\u5409\u6570\u4E0D\u8981\u5957\u7528\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "funeral-visit-time", occasions: ["\u767D\u4E8B"], severity: "normal", text: "\u540A\u5501\u5B9C\u65E9\u4E0D\u5B9C\u8FDF\uFF0C\u9519\u8FC7\u51FA\u6BA1\u51E0\u4E4E\u65E0\u6CD5\u8865\uFF1B\u5230\u573A\u6BD4\u968F\u793C\u66F4\u91CD\u8981\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "sick-pear", occasions: ["\u63A2\u75C5"], severity: "high", text: "\u63A2\u75C5\u5FCC\u9001\u68A8\uFF08\u8C10\u97F3\u300C\u79BB\u300D\uFF09\u3001\u767D\u83CA\u3001\u949F\u8868\uFF1B\u4E5F\u907F\u5F00\u75C5\u4EBA\u5FCC\u53E3\u7684\u4E1C\u897F\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "sick-time", occasions: ["\u63A2\u75C5"], severity: "normal", text: "\u907F\u5F00\u624B\u672F\u5F53\u5929\u4E0E\u5348\u4F11\u65F6\u6BB5\uFF0C\u63A2\u89C6\u5B9C\u77ED\uFF1B\u591A\u95EE\u300C\u9700\u8981\u6211\u505A\u4EC0\u4E48\u300D\u5C11\u8BB2\u5927\u9053\u7406\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "sick-money", occasions: ["\u63A2\u75C5"], severity: "normal", text: "\u63A2\u75C5\u4EE5\u5B9E\u7269\u6170\u95EE\uFF08\u6C34\u679C\u3001\u8425\u517B\u54C1\uFF09\u4E3A\u4E3B\uFF1B\u82E5\u5173\u7CFB\u5F88\u8FD1\u6216\u5BF9\u65B9\u786E\u6709\u7ECF\u6D4E\u538B\u529B\uFF0C\u518D\u8003\u8651\u73B0\u91D1\uFF0C\u91CF\u529B\u800C\u884C\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "joy-even", occasions: ["\u5A5A\u793C", "\u6EE1\u6708", "\u4E54\u8FC1", "\u5BFF\u5BB4", "\u5347\u5B66", "\u5F00\u4E1A", "\u751F\u65E5", "\u8282\u65E5"], severity: "normal", text: "\u559C\u4E8B\u793C\u91D1\u504F\u597D\u53CC\u6570\u4E0E 6/8/9\uFF0C\u5FCC 4\uFF1B\u5177\u4F53\u5409\u6570\u5404\u5730\u4E0D\u540C\uFF0C\u6309\u5F53\u5730\u4E60\u60EF\u8C03\u6574\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "joy-clock", occasions: ["\u5A5A\u793C", "\u6EE1\u6708", "\u4E54\u8FC1", "\u5BFF\u5BB4", "\u5347\u5B66", "\u5F00\u4E1A", "\u751F\u65E5", "\u8282\u65E5"], severity: "high", text: "\u4E0D\u9001\u949F\uFF08\u8C10\u97F3\u300C\u9001\u7EC8\u300D\uFF09\u3001\u4E0D\u9001\u4F1E\uFF08\u300C\u6563\u300D\uFF09\u3001\u4E0D\u9001\u978B\uFF08\u300C\u90AA\u300D\uFF09\uFF1B\u957F\u8F88\u5C24\u5176\u5FCC\u8BB3\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "elder-birthday", occasions: ["\u5BFF\u5BB4"], severity: "normal", text: "\u5BFF\u793C\u5FCC\u949F\u8868\u3001\u978B\u3001\u4F1E\uFF1B\u5BFF\u6843/\u5BFF\u9762/\u8336\u53F6\u66F4\u7A33\u59A5\u3002\u90E8\u5206\u5730\u533A\u8BB2\u7A76\u300C\u8FC7\u4E5D\u4E0D\u8FC7\u5341\u300D\uFF0C\u5148\u95EE\u4E00\u53E5\u3002", source: "\u5168\u56FD\u901A\u884C" },
+    { id: "leader-cash", occasions: [], identities: ["\u9886\u5BFC", "\u5BA2\u6237"], severity: "high", text: "\u7ED9\u9886\u5BFC\u3001\u516C\u804C\u6216\u91C7\u8D2D\u5C97\u9001\u73B0\u91D1/\u8D2D\u7269\u5361\uFF0C\u5728\u591A\u6570\u5355\u4F4D\u5C5E\u8FDD\u89C4\uFF0C\u4E5F\u6709\u5408\u89C4\u98CE\u9669\uFF1B\u4EE5\u96C6\u4F53\u540D\u4E49\u6216\u5B9E\u7269\u66F4\u7A33\u59A5\u3002", source: "\u5168\u56FD\u901A\u884C" }
+  ]
+};
+var BASE_PACK = Object.freeze(BASE_PACK_RAW);
+function emptyKnowledgeBase() {
+  return { packs: [BASE_PACK], rates: [] };
+}
+function validatePack(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "\u4E0D\u662F\u5408\u6CD5\u7684\u793C\u4FD7\u5305\uFF08\u5E94\u4E3A\u5BF9\u8C61\uFF09" };
+  }
+  const o = raw;
+  const id = typeof o.id === "string" ? o.id.trim() : "";
+  const name = typeof o.name === "string" ? o.name.trim() : "";
+  if (!id) return { ok: false, error: "\u7F3A\u5C11 id" };
+  if (!name) return { ok: false, error: "\u7F3A\u5C11 name" };
+  if (!Array.isArray(o.rules)) return { ok: false, error: "\u7F3A\u5C11 rules \u6570\u7EC4" };
+  const priority = typeof o.priority === "number" && Number.isFinite(o.priority) ? o.priority : 0;
+  const rules = [];
+  for (let i = 0; i < o.rules.length; i++) {
+    const r = o.rules[i];
+    if (!r || typeof r !== "object") return { ok: false, error: `\u7B2C ${i + 1} \u6761\u89C4\u5219\u683C\u5F0F\u4E0D\u5BF9` };
+    const rid = typeof r.id === "string" ? r.id.trim() : "";
+    const text = typeof r.text === "string" ? r.text.trim() : "";
+    if (!rid) return { ok: false, error: `\u7B2C ${i + 1} \u6761\u89C4\u5219\u7F3A\u5C11 id` };
+    if (!text) return { ok: false, error: `\u7B2C ${i + 1} \u6761\u89C4\u5219\u7F3A\u5C11 text` };
+    const occasions = Array.isArray(r.occasions) ? r.occasions.filter((x) => typeof x === "string") : [];
+    const identities = Array.isArray(r.identities) ? r.identities.filter((x) => typeof x === "string") : void 0;
+    const severity = r.severity === "high" ? "high" : "normal";
+    rules.push({
+      id: rid,
+      occasions,
+      ...identities ? { identities } : {},
+      severity,
+      text,
+      ...typeof r.source === "string" ? { source: r.source } : {}
+    });
+  }
+  return {
+    ok: true,
+    pack: {
+      id,
+      name,
+      ...typeof o.scope === "string" ? { scope: o.scope } : {},
+      priority,
+      rules
+    }
+  };
+}
+function mergePacks(packs) {
+  const byId = /* @__PURE__ */ new Map();
+  const sorted = [...packs].sort((a, b) => a.priority - b.priority);
+  for (const pack of sorted) {
+    for (const rule of pack.rules) {
+      byId.set(rule.id, { rule, priority: pack.priority });
+    }
+  }
+  return [...byId.values()].map((x) => x.rule);
+}
+function rulesFor(kb, occasion, identity = "") {
+  const merged = mergePacks(kb.packs);
+  return merged.filter((r) => {
+    if (r.occasions.length && !r.occasions.includes(occasion)) return false;
+    if (r.identities && r.identities.length && !r.identities.includes(identity)) return false;
+    return true;
+  });
+}
+function localMarketRate(kb, occasion, scope, identity) {
+  var _a, _b;
+  const candidates = kb.rates.filter((r) => r.occasion === occasion);
+  if (!candidates.length) return null;
+  const byScope = scope ? candidates.filter((r) => r.scope === scope) : [];
+  const pool = byScope.length ? byScope : candidates;
+  const byIdentity = identity ? pool.filter((r) => r.identity === identity) : [];
+  const finalPool = byIdentity.length ? byIdentity : pool.filter((r) => !r.identity);
+  return (_b = (_a = finalPool[0]) != null ? _a : pool[0]) != null ? _b : null;
+}
+function validateRate(raw) {
+  if (!raw || typeof raw !== "object") return { ok: false, error: "\u884C\u60C5\u6761\u76EE\u683C\u5F0F\u4E0D\u5BF9" };
+  const o = raw;
+  const scope = typeof o.scope === "string" ? o.scope.trim() : "";
+  const occasion = typeof o.occasion === "string" ? o.occasion.trim() : "";
+  const low = Number(o.low);
+  const high = Number(o.high);
+  if (!scope) return { ok: false, error: "\u884C\u60C5\u7F3A\u5C11 scope\uFF08\u5730\u533A\uFF09" };
+  if (!occasion) return { ok: false, error: "\u884C\u60C5\u7F3A\u5C11 occasion\uFF08\u573A\u5408\uFF09" };
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low < 0 || high < low) {
+    return { ok: false, error: "\u884C\u60C5\u91D1\u989D\u4E0D\u5408\u6CD5\uFF08\u9700 0 \u2264 low \u2264 high\uFF09" };
+  }
+  const id = typeof o.id === "string" && o.id ? o.id : `${scope}-${occasion}-${low}-${high}`;
+  return {
+    ok: true,
+    rate: {
+      id,
+      scope,
+      occasion,
+      low,
+      high,
+      ...typeof o.identity === "string" ? { identity: o.identity } : {},
+      ...typeof o.source === "string" ? { source: o.source } : {},
+      ...typeof o.updatedAt === "string" ? { updatedAt: o.updatedAt } : {}
+    }
+  };
+}
+function importKnowledge(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "\u4E0D\u662F\u5408\u6CD5\u7684\u77E5\u8BC6\u5E93\u6587\u4EF6" };
+  }
+  const o = raw;
+  const packs = [BASE_PACK];
+  if (Array.isArray(o.packs)) {
+    for (let i = 0; i < o.packs.length; i++) {
+      const v = validatePack(o.packs[i]);
+      if (!v.ok) return { ok: false, error: `\u7B2C ${i + 1} \u4EFD\u793C\u4FD7\u5305\uFF1A${v.error}` };
+      if (v.pack.id === BASE_PACK.id) continue;
+      packs.push(v.pack);
+    }
+  }
+  const rates = [];
+  if (Array.isArray(o.rates)) {
+    for (let i = 0; i < o.rates.length; i++) {
+      const v = validateRate(o.rates[i]);
+      if (!v.ok) return { ok: false, error: `\u7B2C ${i + 1} \u6761\u884C\u60C5\uFF1A${v.error}` };
+      rates.push(v.rate);
+    }
+  }
+  if (packs.length === 1 && rates.length === 0) {
+    return { ok: false, error: "\u6587\u4EF6\u91CC\u6CA1\u6709\u53EF\u5BFC\u5165\u7684\u793C\u4FD7\u5305\u6216\u884C\u60C5" };
+  }
+  return { ok: true, kb: { packs, rates } };
 }
 
 // packages/core/src/ics.ts

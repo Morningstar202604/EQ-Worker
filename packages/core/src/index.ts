@@ -8,6 +8,7 @@ export * from './health';
 export * from './actions';
 export * from './scripts';
 export * from './etiquette';
+export * from './knowledge';
 export * from './ics';
 export * from './achievements';
 export * from './practice';

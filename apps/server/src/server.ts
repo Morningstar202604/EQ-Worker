@@ -157,7 +157,7 @@ export function createAppServer(options: ServerOptions = {}) {
 
     // 健康检查不需要令牌：让 CLI/脚本能探活
     if (path === '/health') {
-      json(res, 200, { ok: true, version: '3.7.0', dataFile });
+      json(res, 200, { ok: true, version: '3.8.0', dataFile });
       return;
     }
     if (!authed(req)) {

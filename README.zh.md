@@ -8,8 +8,8 @@
 
 <a href="README.md">English</a> · <b>简体中文</b>
 
-[![Version](https://img.shields.io/badge/version-v3.6.0-orange)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-545%20passing-brightgreen)](tests/)
+[![Version](https://img.shields.io/badge/version-v3.8.0-orange)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-603%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 [**在线打开 →**](https://x33834.github.io/EQ-Worker/) · [Windows](https://github.com/badhope/EQ-Worker/releases) · [安卓](https://github.com/badhope/EQ-Worker/releases)
@@ -43,6 +43,46 @@
 <td><img src="docs/screenshots/v3/10-health.png" alt="关系体检" /><br /><sub><b>关系体检</b> — 按健康度排序，先修最该修的</sub></td>
 </tr>
 </table>
+
+---
+
+## AI 与联网的真实边界
+
+这一节写清楚能力到什么程度，避免误会。
+
+| 能力 | 状态 |
+|---|---|
+| AI 生成话术 / 随礼说明 / 复盘 | ✅ 有，4 条流水线，默认关闭、用户自备 Key |
+| AI 调用本地函数查数据 | ✅ 8 个只读工具（找人 / 算随礼 / 查账本 / 查礼俗 / 生成话术 / 今日行动 / 健康排行） |
+| 联网搜索 | ⚠️ **可选，默认关闭**。支持「模型自带联网」与「独立搜索接口」两种后端，需自行填 Key |
+| 联网搜索的免费方案 | ❌ 内置的免费额度**没有**。搜索接口按次计费，或自建 SearXNG |
+| 本地礼俗知识库 | ✅ 内置「全国通行」包，可导入地区包与本地行情覆盖 |
+| 向量检索 / RAG | ❌ 没有 |
+
+关键约束：
+
+- **默认零网络请求**。有测试断言：把「默认关闭」改掉，测试立刻变红。
+- 未开启联网时，界面**不渲染** Key 与地址输入框。
+- 开启后明确提示「查询会离开本机」，且查询不携带姓名、备注、金额。
+- AI 工具调用**全部只读**，姓名默认脱敏为「这位朋友」。
+
+---
+
+## SDK
+
+想把随礼计算、礼俗规则、话术生成嵌进别的项目：
+
+```bash
+node scripts/build-sdk.mjs
+# → dist-sdk/eq-worker-sdk.mjs  (ESM，零依赖，89 项导出)
+```
+
+```js
+import { createEmptyState, giftAdvice } from './eq-worker-sdk.mjs';
+const advice = giftAdvice(state, 'p1', '白事');   // ¥501 / ¥701 / ¥1001，全单数
+```
+
+详见 [docs/SDK.md](docs/SDK.md)。
 
 ---
 
