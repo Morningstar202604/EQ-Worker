@@ -41,7 +41,7 @@ import {
   type CityTier
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.5.0';
+const VERSION = '3.7.0';
 
 type Flags = {
   data?: string;
@@ -338,7 +338,7 @@ function cmdAddPerson(flags: Flags): number {
 function cmdAddEvent(flags: Flags): number {
   const name = flags.opts.get('to') ?? flags.positional[1];
   const type = (flags.opts.get('type') ?? 'meal') as EventType;
-  if (!name) { console.error('用法：eqw record --to 张三 [--type gift_give] [--title 生日送礼] [--amount 500] [--occasion 生日]'); return 2; }
+  if (!name) { console.error('用法：eqw record --to 张三 [--type gift_give] [--title 生日送礼] [--amount 500] [--occasion 生日] [--dir in|out]'); return 2; }
   if (!EVENT_TYPES[type]) {
     console.error(c(`事件类型不支持：${type}。可选：${Object.keys(EVENT_TYPES).join('、')}`, 'red'));
     return 2;
@@ -353,6 +353,13 @@ function cmdAddEvent(flags: Flags): number {
   const dir: 'in' | 'out' | 'none' = dirFlag === 'in' || dirFlag === 'out' || dirFlag === 'none'
     ? dirFlag
     : type === 'gift_get' ? 'in' : type === 'gift_give' ? 'out' : 'none';
+  /* 金额型「金钱往来」必须给方向：缺方向时这笔钱既不算借入也不算借出，
+     账本、催还、还款提醒全部看不到它——用户以为记上了，实际等于没记。
+     宁可报错让他补 --dir，也不要静默存一条不入账的记录。 */
+  if (type === 'money' && amount > 0 && dir === 'none') {
+    console.error(c('金钱往来需要明确方向：--dir in（我借入）或 --dir out（我借出）。', 'red'));
+    return 1;
+  }
   const event = {
     id: uid(),
     personId: p.id,
@@ -477,13 +484,15 @@ function cmdImport(flags: Flags): number {
     console.error(c(`JSON 解析失败：${(e as Error).message}`, 'red')); return 1;
   }
   const clean = sanitizeImport(parsed as Parameters<typeof sanitizeImport>[0]);
-  if (!clean.persons.length && !clean.events.length) {
+  /* 只要没有联系人就必须中止：只剩事件的备份会清空现有联系人，留下孤儿事件。 */
+  if (!clean.persons.length) {
     console.error(c('导入数据里没有可用的联系人，已中止（不会覆盖现有数据）。', 'red'));
     return 1;
   }
   const { store } = openStore(flags);
-  store.applyImport(clean);
-  if (!store.save()) { console.error(c('保存失败', 'red')); return 1; }
+  /* applyImport 已负责落盘与失败回滚；重复 save() 会在回滚后再写一次，
+     造成「报成功但其实没导入」。 */
+  if (!store.applyImport(clean)) { console.error(c('保存失败，未修改现有数据', 'red')); return 1; }
   const st = store.getState();
   console.log(c(`已导入 ${st.persons.length} 位人脉、${st.events.length} 条往来`, 'green'));
   for (const w of clean.warn) console.log(c(`  警告：${w}`, 'gold'));
@@ -696,6 +705,7 @@ ${c('参谋', 'bold')}
 ${c('写入', 'bold')}
   add-person              添加人脉    --name 张三 --identity 朋友 --birthday 03-15 --tags a,b --note 备注
   record                  记一笔      --to 张三 --type gift_give --title 生日送礼 --amount 500 --occasion 生日
+                                      金钱往来必须带方向：--type money --amount 5000 --dir out（我借出）
   demo                    载入演示数据（会覆盖当前数据）
 
 ${c('数据', 'bold')}

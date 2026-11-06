@@ -110,10 +110,27 @@ export function toDateInput(v: unknown, now: number = Date.now()): string {
   if (!v) return '';
   const m = String(v).match(/^(\d{2})-(\d{2})$/);
   if (!m) return String(v);
-  const y = new Date(now).getFullYear();
-  const d = new Date(y, +m[1] - 1, +m[2]);
-  if (d.getMonth() !== +m[1] - 1) return y + '-02-28';
-  return y + '-' + m[1] + '-' + m[2];
+  const year = new Date(now).getFullYear();
+  const month = +m[1];
+  const day = +m[2];
+  /* 02-29 必须保留原值，否则用户编辑一次生日就被永久改成 02-28。
+     非闰年时找一个最近的闰年做回显载体，读回时 toMMDD 仍取月日，语义不变。 */
+  if (month === 2 && day === 29 && !isLeap(year)) return `${nearestLeapYear(year)}-02-29`;
+  const d = new Date(year, month - 1, day);
+  if (d.getMonth() !== month - 1) return `${year}-02-28`;
+  return `${year}-${m[1]}-${m[2]}`;
+}
+
+function isLeap(y: number): boolean {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+
+function nearestLeapYear(y: number): number {
+  for (let delta = 1; delta <= 8; delta++) {
+    if (isLeap(y + delta)) return y + delta;
+    if (isLeap(y - delta)) return y - delta;
+  }
+  return y;
 }
 
 export function daysUntil(birthday: unknown, now: number = Date.now()): number {

@@ -4,7 +4,7 @@ import { buildActions } from '../src/actions';
 import { buildAlerts, computePerson, getLevel, getSuggestion, getWisdom, overallMetrics, relationRead } from '../src/engine';
 import { personHealth } from '../src/health';
 import { buildICS, upcomingDates } from '../src/ics';
-import { giftAdvice, ledgerInsights, ledgerTotals, personLedger } from '../src/ledger';
+import { balanceByKind, giftAdvice, ledgerInsights, ledgerTotals, personLedger, settlePrefill } from '../src/ledger';
 import { buildScripts, SCRIPT_SCENES } from '../src/scripts';
 import { achievements, monthInsights } from '../src/achievements';
 import { createEmptyState, normalizeSettings } from '../src/sanitize';
@@ -165,11 +165,23 @@ function assertParity(f: Fixture): void {
     compare(plain(personLedger(S, p.id)), plain(H.personLedger(p.id)), `${f.name} personLedger(${p.id})`);
     if (!f.persons.length) continue;
     compare(plain(personHealth(S, p, NOW)), plain(H.personHealth(p)), `${f.name} personHealth(${p.id})`);
-    for (const opts of [undefined, { tier: 'generous', city: '一线' }, { tier: 'simple', city: '三线' }] as const) {
+    /* 覆盖红白事全部场合，而不只是婚礼。
+       之前只测婚礼，导致白事单数、寿宴/升学/开业等新场合的双端差异无法被发现。 */
+    for (const occ of ['婚礼', '白事', '探病', '寿宴', '升学', '开业', '还礼', '日常']) {
+      for (const opts of [undefined, { tier: 'generous', city: '一线' }, { tier: 'simple', city: '三线' }] as const) {
+        compare(
+          plain(giftAdvice(S, p.id, occ, opts ? { ...opts } : {})),
+          plain(H.giftAdvice(p.id, occ, opts ? { ...opts } : undefined)),
+          `${f.name} giftAdvice(${p.id},${occ},${JSON.stringify(opts ?? {})})`
+        );
+      }
+    }
+    /* 结清预填：借款/礼金分账的核心契约，之前完全没测。 */
+    for (const kind of ['loan', 'gift'] as const) {
       compare(
-        plain(giftAdvice(S, p.id, '婚礼', opts ? { ...opts } : {})),
-        plain(H.giftAdvice(p.id, '婚礼', opts ? { ...opts } : undefined)),
-        `${f.name} giftAdvice(${p.id},${JSON.stringify(opts ?? {})})`
+        plain(settlePrefill(S, p.id, kind)),
+        plain(H.settlePrefill(p.id, kind)),
+        `${f.name} settlePrefill(${p.id},${kind})`
       );
     }
   }

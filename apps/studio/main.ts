@@ -4,6 +4,9 @@ import {
   buildScripts,
   fmtMoney,
   giftAdvice,
+  giftAvoidTips,
+  checkGiftTaboo,
+  etiquetteTips,
   type EventType,
   type Occasion
 } from '../../packages/core/src/index';
@@ -129,12 +132,25 @@ function scriptDialog(studio: StudioStore, sceneId: string, personId: string): s
   ].join('');
 }
 
-function giftDialog(studio: StudioStore, personId: string): string {
-  const advice = giftAdvice(studio.getState(), personId, '还礼');
+function giftDialog(studio: StudioStore, personId: string, occasion = '婚礼'): string {
+  /* 场合决定金额量级：婚礼/满月/探病/白事差一倍以上，必须由用户选，
+     不能像以前那样硬编码成 '还礼'——那等于「随礼参谋」实际只算回礼。 */
+  const advice = giftAdvice(studio.getState(), personId, occasion);
+  const options = OCCASIONS
+    .map((o) => `<option value="${escapeHtml(o)}"${o === occasion ? ' selected' : ''}>${escapeHtml(o)}</option>`)
+    .join('');
+  const avoid = giftAvoidTips(occasion).map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+  const tips = etiquetteTips(occasion, advice.identity)
+    .map((t) => `<li class="${t.severity === 'high' ? 'error' : ''}">${escapeHtml(t.text)}</li>`)
+    .join('');
   return [
+    `<label class="field">场合 <select data-gift-occasion="${escapeHtml(personId)}">${options}</select></label>`,
     `<p class="gift-range">${escapeHtml(fmtMoney(advice.low))} - ${escapeHtml(fmtMoney(advice.high))}</p>`,
     `<p class="muted">中位 ${escapeHtml(fmtMoney(advice.mid))} · ${escapeHtml(advice.identity)} · ${escapeHtml(advice.occasion)}</p>`,
     `<ul class="tips">${advice.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>`,
+    `<label class="field">打算送什么（可选，用来查忌讳） <input data-gift-name="${escapeHtml(personId)}" placeholder="如：茶叶 / 一座挂钟" /></label>`,
+    `<p class="hint">送礼忌讳：</p><ul class="tips">${avoid}</ul>`,
+    `<p class="hint">礼俗提醒：</p><ul class="tips">${tips}</ul>`,
     `<p class="hint">${escapeHtml(advice.note)}</p>`
   ].join('');
 }
@@ -170,7 +186,7 @@ function handleCoreAction(studio: StudioStore, doc: Document, action: string, ar
     return;
   }
   if (action === 'giftModal') {
-    openDialog(doc, '回礼参谋', giftDialog(studio, arg || personId));
+    openDialog(doc, '随礼参谋', giftDialog(studio, arg || personId));
     return;
   }
   if (action === 'eventQuick') {
@@ -228,9 +244,9 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     if (!el) return;
     const act = el.dataset.act ?? '';
 
-    if (act === 'nav') {
+    if (act === 'nav' || act === 'entry-open') {
       const view = el.dataset.view as StudioView | undefined;
-      if (view) studio.setView(view);
+      if (view && VIEWS.some((v) => v.id === view)) studio.setView(view);
       return;
     }
     if (act === 'load-demo') {
@@ -375,6 +391,30 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     }
     if (act === 'ai-person') {
       studio.setAIPerson(target.value);
+      return;
+    }
+    /* 随礼参谋切换场合时重算：金额量级随场合变化，不能让用户自己心算。 */
+    const giftFor = target.dataset.giftOccasion;
+    if (giftFor) {
+      openDialog(doc, '随礼参谋', giftDialog(studio, giftFor, target.value));
+      return;
+    }
+    /* 礼物名称只影响忌讳提示，不影响金额。 */
+    if (target instanceof HTMLInputElement && target.dataset.giftName) {
+      const name = target.value;
+      const hits = checkGiftTaboo(name, '');
+      const box = doc.querySelector('.dialog-body');
+      if (box) {
+        const existing = box.querySelector('.gift-taboo-live');
+        if (existing) existing.remove();
+        if (hits.length) {
+          const p = doc.createElement('p');
+          p.className = 'error gift-taboo-live';
+          p.textContent = hits.map((h) => `「${h.keyword}」${h.reason}`).join('；');
+          box.appendChild(p);
+        }
+      }
+      return;
     }
   };
 
@@ -399,7 +439,13 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     const dir = dirRaw === 'in' || dirRaw === 'out' ? dirRaw : 'none';
     const title = String(data.get('title') ?? '');
     const occasion = String(data.get('occasion') ?? '其他') as Occasion;
-    studio.addEvent({ personId, type, title, amount, dir, occasion });
+    /* 保存失败必须让用户看见：以前丢弃返回值，弹窗照关，
+       界面像成功了，刷新后这条往来消失。 */
+    const ok = studio.addEvent({ personId, type, title, amount, dir, occasion });
+    if (!ok) {
+      openDialog(doc, '保存失败', '<p class="error">内容超出长度限制、金额过大或本机存储不可写，本次记录未保存。</p><div class="dialog-actions"><button type="button" class="btn ghost" data-act="dialog-close">知道了</button></div>');
+      return;
+    }
     closeDialog(doc);
   };
 

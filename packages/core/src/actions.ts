@@ -1,6 +1,6 @@
 import { DAY, daysUntil, todayStr, upcomingFestival } from './date';
 import { computePerson } from './engine';
-import { fmtMoney, personLedger } from './ledger';
+import { balanceByKind, eventDir, fmtMoney } from './ledger';
 import type { ActionItem, AppState } from './types';
 
 export function buildActions(state: AppState, limit: number = 6, now: number = Date.now()): ActionItem[] {
@@ -9,7 +9,6 @@ export function buildActions(state: AppState, limit: number = 6, now: number = D
 
   for (const p of state.persons) {
     const m = computePerson(state, p, now);
-    const l = personLedger(state, p.id);
 
     if (p.birthday) {
       const d = daysUntil(p.birthday, now);
@@ -47,21 +46,54 @@ export function buildActions(state: AppState, limit: number = 6, now: number = D
       });
     }
 
-    if (l.net >= 300) {
+    /* 礼金账与借款账必须分开判断，且都走 balanceByKind 这一个口径。
+       以前只看净额正负：送礼 500 被写成「对方还欠你 500」并推送「催还话术」；
+       而 giftBal 又忽略 dir，一笔 gift_get/dir:out 会被算成「对方给了你」。
+       两件事的还法完全不同，口径必须唯一。 */
+    const bal = balanceByKind(state, p.id);
+    if (bal.loan >= 300) {
       push({
-        key: 'money-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'money', prio: 78,
-        title: `你在账本上净欠 ${p.name} ${fmtMoney(l.net)}`,
-        reason: '钱和礼都要有来有往。先确认是礼金还是借款，再决定回礼还是还款。',
-        primary: { label: '还礼参谋', act: 'giftModal', arg: p.id },
-        secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
+        key: 'loan-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'money', prio: 88,
+        title: `你向 ${p.name} 借了 ${fmtMoney(bal.loan)}`,
+        reason: '借款要还本金，和随礼不是一回事。约个明确时间还上，比拖着更体面。',
+        primary: { label: '还款话术', act: 'scriptModal', arg: 'repay_loan|' + p.id },
+        secondary: { label: '记一笔还款', act: 'eventQuick', arg: p.id }
       });
-    } else if (l.net <= -300) {
+    } else if (bal.loan <= -300) {
       push({
-        key: 'money-due:' + p.id, personId: p.id, tone: 'blue', icon: 'money', prio: 46,
-        title: `${p.name} 还欠你 ${fmtMoney(-l.net)}`,
-        reason: '如果是借款，找个轻松的由头提一句；如果是礼金，等合适场合自然回礼即可。',
+        key: 'loan-due:' + p.id, personId: p.id, tone: 'blue', icon: 'money', prio: 84,
+        title: `${p.name} 还欠你 ${fmtMoney(-bal.loan)} 借款`,
+        reason: '借款按约定时间收回；没有约定就说清自己的用钱安排，别用催礼的语气。',
         primary: { label: '催还话术', act: 'scriptModal', arg: 'collect_debt|' + p.id },
         secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
+      });
+    }
+
+    if (bal.gift >= 300) {
+      push({
+        key: 'gift-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'gift', prio: 78,
+        title: `人情账上你还欠 ${p.name} ${fmtMoney(bal.gift)}`,
+        reason: '礼金讲究有来有往。等对方下次办事时还上，或以实物、请饭的方式答谢。',
+        primary: { label: '还礼参谋', act: 'giftModal', arg: p.id },
+        secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+      });
+    }
+
+    /* 刚收到的礼要有时间窗提醒。之前只在累计净额 ≥300 时提示，
+       今天收到 200 元礼完全没有任何动作，而那正是最该道谢/记着回礼的时候。
+       优先级低于借款（88/84）：借款有明确到期语义，不该被寒暄类动作压掉。 */
+    const recentGift = state.events
+      .filter((e) => e.personId === p.id && e.type === 'gift_get' && eventDir(e) === 'in'
+        && Number(e.amount) > 0 && e.time <= now && now - e.time <= 7 * DAY)
+      .sort((a, b) => b.time - a.time)[0];
+    if (recentGift) {
+      const age = Math.floor((now - recentGift.time) / DAY);
+      push({
+        key: 'gift-thanks:' + p.id, personId: p.id, tone: 'teal', icon: 'gift', prio: 82,
+        title: `为 ${p.name} 的礼回个话`,
+        reason: `「${recentGift.title || '对方的心意'}」${age === 0 ? '是今天' : age + ' 天前'}收到的。先说声谢谢，再把这份人情记下来，日后好还。`,
+        primary: { label: '道谢话术', act: 'scriptModal', arg: 'thanks|' + p.id },
+        secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
       });
     }
 

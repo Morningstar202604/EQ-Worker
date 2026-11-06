@@ -15,7 +15,10 @@ describe('date', () => {
   it('2/29 在非闰年按 2/28 计算', () => {
     const feb28 = new Date(2026, 1, 28, 12).getTime();
     expect(daysUntil('02-29', feb28)).toBe(0);
-    expect(toDateInput('02-29', feb28)).toBe('2026-02-28');
+    /* 回显必须保住 02-29：以前返回 2026-02-28，用户编辑一次生日就被永久改成 2/28。
+       现在用最近的闰年做回显载体，读回时 toMMDD 仍取月日。 */
+    expect(toDateInput('02-29', feb28)).toBe('2028-02-29');
+    expect(toMMDD(toDateInput('02-29', feb28))).toBe('02-29');
   });
 
   it('solarToLunar：2024-02-10 = 正月初一', () => {

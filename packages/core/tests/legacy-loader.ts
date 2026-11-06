@@ -31,6 +31,7 @@ export interface LegacyApi {
   personHealth(p: unknown): Record<string, unknown>;
   overallMetrics(): Record<string, unknown> | null;
   giftAdvice(personId: string, occasion: string, opts?: unknown): Record<string, unknown>;
+  settlePrefill(personId: string, kind: 'loan' | 'gift'): Record<string, unknown> | null;
   buildActions(limit?: number): Array<Record<string, unknown>>;
   buildAlerts(): Array<Record<string, unknown>>;
   getSuggestion(p: unknown): string;
@@ -79,7 +80,7 @@ export function loadLegacy(now: number): LegacyApi {
   if (idx >= 0) src = src.slice(0, idx) + '\n';
   src += `
 ;globalThis.__h5 = { state, computePerson, personLedger, personHealth, overallMetrics,
-  giftAdvice, buildActions, buildAlerts, getSuggestion, relationRead, buildScripts,
+  giftAdvice, settlePrefill, buildActions, buildAlerts, getSuggestion, relationRead, buildScripts,
   buildICS, upcomingDates, ledgerTotals, ledgerInsights, getWisdom, getLevel, invalidateCache,
   achievementsList, monthInsights };`;
 

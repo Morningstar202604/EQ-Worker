@@ -25,6 +25,7 @@ var index_exports = {};
 __export(index_exports, {
   AI_KEY: () => AI_KEY,
   CITY_TIERS: () => CITY_TIERS,
+  CONDOLENCE_AMOUNTS: () => CONDOLENCE_AMOUNTS,
   DAY: () => DAY,
   DB_KEY: () => DB_KEY,
   DEFAULT_AI: () => DEFAULT_AI,
@@ -48,10 +49,12 @@ __export(index_exports, {
   achievements: () => achievements,
   annualReport: () => annualReport,
   avg: () => avg,
+  balanceByKind: () => balanceByKind,
   buildActions: () => buildActions,
   buildAlerts: () => buildAlerts,
   buildICS: () => buildICS,
   buildScripts: () => buildScripts,
+  checkGiftTaboo: () => checkGiftTaboo,
   clamp: () => clamp,
   commitPractice: () => commitPractice,
   computeAll: () => computeAll,
@@ -64,6 +67,7 @@ __export(index_exports, {
   daysUntil: () => daysUntil,
   detectSchema: () => detectSchema,
   esc: () => esc,
+  etiquetteTips: () => etiquetteTips,
   eventDir: () => eventDir,
   findScenario: () => findScenario,
   fmtDate: () => fmtDate,
@@ -72,6 +76,7 @@ __export(index_exports, {
   getSuggestion: () => getSuggestion,
   getWisdom: () => getWisdom,
   giftAdvice: () => giftAdvice,
+  giftAvoidTips: () => giftAvoidTips,
   healthRanking: () => healthRanking,
   invalidateEventIndex: () => invalidateEventIndex,
   ledgerInsights: () => ledgerInsights,
@@ -115,7 +120,21 @@ var EVENT_TYPES = {
   conflict: { label: "\u51B2\u7A81/\u6469\u64E6", dHeat: -10, dTrust: -6, dIntimacy: -6, dDebt: 0 },
   other: { label: "\u5176\u4ED6", dHeat: 2, dTrust: 1, dIntimacy: 1, dDebt: 0 }
 };
-var OCCASIONS = ["\u65E5\u5E38", "\u751F\u65E5", "\u5A5A\u793C", "\u6EE1\u6708", "\u4E54\u8FC1", "\u63A2\u75C5", "\u8282\u65E5", "\u8FD8\u793C", "\u5176\u4ED6"];
+var OCCASIONS = [
+  "\u65E5\u5E38",
+  "\u751F\u65E5",
+  "\u5A5A\u793C",
+  "\u6EE1\u6708",
+  "\u4E54\u8FC1",
+  "\u63A2\u75C5",
+  "\u8282\u65E5",
+  "\u8FD8\u793C",
+  "\u767D\u4E8B",
+  "\u5BFF\u5BB4",
+  "\u5347\u5B66",
+  "\u5F00\u4E1A",
+  "\u5176\u4ED6"
+];
 var GIFT_TIERS = {
   simple: { label: "\u4ECE\u7B80", mult: 0.7 },
   standard: { label: "\u5F97\u4F53", mult: 1 },
@@ -123,16 +142,17 @@ var GIFT_TIERS = {
 };
 var CITY_TIERS = { \u4E09\u7EBF: 0.8, \u4E8C\u7EBF: 1, \u4E00\u7EBF: 1.25 };
 var GIFT_BASE = {
-  \u9886\u5BFC: { \u751F\u65E5: 500, \u5A5A\u793C: 1e3, \u6EE1\u6708: 800, \u4E54\u8FC1: 500, \u63A2\u75C5: 500, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u5176\u4ED6: 500 },
-  \u540C\u4E8B: { \u751F\u65E5: 200, \u5A5A\u793C: 500, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u5176\u4ED6: 200 },
-  \u5BA2\u6237: { \u751F\u65E5: 300, \u5A5A\u793C: 800, \u6EE1\u6708: 600, \u4E54\u8FC1: 500, \u63A2\u75C5: 500, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u5176\u4ED6: 300 },
-  \u670B\u53CB: { \u751F\u65E5: 200, \u5A5A\u793C: 600, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u5176\u4ED6: 200 },
-  \u5BB6\u4EBA: { \u751F\u65E5: 500, \u5A5A\u793C: 1600, \u6EE1\u6708: 1e3, \u4E54\u8FC1: 800, \u63A2\u75C5: 800, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u5176\u4ED6: 500 },
-  \u957F\u8F88: { \u751F\u65E5: 500, \u5A5A\u793C: 1200, \u6EE1\u6708: 1e3, \u4E54\u8FC1: 500, \u63A2\u75C5: 600, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u5176\u4ED6: 500 },
-  \u540C\u5B66: { \u751F\u65E5: 200, \u5A5A\u793C: 600, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u5176\u4ED6: 200 },
-  \u90BB\u5C45: { \u751F\u65E5: 200, \u5A5A\u793C: 500, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u5176\u4ED6: 200 },
-  \u5176\u4ED6: { \u751F\u65E5: 200, \u5A5A\u793C: 500, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u5176\u4ED6: 200 }
+  \u9886\u5BFC: { \u751F\u65E5: 500, \u5A5A\u793C: 1e3, \u6EE1\u6708: 800, \u4E54\u8FC1: 500, \u63A2\u75C5: 500, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u767D\u4E8B: 500, \u5BFF\u5BB4: 800, \u5347\u5B66: 500, \u5F00\u4E1A: 500, \u5176\u4ED6: 500 },
+  \u540C\u4E8B: { \u751F\u65E5: 200, \u5A5A\u793C: 500, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u767D\u4E8B: 300, \u5BFF\u5BB4: 300, \u5347\u5B66: 200, \u5F00\u4E1A: 200, \u5176\u4ED6: 200 },
+  \u5BA2\u6237: { \u751F\u65E5: 300, \u5A5A\u793C: 800, \u6EE1\u6708: 600, \u4E54\u8FC1: 500, \u63A2\u75C5: 500, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u767D\u4E8B: 500, \u5BFF\u5BB4: 600, \u5347\u5B66: 300, \u5F00\u4E1A: 500, \u5176\u4ED6: 300 },
+  \u670B\u53CB: { \u751F\u65E5: 200, \u5A5A\u793C: 600, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u767D\u4E8B: 300, \u5BFF\u5BB4: 300, \u5347\u5B66: 200, \u5F00\u4E1A: 300, \u5176\u4ED6: 200 },
+  \u5BB6\u4EBA: { \u751F\u65E5: 500, \u5A5A\u793C: 1600, \u6EE1\u6708: 1e3, \u4E54\u8FC1: 800, \u63A2\u75C5: 800, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u767D\u4E8B: 800, \u5BFF\u5BB4: 1e3, \u5347\u5B66: 500, \u5F00\u4E1A: 800, \u5176\u4ED6: 500 },
+  \u957F\u8F88: { \u751F\u65E5: 500, \u5A5A\u793C: 1200, \u6EE1\u6708: 1e3, \u4E54\u8FC1: 500, \u63A2\u75C5: 600, \u8282\u65E5: 500, \u8FD8\u793C: 500, \u65E5\u5E38: 300, \u767D\u4E8B: 600, \u5BFF\u5BB4: 800, \u5347\u5B66: 500, \u5F00\u4E1A: 500, \u5176\u4ED6: 500 },
+  \u540C\u5B66: { \u751F\u65E5: 200, \u5A5A\u793C: 600, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u767D\u4E8B: 300, \u5BFF\u5BB4: 300, \u5347\u5B66: 200, \u5F00\u4E1A: 200, \u5176\u4ED6: 200 },
+  \u90BB\u5C45: { \u751F\u65E5: 200, \u5A5A\u793C: 500, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u767D\u4E8B: 300, \u5BFF\u5BB4: 300, \u5347\u5B66: 200, \u5F00\u4E1A: 200, \u5176\u4ED6: 200 },
+  \u5176\u4ED6: { \u751F\u65E5: 200, \u5A5A\u793C: 500, \u6EE1\u6708: 500, \u4E54\u8FC1: 300, \u63A2\u75C5: 300, \u8282\u65E5: 200, \u8FD8\u793C: 300, \u65E5\u5E38: 200, \u767D\u4E8B: 300, \u5BFF\u5BB4: 300, \u5347\u5B66: 200, \u5F00\u4E1A: 200, \u5176\u4ED6: 200 }
 };
+var CONDOLENCE_AMOUNTS = [101, 201, 301, 501, 701, 1001, 1201, 1501, 2001, 3001];
 var LEDGER_STATUS = {
   owe: { label: "\u6211\u6B20\u5BF9\u65B9", cls: "amber" },
   due: { label: "\u5BF9\u65B9\u6B20\u6211", cls: "blue" },
@@ -362,6 +382,145 @@ var SCENARIOS = [
       { t: "\u8FFD\u7740\u8BF4\u300C\u8001\u677F\u518D\u53D1\u4E00\u4E2A\u300D", s: 30, r: "\u6CA1\u5206\u5BF8\uFF0C\u4E00\u6B21\u5C31\u8D25\u597D\u611F\u3002" }
     ],
     tip: "\u7EA2\u5305\u793C\u4EEA\uFF1A\u9886\u4E86\u8981\u8868\u6001\uFF1B\u624B\u6C14\u6700\u4F73\u65F6\u300C\u6536\u4E86\u518D\u6563\u300D\u662F\u6700\u9AD8\u6BB5\u4F4D\u2014\u2014\u70ED\u95F9\u4E86\u7FA4\uFF0C\u8FD8\u4E86\u60C5\uFF0C\u8C01\u4E5F\u4E0D\u6B20\u3002"
+  },
+  {
+    id: "funeral",
+    diff: "\u9AD8\u624B",
+    tag: "\u7EA2\u767D\u4E8B",
+    title: "\u540C\u4E8B\u7684\u7236\u4EB2\u8FC7\u4E16\uFF0C\u4F60\u53BB\u4E0D\u53BB\uFF1F\u968F\u591A\u5C11\uFF1F",
+    scene: "\u5173\u7CFB\u4E0D\u9519\u7684\u540C\u4E8B\u8001\u9648\uFF0C\u7236\u4EB2\u6628\u665A\u8FC7\u4E16\u3002\u529E\u516C\u5BA4\u51E0\u4E2A\u4EBA\u5728\u5546\u91CF\u8981\u4E0D\u8981\u53BB\u3001\u968F\u591A\u5C11\u3002",
+    choices: [
+      { t: "\u5F53\u6CA1\u542C\u8BF4\uFF0C\u7B49\u4ED6\u56DE\u6765\u518D\u8BF4", s: 20, r: "\u767D\u4E8B\u6700\u8BB2\u300C\u5230\u573A\u300D\uFF0C\u9519\u8FC7\u540A\u5501\u51E0\u4E4E\u65E0\u6CD5\u8865\u3002\u4E8B\u540E\u4E00\u53E5\u300C\u8282\u54C0\u300D\u4E5F\u663E\u5F97\u6577\u884D\u3002" },
+      { t: "\u5F53\u5929\u5C31\u53BB\uFF0C\u968F\u4E00\u4EFD\u5E1B\u91D1\uFF08\u5355\u6570\uFF0C\u5982 301\uFF09\uFF0C\u5230\u573A\u5E2E\u5FD9\u8DD1\u817F\uFF0C\u4E0D\u591A\u8BF4\u8BDD", s: 92, r: "\u767D\u4E8B\u91CD\u5728\u573A\u4E0E\u51FA\u529B\uFF0C\u91D1\u989D\u53D6\u5355\u6570\u3001\u7D20\u8272\u4FE1\u5C01\uFF0C\u5230\u573A\u6BD4\u8BF4\u8F9E\u66F4\u91CD\u8981\u3002" },
+      { t: "\u968F 800\uFF0C\u8DDF\u5A5A\u793C\u4E00\u4E2A\u6807\u51C6\uFF0C\u663E\u5F97\u91CD\u89C6", s: 40, r: "\u767D\u4E8B\u5FCC\u7528\u559C\u4E8B\u5409\u6570\u4E0E\u53CC\u6570\uFF0C800 \u8FD9\u79CD\u6570\u5B57\u5728\u7075\u524D\u5F88\u4E0D\u5408\u65F6\u5B9C\u3002" },
+      { t: "\u5FAE\u4FE1\u8F6C 500\uFF0C\u9644\u4E00\u53E5\u300C\u606D\u559C\u53D1\u8D22\u300D\u7CFB\u8BEF\u53D1", s: 5, r: "\u65E2\u6CA1\u6709\u5230\u573A\uFF0C\u53C8\u7528\u9519\u8BED\u5883\uFF0C\u6BD4\u4E0D\u53BB\u66F4\u4F24\u4EBA\u3002" }
+    ],
+    tip: "\u767D\u4E8B\u4E09\u539F\u5219\uFF1A\u5230\u573A\u4F18\u5148\u3001\u91D1\u989D\u53D6\u5355\u6570\u3001\u5C11\u8BF4\u591A\u505A\u3002\u5B83\u548C\u559C\u4E8B\u4E0D\u662F\u4E00\u5957\u793C\u6570\uFF0C\u4E0D\u80FD\u5957\u7528\u5A5A\u793C\u6807\u51C6\u3002"
+  },
+  {
+    id: "condolence_words",
+    diff: "\u8FDB\u9636",
+    tag: "\u7EA2\u767D\u4E8B",
+    title: "\u53BB\u540A\u5501\uFF0C\u5BB6\u5C5E\u54ED\u7740\u8BF4\u300C\u4ED6\u8D70\u5F97\u592A\u7A81\u7136\u300D",
+    scene: "\u4F60\u5230\u7075\u524D\u4E0A\u9999\uFF0C\u5BB6\u5C5E\u7EA2\u7740\u773C\u775B\u8BF4\uFF1A\u300C\u4ED6\u8D70\u5F97\u592A\u7A81\u7136\u4E86\uFF0C\u4E00\u53E5\u8BDD\u90FD\u6CA1\u7559\u4E0B\u3002\u300D",
+    choices: [
+      { t: "\u300C\u522B\u96BE\u8FC7\u4E86\uFF0C\u4EBA\u6B7B\u4E0D\u80FD\u590D\u751F\uFF0C\u60F3\u5F00\u70B9\u300D", s: 25, r: "\u300C\u60F3\u5F00\u70B9\u300D\u662F\u6700\u5E38\u89C1\u7684\u65E0\u6548\u5B89\u6170\uFF0C\u7B49\u4E8E\u5426\u5B9A\u5BF9\u65B9\u7684\u60B2\u4F24\u3002" },
+      { t: "\u300C\u60A8\u8282\u54C0\uFF0C\u6709\u4EC0\u4E48\u8981\u529E\u7684\u6211\u5E2E\u7740\u8DD1\u300D", s: 90, r: "\u627F\u8BA4\u60B2\u4F24\u3001\u7ED9\u51FA\u5177\u4F53\u5E2E\u52A9\uFF0C\u662F\u540A\u5501\u573A\u5408\u6700\u7A33\u59A5\u7684\u56DE\u5E94\u3002" },
+      { t: "\u300C\u4ED6\u751F\u524D\u8FD8\u8DDF\u6211\u8BF4\u8FC7\u60A8\u7684\u597D\u300D", s: 75, r: "\u8FFD\u5FC6\u901D\u8005\u662F\u597D\u65B9\u5411\uFF0C\u4F46\u8981\u770B\u5BB6\u5C5E\u72B6\u6001\uFF0C\u4E0D\u5B9C\u5C55\u5F00\u592A\u957F\u3002" },
+      { t: "\u6C89\u9ED8\u70B9\u5934\uFF0C\u8F6C\u53BB\u5E2E\u5FD9\u642C\u4E1C\u897F", s: 70, r: "\u4E0D\u8BF4\u8BDD\u76F4\u63A5\u505A\u4E8B\uFF0C\u5728\u8FD9\u79CD\u573A\u5408\u5F80\u5F80\u6BD4\u8BF4\u8BDD\u5F97\u4F53\u3002" }
+    ],
+    tip: "\u540A\u5501\u8BDD\u672F\u53EA\u505A\u4E24\u4EF6\u4E8B\uFF1A\u627F\u8BA4\u5BF9\u65B9\u7684\u5931\u53BB\uFF0C\u7ED9\u4E00\u4E2A\u5177\u4F53\u53EF\u6267\u884C\u7684\u5E2E\u52A9\u3002\u6700\u5FCC\u300C\u60F3\u5F00\u70B9\u300D\u300C\u522B\u54ED\u4E86\u300D\u3002"
+  },
+  {
+    id: "school_banquet",
+    diff: "\u8FDB\u9636",
+    tag: "\u793C\u5C1A\u5F80\u6765",
+    title: "\u5B69\u5B50\u8003\u4E0A\u5927\u5B66\uFF0C\u540C\u4E8B\u529E\u4E86\u5347\u5B66\u5BB4",
+    scene: "\u540C\u90E8\u95E8\u7684\u674E\u59D0\u5B69\u5B50\u8003\u4E0A\u91CD\u70B9\u5927\u5B66\uFF0C\u5728\u7FA4\u91CC\u53D1\u4E86\u5347\u5B66\u5BB4\u9080\u8BF7\uFF0C\u9644\u4E86\u9152\u5E97\u5730\u5740\u3002",
+    choices: [
+      { t: "\u4E0D\u53BB\u4E5F\u4E0D\u968F\uFF0C\u53CD\u6B63\u53EA\u662F\u540C\u4E8B", s: 25, r: "\u5347\u5B66\u5BB4\u662F\u660E\u786E\u7684\u4EBA\u60C5\u9080\u7EA6\uFF0C\u540C\u4E8B\u5708\u5B50\u91CC\u7F3A\u5E2D\u4F1A\u88AB\u8BB0\u4F4F\u3002" },
+      { t: "\u6309\u540C\u4E8B\u884C\u60C5\u968F 200-300\uFF0C\u4EBA\u5230\u573A\u8BF4\u53E5\u300C\u5B69\u5B50\u4E89\u6C14\u300D", s: 90, r: "\u5347\u5B66\u5BB4\u91CF\u7EA7\u4F4E\u4E8E\u5A5A\u793C\uFF0C\u6309\u540C\u8F88\u5173\u7CFB\u968F\u793C\u5373\u53EF\uFF0C\u91CD\u70B9\u5728\u5230\u573A\u795D\u8D3A\u3002" },
+      { t: "\u6309\u5A5A\u793C\u6807\u51C6\u968F 600", s: 55, r: "\u8D85\u51FA\u884C\u60C5\u4F1A\u8BA9\u5BF9\u65B9\u6709\u538B\u529B\uFF0C\u4E5F\u53EF\u80FD\u62AC\u9AD8\u4E0B\u6B21\u7684\u671F\u5F85\u3002" },
+      { t: "\u53EA\u53D1\u5FAE\u4FE1\u7EA2\u5305\uFF0C\u4E0D\u5199\u5907\u6CE8", s: 45, r: "\u7EA2\u5305\u4E0D\u7559\u540D\uFF0C\u5BF9\u65B9\u4E8B\u540E\u5BF9\u4E0D\u4E0A\u4EBA\uFF0C\u4EBA\u60C5\u7B49\u4E8E\u767D\u9001\u3002" }
+    ],
+    tip: "\u5347\u5B66\u5BB4\u5C5E\u300C\u8F7B\u559C\u4E8B\u300D\uFF0C\u793C\u91D1\u91CF\u7EA7\u4F4E\u4E8E\u5A5A\u793C\uFF1B\u5230\u573A+\u4E00\u53E5\u771F\u8BDA\u7684\u5938\u5956\uFF0C\u6BD4\u52A0\u94B1\u66F4\u5F97\u4F53\u3002"
+  },
+  {
+    id: "funeral_money_return",
+    diff: "\u9AD8\u624B",
+    tag: "\u7EA2\u767D\u4E8B",
+    title: "\u6536\u8FC7\u5BF9\u65B9\u767D\u4E8B\u7684\u5E1B\u91D1\uFF0C\u5BF9\u65B9\u5BB6\u53C8\u529E\u559C\u4E8B",
+    scene: "\u4E09\u5E74\u524D\u4F60\u7236\u4EB2\u8FC7\u4E16\uFF0C\u90BB\u5C45\u5F20\u53D4\u968F\u4E86 501 \u5143\u5E1B\u91D1\u3002\u4E0B\u6708\u5F20\u53D4\u513F\u5B50\u7ED3\u5A5A\u3002",
+    choices: [
+      { t: "\u6309\u5F53\u5E74 501 \u5143\u56DE\uFF0C\u4E00\u5206\u4E0D\u591A", s: 45, r: "\u767D\u4E8B\u4E0E\u559C\u4E8B\u4E0D\u80FD\u7B49\u989D\u5BF9\u51B2\uFF0C\u4E14 501 \u662F\u5355\u6570\uFF0C\u7528\u5A5A\u793C\u4E0A\u4E0D\u5408\u793C\u6570\u3002" },
+      { t: "\u6309\u5A5A\u793C\u884C\u60C5\u968F 600-800\uFF0C\u53CC\u6570\uFF0C\u6B63\u5E38\u5230\u573A", s: 92, r: "\u7EA2\u767D\u4E8B\u5404\u81EA\u6309\u672C\u573A\u5408\u89C4\u77E9\u529E\uFF1A\u5F53\u5E74\u5E1B\u91D1\u662F\u60C5\u5206\uFF0C\u5982\u4ECA\u5A5A\u793C\u6309\u559C\u4E8B\u884C\u60C5\u8FD8\u3002" },
+      { t: "\u5E72\u8106\u4E0D\u53BB\uFF0C\u5F53\u5E74\u90A3 501 \u5C31\u7B97\u4E24\u6E05", s: 20, r: "\u628A\u767D\u4E8B\u5E1B\u91D1\u5F53\u503A\u52A1\u5BF9\u51B2\uFF0C\u5728\u4EBA\u60C5\u4E0A\u662F\u6700\u4F24\u4EBA\u7684\u7B97\u6CD5\u3002" }
+    ],
+    tip: "\u7EA2\u767D\u4E8B\u4E0D\u53EF\u5BF9\u51B2\u3002\u767D\u4E8B\u6536\u7684\u5E1B\u91D1\u8981\u8BB0\u60C5\uFF0C\u4F46\u8FD8\u7684\u65F6\u5019\u6309\u5BF9\u65B9\u5F53\u4E0B\u8FD9\u573A\u4E8B\u7684\u89C4\u77E9\u6765\u3002"
+  },
+  {
+    id: "seating",
+    diff: "\u9AD8\u624B",
+    tag: "\u996D\u5C40\u9152\u684C",
+    title: "\u8BF7\u5BA2\u5403\u996D\uFF0C\u4E3B\u4F4D\u8BE5\u7559\u7ED9\u8C01\uFF1F",
+    scene: "\u4F60\u5F20\u7F57\u4E86\u4E00\u573A\u996D\u5C40\uFF0C\u8BF7\u4E86\u90E8\u95E8\u9886\u5BFC\u548C\u4E24\u4F4D\u8001\u540C\u4E8B\u3002\u5305\u95F4\u662F\u5706\u684C\uFF0C\u8FDB\u95E8\u6B63\u5BF9\u7684\u90A3\u628A\u6905\u5B50\u7A7A\u7740\u3002",
+    choices: [
+      { t: "\u81EA\u5DF1\u5750\u4E3B\u4F4D\uFF0C\u65B9\u4FBF\u7167\u5E94\u5168\u573A", s: 25, r: "\u4E3B\u4F4D\u662F\u7ED9\u6700\u5C0A\u8D35\u5BA2\u4EBA\u7684\uFF0C\u4E3B\u4EBA\u5750\u4E86\u4F1A\u663E\u5F97\u4E0D\u61C2\u89C4\u77E9\u3002" },
+      { t: "\u8BA9\u9886\u5BFC\u5750\u6B63\u5BF9\u95E8\u7684\u4E3B\u4F4D\uFF0C\u81EA\u5DF1\u5750\u9760\u8FD1\u95E8\u53E3\u7684\u4F4D\u7F6E\u597D\u62DB\u547C\u670D\u52A1\u5458", s: 92, r: "\u4E3B\u4F4D\u7ED9\u5C0A\u5BA2\u3001\u4E3B\u4EBA\u5750\u8FD1\u95E8\u7167\u5E94\uFF0C\u662F\u6700\u901A\u884C\u7684\u5EA7\u6B21\u903B\u8F91\u3002" },
+      { t: "\u6309\u5230\u573A\u5148\u540E\u968F\u4FBF\u5750", s: 40, r: "\u996D\u5C40\u5EA7\u6B21\u672C\u8EAB\u5C31\u662F\u4E00\u79CD\u8868\u6001\uFF0C\u968F\u4FBF\u5750\u5BB9\u6613\u8BA9\u654F\u611F\u7684\u4EBA\u591A\u60F3\u3002" },
+      { t: "\u8BA9\u5E74\u7EAA\u6700\u5927\u7684\u8001\u540C\u4E8B\u5750\u4E3B\u4F4D", s: 65, r: "\u5E74\u9F84\u662F\u91CD\u8981\u56E0\u7D20\uFF0C\u4F46\u804C\u573A\u996D\u5C40\u91CC\u804C\u7EA7\u4E0E\u4E3B\u5BA2\u5173\u7CFB\u901A\u5E38\u4F18\u5148\uFF1B\u62FF\u4E0D\u51C6\u53EF\u5148\u8BA9\u4E00\u6B21\u3002" }
+    ],
+    tip: "\u5706\u684C\u4E09\u539F\u5219\uFF1A\u6B63\u5BF9\u95E8\u662F\u4E3B\u4F4D\u7ED9\u5C0A\u5BA2\uFF0C\u4E3B\u4EBA\u5750\u8FD1\u95E8\u7167\u5E94\uFF0C\u4E3B\u5BBE\u4E24\u4FA7\u6309\u4EB2\u758F\u4E0E\u804C\u7EA7\u4EA4\u9519\u3002"
+  },
+  {
+    id: "proxy_gift",
+    diff: "\u8FDB\u9636",
+    tag: "\u793C\u5C1A\u5F80\u6765",
+    title: "\u540C\u4E8B\u8BA9\u4F60\u5E2E\u5FD9\u4EE3\u968F\u793C\uFF0C\u8981\u7ED9\u5417\uFF1F",
+    scene: "\u540C\u4E8B\u5C0F\u674E\u4E34\u65F6\u51FA\u5DEE\uFF0C\u8BA9\u4F60\u5E2E\u4ED6\u628A\u5A5A\u793C\u793C\u91D1\u5E26\u7ED9\u65B0\u90CE\uFF0C\u8BF4\u300C\u56DE\u5934\u8F6C\u4F60\u300D\u3002",
+    choices: [
+      { t: "\u5148\u57AB\u4E0A\uFF0C\u4E8B\u540E\u518D\u8BF4", s: 60, r: "\u5E2E\u5FD9\u53EF\u4EE5\uFF0C\u4F46\u91D1\u989D\u548C\u51ED\u8BC1\u4E0D\u8BF4\u6E05\u695A\uFF0C\u4E8B\u540E\u5BB9\u6613\u626F\u4E0D\u6E05\u3002" },
+      { t: "\u95EE\u6E05\u91D1\u989D\uFF0C\u4EE3\u968F\u540E\u5728\u793C\u7C3F\u4E0A\u5199\u5C0F\u674E\u7684\u540D\u5B57\uFF0C\u5E76\u628A\u91D1\u989D\u548C\u622A\u56FE\u53D1\u7ED9\u4ED6", s: 92, r: "\u4EE3\u968F\u7684\u5173\u952E\u662F\u300C\u8BB0\u8C01\u7684\u540D\u300D\u4E0E\u300C\u7559\u75D5\u300D\uFF1A\u793C\u7C3F\u5199\u4ED6\u7684\u540D\u5B57\uFF0C\u60C5\u5206\u5F52\u4ED6\uFF1B\u51ED\u8BC1\u7559\u7ED9\u4F60\uFF0C\u94B1\u4E0D\u7CCA\u6D82\u3002" },
+      { t: "\u76F4\u63A5\u62D2\u7EDD\uFF0C\u8BA9\u4ED6\u81EA\u5DF1\u60F3\u529E\u6CD5", s: 35, r: "\u4E3E\u624B\u4E4B\u52B3\u7684\u5FD9\u62D2\u7EDD\u5F97\u592A\u5E72\u8106\uFF0C\u4F1A\u4F24\u540C\u4E8B\u5173\u7CFB\u3002" },
+      { t: "\u5E2E\u4ED6\u968F\u4E86\uFF0C\u4F46\u793C\u7C3F\u4E0A\u5199\u81EA\u5DF1\u7684\u540D\u5B57", s: 20, r: "\u94B1\u662F\u4ED6\u51FA\u7684\uFF0C\u540D\u5B57\u5199\u4F60\u5C31\u7B49\u4E8E\u541E\u4E86\u4ED6\u7684\u60C5\u5206\uFF0C\u8FD9\u662F\u6700\u4E0D\u8BE5\u72AF\u7684\u9519\u3002" }
+    ],
+    tip: "\u4EE3\u968F\u4E09\u4EF6\u4E8B\uFF1A\u95EE\u6E05\u91D1\u989D\u3001\u793C\u7C3F\u5199\u5BF9\u65B9\u540D\u5B57\u3001\u622A\u56FE\u7559\u75D5\u3002\u505A\u5BF9\u4E86\u662F\u987A\u624B\u4EBA\u60C5\uFF0C\u505A\u9519\u4E86\u662F\u7EA0\u7EB7\u3002"
+  },
+  {
+    id: "gift_rejected",
+    diff: "\u8FDB\u9636",
+    tag: "\u793C\u5C1A\u5F80\u6765",
+    title: "\u9001\u51FA\u53BB\u7684\u793C\u88AB\u9000\u56DE\u6765\u4E86\uFF0C\u600E\u4E48\u529E\uFF1F",
+    scene: "\u4F60\u7ED9\u5BA2\u6237\u9001\u4E86\u4E00\u76D2\u8336\u53F6\uFF0C\u7B2C\u4E8C\u5929\u5BF9\u65B9\u8BA9\u52A9\u7406\u539F\u6837\u9000\u56DE\uFF0C\u8BF4\u300C\u5FC3\u610F\u9886\u4E86\uFF0C\u4E1C\u897F\u4E0D\u80FD\u6536\u300D\u3002",
+    choices: [
+      { t: "\u518D\u9001\u4E00\u6B21\uFF0C\u52A0\u91CD\u5206\u91CF", s: 20, r: "\u5BF9\u65B9\u5DF2\u7ECF\u660E\u786E\u62D2\u7EDD\uFF0C\u518D\u52A0\u7801\u4F1A\u8BA9\u5173\u7CFB\u53D8\u7D27\u5F20\uFF0C\u4E5F\u53EF\u80FD\u8BA9\u5BF9\u65B9\u4E3A\u96BE\u3002" },
+      { t: "\u63A5\u53D7\u9000\u56DE\uFF0C\u6362\u6210\u4E00\u5F20\u624B\u5199\u5361\u7247\u6216\u4E00\u53E5\u771F\u8BDA\u7684\u8BDD\uFF0C\u4E0D\u518D\u9001\u5B9E\u7269", s: 90, r: "\u9000\u793C\u5F80\u5F80\u662F\u4E0D\u60F3\u6B20\u4EBA\u60C5\u6216\u6709\u5408\u89C4\u987E\u8651\u3002\u6539\u7528\u4E0D\u6784\u6210\u8D1F\u62C5\u7684\u8868\u8FBE\uFF0C\u65E2\u4FDD\u9762\u5B50\u4E5F\u4E0D\u8FDD\u89C4\u3002" },
+      { t: "\u5F53\u573A\u95EE\u300C\u662F\u4E0D\u662F\u5ACC\u5C11\u300D", s: 15, r: "\u628A\u5BF9\u65B9\u7684\u987E\u8651\u7406\u89E3\u6210\u5ACC\u5C11\uFF0C\u4F1A\u8BA9\u573A\u9762\u5F88\u96BE\u770B\u3002" },
+      { t: "\u4EC0\u4E48\u90FD\u4E0D\u8BF4\uFF0C\u4EE5\u540E\u4E0D\u518D\u6765\u5F80", s: 30, r: "\u4E00\u6B21\u9000\u793C\u4E0D\u7B49\u4E8E\u5173\u7CFB\u7834\u88C2\uFF0C\u51B7\u5904\u7406\u53CD\u800C\u771F\u7684\u65AD\u4E86\u3002" }
+    ],
+    tip: "\u88AB\u9000\u793C\u5148\u60F3\u300C\u5BF9\u65B9\u5728\u907F\u4EC0\u4E48\u300D\uFF1A\u907F\u4EBA\u60C5\u3001\u907F\u5408\u89C4\u3001\u907F\u8D1F\u62C5\u3002\u6362\u4E00\u79CD\u4E0D\u6784\u6210\u8D1F\u62C5\u7684\u8868\u8FBE\uFF0C\u6BD4\u52A0\u94B1\u6709\u7528\u3002"
+  },
+  {
+    id: "elder_birthday",
+    diff: "\u8FDB\u9636",
+    tag: "\u5BB6\u5EAD\u996D\u684C",
+    title: "\u957F\u8F88\u4E03\u5341\u5927\u5BFF\uFF0C\u9001\u4EC0\u4E48\u5408\u9002\uFF1F",
+    scene: "\u5916\u5A46\u4E03\u5341\u5927\u5BFF\uFF0C\u5BB6\u91CC\u8981\u529E\u5BFF\u5BB4\u3002\u4F60\u60F3\u9001\u4EFD\u793C\uFF0C\u4F46\u4E0D\u786E\u5B9A\u9001\u4EC0\u4E48\u4E0D\u4F1A\u8E29\u5FCC\u8BB3\u3002",
+    choices: [
+      { t: "\u9001\u4E00\u5957\u9AD8\u6863\u949F\u8868\uFF0C\u5B9E\u7528\u53C8\u6709\u9762\u5B50", s: 15, r: "\u300C\u9001\u949F\u300D\u8C10\u97F3\u300C\u9001\u7EC8\u300D\uFF0C\u662F\u5BFF\u793C\u6700\u5178\u578B\u7684\u5FCC\u8BB3\uFF0C\u5C24\u5176\u4E0D\u80FD\u9001\u957F\u8F88\u3002" },
+      { t: "\u9001\u5BFF\u6843\u5BFF\u9762\uFF0C\u518D\u52A0\u4E00\u4EF6\u5979\u5E73\u65F6\u5FF5\u53E8\u8FC7\u7684\u5B9E\u7528\u7269\u4EF6", s: 92, r: "\u5BFF\u793C\u91CD\u300C\u610F\u5934\u300D\u4E5F\u91CD\u300C\u5B9E\u7528\u300D\uFF1A\u5BFF\u6843\u5BFF\u9762\u5E94\u666F\uFF0C\u52A0\u4E0A\u5979\u771F\u6B63\u9700\u8981\u7684\u4E1C\u897F\u624D\u8D34\u5FC3\u3002" },
+      { t: "\u76F4\u63A5\u7ED9\u4E00\u4E2A\u5927\u7EA2\u5305\uFF0C\u6700\u7701\u4E8B", s: 55, r: "\u7EA2\u5305\u4E0D\u51FA\u9519\uFF0C\u4F46\u5BF9\u76F4\u7CFB\u957F\u8F88\u7565\u663E\u6577\u884D\uFF0C\u914D\u4E00\u4EF6\u5C0F\u7269\u4F1A\u66F4\u6696\u3002" },
+      { t: "\u9001\u4E00\u53CC\u597D\u978B\uFF0C\u795D\u5979\u8D70\u5F97\u66F4\u8FDC", s: 25, r: "\u300C\u978B\u300D\u8C10\u97F3\u300C\u90AA\u300D\uFF0C\u4E5F\u6709\u300C\u8D70\u6389\u300D\u4E4B\u610F\uFF0C\u9001\u957F\u8F88\u5E76\u4E0D\u5409\u5229\u3002" }
+    ],
+    tip: "\u5BFF\u793C\u5FCC\u949F\u3001\u978B\u3001\u4F1E\uFF1B\u5BFF\u6843\u5BFF\u9762\u662F\u5B89\u5168\u724C\u3002\u90E8\u5206\u5730\u533A\u8BB2\u7A76\u300C\u8FC7\u4E5D\u4E0D\u8FC7\u5341\u300D\uFF0C\u529E\u4E4B\u524D\u5148\u95EE\u4E00\u53E5\u5BB6\u91CC\u7684\u89C4\u77E9\u3002"
+  },
+  {
+    id: "colleague_debt",
+    diff: "\u9AD8\u624B",
+    tag: "\u91D1\u94B1\u5F80\u6765",
+    title: "\u540C\u4E8B\u501F\u4E86\u94B1\u4E00\u76F4\u4E0D\u63D0\uFF0C\u600E\u4E48\u5F00\u53E3\uFF1F",
+    scene: "\u4E09\u4E2A\u6708\u524D\u540C\u4E8B\u8001\u5468\u501F\u4E86\u4F60 3000\uFF0C\u8BF4\u300C\u4E0B\u6708\u53D1\u5DE5\u8D44\u5C31\u8FD8\u300D\u3002\u73B0\u5728\u4ED6\u6362\u4E86\u65B0\u624B\u673A\uFF0C\u5374\u4E00\u6B21\u6CA1\u63D0\u8FC7\u8FD8\u94B1\u3002",
+    choices: [
+      { t: "\u5728\u529E\u516C\u5BA4\u91CC\u5F53\u4F17\u63D0\u4E00\u53E5\uFF0C\u8BA9\u4ED6\u4E0B\u4E0D\u6765\u53F0", s: 15, r: "\u5F53\u4F17\u50AC\u503A\u7B49\u4E8E\u6495\u7834\u8138\uFF0C\u94B1\u4E5F\u8BB8\u80FD\u8981\u56DE\u6765\uFF0C\u5173\u7CFB\u4E00\u5B9A\u6CA1\u4E86\u3002" },
+      { t: "\u79C1\u4E0B\u627E\u4ED6\uFF0C\u8BF4\u81EA\u5DF1\u6700\u8FD1\u6709\u7B14\u652F\u51FA\uFF0C\u95EE\u4ED6\u4EC0\u4E48\u65F6\u5019\u65B9\u4FBF", s: 90, r: "\u7ED9\u4E00\u4E2A\u300C\u6211\u4E5F\u9700\u8981\u7528\u94B1\u300D\u7684\u7531\u5934\uFF0C\u65E2\u63D0\u9192\u4E86\u5BF9\u65B9\uFF0C\u4E5F\u7ED9\u4E86\u4ED6\u53F0\u9636\u3002" },
+      { t: "\u7EE7\u7EED\u7B49\uFF0C\u6015\u4F24\u611F\u60C5", s: 35, r: "\u62D6\u5F97\u8D8A\u4E45\u8D8A\u96BE\u5F00\u53E3\uFF0C\u5BF9\u65B9\u4E5F\u53EF\u80FD\u771F\u7684\u5FD8\u4E86\uFF1B\u6C89\u9ED8\u4E0D\u662F\u4F53\u9762\uFF0C\u662F\u79EF\u7D2F\u6028\u6C14\u3002" },
+      { t: "\u8BA9\u5171\u540C\u7684\u670B\u53CB\u53BB\u8F6C\u544A", s: 30, r: "\u7B2C\u4E09\u4EBA\u4F20\u8BDD\u4F1A\u8BA9\u4E8B\u60C5\u53D8\u590D\u6742\uFF0C\u8FD8\u5BB9\u6613\u88AB\u89E3\u8BFB\u6210\u300C\u5230\u5904\u8BF4\u4ED6\u6B20\u94B1\u300D\u3002" }
+    ],
+    tip: "\u50AC\u8FD8\u7684\u539F\u5219\uFF1A\u79C1\u4E0B\u3001\u7ED9\u7531\u5934\u3001\u7ED9\u53F0\u9636\u3002\u8BF4\u300C\u6211\u6700\u8FD1\u8981\u7528\u94B1\u300D\u6BD4\u8BF4\u300C\u4F60\u8BE5\u8FD8\u6211\u4E86\u300D\u6709\u6548\u5F97\u591A\u3002"
+  },
+  {
+    id: "income_question",
+    diff: "\u8FDB\u9636",
+    tag: "\u5BB6\u5EAD\u996D\u684C",
+    title: "\u4EB2\u621A\u5F53\u4F17\u95EE\u300C\u4F60\u4E00\u4E2A\u6708\u6323\u591A\u5C11\u300D",
+    scene: "\u5BB6\u65CF\u805A\u4F1A\u4E0A\uFF0C\u4E8C\u8205\u7AEF\u7740\u9152\u676F\u95EE\uFF1A\u300C\u542C\u8BF4\u4F60\u5728\u5927\u57CE\u5E02\u6DF7\u5F97\u4E0D\u9519\uFF0C\u4E00\u4E2A\u6708\u6323\u591A\u5C11\u554A\uFF1F\u300D\u6EE1\u684C\u4EBA\u90FD\u770B\u8FC7\u6765\u3002",
+    choices: [
+      { t: "\u5982\u5B9E\u62A5\u6570\u5B57\uFF0C\u663E\u5F97\u5766\u8BDA", s: 45, r: "\u6536\u5165\u4E00\u65E6\u8BF4\u51FA\u53E3\uFF0C\u5F88\u5FEB\u5C31\u4F1A\u53D8\u6210\u4EB2\u621A\u95F4\u7684\u6BD4\u8F83\u548C\u501F\u94B1\u7684\u7531\u5934\u3002" },
+      { t: "\u7B11\u7740\u8BF4\u300C\u591F\u82B1\uFF0C\u6BD4\u4E0D\u4E0A\u60A8\u5BB6\u5B69\u5B50\u300D\uFF0C\u628A\u8BDD\u5934\u9012\u56DE\u53BB", s: 90, r: "\u4E0D\u6B63\u9762\u56DE\u7B54\u3001\u53C8\u4E0D\u51B7\u573A\uFF0C\u628A\u8BDD\u9898\u8F6C\u56DE\u5BF9\u65B9\u8EAB\u4E0A\uFF0C\u662F\u8FD9\u7C7B\u95EE\u9898\u7684\u6807\u51C6\u89E3\u6CD5\u3002" },
+      { t: "\u51B7\u8138\u8BF4\u300C\u8FD9\u4E2A\u4E0D\u65B9\u4FBF\u8BF4\u300D", s: 55, r: "\u8FB9\u754C\u662F\u5BF9\u7684\uFF0C\u4F46\u8BED\u6C14\u786C\u4F1A\u8BA9\u6EE1\u684C\u5C34\u5C2C\uFF0C\u957F\u8F88\u4E5F\u4F1A\u89C9\u5F97\u4F60\u4E0D\u7ED9\u9762\u5B50\u3002" },
+      { t: "\u7F16\u4E00\u4E2A\u5F88\u4F4E\u7684\u6570\u5B57", s: 40, r: "\u77ED\u671F\u7701\u4E8B\uFF0C\u4F46\u540E\u7EED\u5BB9\u6613\u88AB\u6233\u7A7F\uFF0C\u4E5F\u53EF\u80FD\u5F15\u6765\u300C\u90A3\u4F60\u600E\u4E48\u8FD8\u4E70\u8FD9\u4E70\u90A3\u300D\u7684\u8FFD\u95EE\u3002" }
+    ],
+    tip: "\u88AB\u95EE\u6536\u5165\u7684\u901A\u7528\u89E3\u6CD5\uFF1A\u4E0D\u62A5\u6570\u5B57\u3001\u4E0D\u51B7\u573A\u3001\u628A\u7403\u8E22\u56DE\u53BB\u3002\u300C\u591F\u82B1\u300D+ \u53CD\u95EE\uFF0C\u6BD4\u771F\u8BDD\u548C\u5047\u8BDD\u90FD\u5B89\u5168\u3002"
   }
 ];
 var SCHEMA_VERSION = 5;
@@ -611,20 +770,20 @@ function solarToLunar(d) {
     y++;
   }
   const leap = lLeapMonth(y);
-  let isLeap = false;
+  let isLeap2 = false;
   let m = 1;
   while (m <= 12) {
-    const mD = leap === m && isLeap ? lLeapDays(y) : lMonthDays(y, m);
+    const mD = leap === m && isLeap2 ? lLeapDays(y) : lMonthDays(y, m);
     if (off < mD) break;
     off -= mD;
-    if (leap === m && !isLeap) {
-      isLeap = true;
+    if (leap === m && !isLeap2) {
+      isLeap2 = true;
     } else {
       m++;
-      isLeap = false;
+      isLeap2 = false;
     }
   }
-  return { y, m, d: off + 1, leap: isLeap };
+  return { y, m, d: off + 1, leap: isLeap2 };
 }
 var FESTIVALS = [
   { m: 1, d: 1, n: "\u6625\u8282" },
@@ -655,10 +814,23 @@ function toDateInput(v, now = Date.now()) {
   if (!v) return "";
   const m = String(v).match(/^(\d{2})-(\d{2})$/);
   if (!m) return String(v);
-  const y = new Date(now).getFullYear();
-  const d = new Date(y, +m[1] - 1, +m[2]);
-  if (d.getMonth() !== +m[1] - 1) return y + "-02-28";
-  return y + "-" + m[1] + "-" + m[2];
+  const year = new Date(now).getFullYear();
+  const month = +m[1];
+  const day = +m[2];
+  if (month === 2 && day === 29 && !isLeap(year)) return `${nearestLeapYear(year)}-02-29`;
+  const d = new Date(year, month - 1, day);
+  if (d.getMonth() !== month - 1) return `${year}-02-28`;
+  return `${year}-${m[1]}-${m[2]}`;
+}
+function isLeap(y) {
+  return y % 4 === 0 && y % 100 !== 0 || y % 400 === 0;
+}
+function nearestLeapYear(y) {
+  for (let delta = 1; delta <= 8; delta++) {
+    if (isLeap(y + delta)) return y + delta;
+    if (isLeap(y - delta)) return y - delta;
+  }
+  return y;
 }
 function daysUntil(birthday, now = Date.now()) {
   const bd = toMMDD(birthday);
@@ -720,7 +892,13 @@ function str(x, max) {
 function mmdd(x) {
   const s = str(x, 10);
   const m = s.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
-  return m ? m[1] + "-" + m[2] : "";
+  if (!m) return "";
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return "";
+  const probe = new Date(2e3, month - 1, day);
+  if (probe.getMonth() !== month - 1 || probe.getDate() !== day) return "";
+  return m[1] + "-" + m[2];
 }
 function fixWeight(type, w) {
   const t = EVENT_TYPES[type] || EVENT_TYPES.other;
@@ -733,7 +911,6 @@ function fixDir(type, dir, amount) {
   if (dir === "in" || dir === "out") return dir;
   if (type === "gift_get") return "in";
   if (type === "gift_give") return "out";
-  if (type === "money") return "in";
   return "none";
 }
 function normalizeSettings(raw) {
@@ -870,15 +1047,23 @@ function computeWithEvents(evs, p, now) {
   let debt = 0;
   let lastTs = null;
   for (const ev of evs) {
+    if (ev.time > now) continue;
     const days = (now - ev.time) / DAY;
     const ratio = Math.pow(0.5, days / 90);
     const t = EVENT_TYPES[ev.type] || EVENT_TYPES.other;
     const denom = Number.isFinite(t.dHeat) && t.dHeat !== 0 ? t.dHeat : 1;
-    const w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
+    let w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
+    if (t.dHeat < 0) w = Math.abs(w);
     heat += t.dHeat * ratio * w;
     trust += t.dTrust * ratio * w;
     intim += t.dIntimacy * ratio * w;
-    debt += t.dDebt * ratio * w;
+    if (ev.type === "money") {
+      const dir = ev.dir;
+      if (dir === "in") debt += 4 * ratio * w;
+      else if (dir === "out") debt -= 2 * ratio * w;
+    } else {
+      debt += t.dDebt * ratio * w;
+    }
     if (!lastTs || ev.time > lastTs) lastTs = ev.time;
   }
   const lastDays = lastTs ? Math.max(0, Math.floor((now - lastTs) / DAY)) : null;
@@ -934,7 +1119,7 @@ function overallMetrics(state, now = Date.now()) {
   const pms = computeAll(state, now);
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map((p) => p.heat));
-  const n30 = state.events.filter((e) => now - e.time < 30 * DAY).length;
+  const n30 = state.events.filter((e) => e.time <= now && now - e.time < 30 * DAY).length;
   const freq = Math.round(100 * (1 - Math.exp(-n30 / 6)));
   const credit = clamp(100 - avg(pms.map((p) => p.debt)), 0, 100);
   const wisdom = getWisdom(state);
@@ -1041,7 +1226,7 @@ function eventDir(e) {
   if (e.type === "gift_give") return "out";
   return "none";
 }
-function personLedger(state, personId) {
+function personLedger(state, personId, now = Date.now()) {
   let given = 0;
   let received = 0;
   let givenCount = 0;
@@ -1051,6 +1236,7 @@ function personLedger(state, personId) {
   let lastTime = 0;
   for (const e of state.events) {
     if (e.personId !== personId) continue;
+    if (e.time > now) continue;
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;
     const dir = eventDir(e);
@@ -1078,6 +1264,22 @@ function personLedger(state, personId) {
     lastDir,
     status: net > 0 ? "owe" : net < 0 ? "due" : "clear"
   };
+}
+function balanceByKind(state, personId, now = Date.now()) {
+  let loan = 0;
+  let gift = 0;
+  for (const e of state.events) {
+    if (e.personId !== personId) continue;
+    if (e.time > now) continue;
+    const amt = Number(e.amount) || 0;
+    if (amt <= 0) continue;
+    const dir = eventDir(e);
+    if (dir === "none") continue;
+    const sign = dir === "in" ? amt : -amt;
+    if (e.type === "money") loan += sign;
+    else if (e.type === "gift_get" || e.type === "gift_give") gift += sign;
+  }
+  return { loan, gift };
 }
 function ledgerTotals(state) {
   let given = 0;
@@ -1111,6 +1313,7 @@ function ledgerInsights(state, now = Date.now()) {
   let maxGift = 0;
   const byOcc = /* @__PURE__ */ Object.create(null);
   for (const e of state.events) {
+    if (e.time > now) continue;
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;
     const dir = eventDir(e);
@@ -1144,10 +1347,11 @@ function ledgerInsights(state, now = Date.now()) {
 function settlePrefill(state, personId, kind) {
   const p = state.persons.find((x) => x.id === personId);
   if (!p) return null;
-  const l = personLedger(state, personId);
-  if (!l.net) return null;
-  const owe = l.net > 0;
-  const amount = Math.abs(l.net);
+  const bal = balanceByKind(state, personId);
+  const target = kind === "loan" ? bal.loan : bal.gift;
+  if (!target) return null;
+  const owe = target > 0;
+  const amount = Math.abs(target);
   const isLoan = kind === "loan";
   return {
     personId,
@@ -1156,7 +1360,7 @@ function settlePrefill(state, personId, kind) {
     amount,
     occasion: isLoan ? "\u5176\u4ED6" : "\u8FD8\u793C",
     title: isLoan ? owe ? "\u8FD8\u6B3E" : "\u6536\u56DE\u501F\u6B3E" : owe ? "\u56DE\u793C" : "\u6536\u5230\u56DE\u793C",
-    net: l.net,
+    net: target,
     owe
   };
 }
@@ -1166,40 +1370,76 @@ function niceAmount(n) {
   if (v > 1e4) return Math.round(v / 1e3) * 1e3;
   return NICE_AMOUNTS.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a, 0);
 }
+function isJoyOccasion(occ) {
+  return occ === "\u5A5A\u793C" || occ === "\u6EE1\u6708" || occ === "\u4E54\u8FC1" || occ === "\u5BFF\u5BB4" || occ === "\u5347\u5B66" || occ === "\u5F00\u4E1A" || occ === "\u751F\u65E5" || occ === "\u8282\u65E5";
+}
+function condolenceAmount(n) {
+  const v = Number.isFinite(n) ? Math.max(0, n) : 0;
+  const up = CONDOLENCE_AMOUNTS.find((a) => a >= v);
+  if (up !== void 0) return up;
+  return Math.ceil(v / 100) * 100 + 1;
+}
 function giftAdvice(state, personId, occasion, opts = {}) {
+  const now = typeof opts.now === "number" ? opts.now : Date.now();
   const p = state.persons.find((x) => x.id === personId) || null;
   const identity = p && p.identity || "\u5176\u4ED6";
-  const occ = OCCASIONS.includes(occasion) ? occasion : "\u5176\u4ED6";
+  const recognized = OCCASIONS.includes(occasion);
+  const occ = recognized ? occasion : "\u5176\u4ED6";
+  const isFuneral2 = occ === "\u767D\u4E8B";
   const table = GIFT_BASE[identity] || GIFT_BASE["\u5176\u4ED6"];
   const base = table[occ] || table["\u5176\u4ED6"];
   const st = state.settings || {};
   const tier = opts.tier && GIFT_TIERS[opts.tier] || st.giftTier && GIFT_TIERS[st.giftTier] || GIFT_TIERS.standard;
   const cityName = opts.city && CITY_TIERS[opts.city] ? opts.city : CITY_TIERS[st.cityTier] ? st.cityTier : "\u4E8C\u7EBF";
   const city = CITY_TIERS[cityName];
-  let mid = base * tier.mult * city;
+  let uplift = 1;
+  const mid = base * tier.mult * city;
   const reasons = [
     `\u5173\u7CFB\u300C${identity}\u300D\xD7 \u573A\u5408\u300C${occ}\u300D\u7684\u57FA\u51C6\u53C2\u8003\u7EA6 ${fmtMoney(base)}\uFF08\u672A\u4E58\u6863\u4F4D/\u57CE\u5E02\u7CFB\u6570\uFF09`,
     `\u6863\u4F4D\u300C${tier.label}\u300D\xD7 \u57CE\u5E02\u300C${cityName}\u300D\u7CFB\u6570 ${city}`
   ];
-  const l = personLedger(state, personId);
-  const sameOcc = state.events.filter((e) => e.personId === personId && Number(e.amount) > 0 && eventDir(e) === "in" && e.occasion === occ).reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
-  const maxReceived = state.events.filter((e) => e.personId === personId && Number(e.amount) > 0 && eventDir(e) === "in").reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  const l = personLedger(state, personId, now);
+  const bal = balanceByKind(state, personId, now);
+  const giftInEvents = state.events.filter((e) => e.personId === personId && (e.type === "gift_get" || e.type === "gift_give") && eventDir(e) === "in" && e.time <= now);
+  const sameOcc = giftInEvents.filter((e) => e.occasion === occ).reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  const maxReceived = giftInEvents.reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  let floor = 0;
   if (sameOcc > 0) {
-    mid = Math.max(mid, sameOcc);
+    floor = sameOcc;
     reasons.push(`\u5BF9\u65B9\u5728\u300C${occ}\u300D\u7ED9\u8FC7\u4F60 ${fmtMoney(sameOcc)}\uFF0C\u8FD8\u793C\u4E0D\u4F4E\u4E8E\u6B64\u6570\u624D\u4E0D\u5931\u793C`);
   } else if (occ === "\u8FD8\u793C" && maxReceived > 0) {
-    mid = Math.max(mid, maxReceived);
-    reasons.push(`\u5BF9\u65B9\u7D2F\u8BA1\u7ED9\u8FC7\u4F60 ${fmtMoney(maxReceived)}\uFF0C\u8FD8\u793C\u5EFA\u8BAE\u4E0D\u4F4E\u4E8E\u6B64\u6570`);
-  } else if (l.net >= 300) {
-    mid *= 1.1;
-    reasons.push(`\u8D26\u672C\u4E0A\u4F60\u51C0\u6B20\u5BF9\u65B9 ${fmtMoney(l.net)}\uFF0C\u5EFA\u8BAE\u9002\u5EA6\u4E0A\u6D6E 10%`);
+    floor = maxReceived;
+    reasons.push(`\u5BF9\u65B9\u7ED9\u8FC7\u4F60\u7684\u6700\u5927\u5355\u7B14\u662F ${fmtMoney(maxReceived)}\uFF0C\u8FD8\u793C\u5EFA\u8BAE\u4E0D\u4F4E\u4E8E\u6B64\u6570`);
+  } else if (bal.gift >= 300) {
+    uplift = 1.1;
+    reasons.push(`\u4EBA\u60C5\u8D26\u4E0A\u4F60\u51C0\u6B20\u5BF9\u65B9 ${fmtMoney(bal.gift)}\uFF0C\u5EFA\u8BAE\u9002\u5EA6\u4E0A\u6D6E 10%`);
   }
   if (p && p.likes) reasons.push(`\u5BF9\u65B9\u559C\u6B22\uFF1A${p.likes}\uFF0C\u53EF\u4F18\u5148\u6309\u559C\u597D\u6311\u793C\u7269`);
   if (p && p.taboos) reasons.push(`\u9700\u8981\u907F\u5F00\uFF1A${p.taboos}`);
-  const midA = niceAmount(mid);
-  const low = niceAmount(midA * 0.7);
-  const high = niceAmount(midA * 1.3);
-  reasons.push(`\u7EFC\u5408\u540E\u4E2D\u4F4D\u7EA6 ${fmtMoney(mid)}\uFF0C\u6309\u5E38\u89C1\u793C\u91D1\u6570\u5B57\u53D6\u6574\u4E3A ${fmtMoney(midA)}`);
+  const funeralIn = state.events.filter((e) => e.personId === personId && eventDir(e) === "in" && e.occasion === "\u767D\u4E8B" && e.time <= now).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  if (funeralIn > 0 && isJoyOccasion(occ)) {
+    reasons.push(`\u4F60\u6536\u8FC7\u5BF9\u65B9\u7684\u767D\u4E8B\u5E1B\u91D1 ${fmtMoney(funeralIn)}\uFF1B\u767D\u4E8B\u4E0E\u559C\u4E8B\u4E0D\u80FD\u7B49\u989D\u5BF9\u51B2\uFF0C\u672C\u573A\u8BF7\u6309\u559C\u4E8B\u884C\u60C5\u5355\u72EC\u968F\u793C`);
+  }
+  const toLegal = (v) => isFuneral2 ? condolenceAmount(v) : niceAmount(v);
+  const stepOf = (v) => isFuneral2 ? 100 : Math.max(100, Math.round(v * 0.2 / 100) * 100);
+  const ceilLegal = (v) => {
+    if (isFuneral2) return condolenceAmount(v);
+    if (v <= 0) return 0;
+    const hit = NICE_AMOUNTS.find((a) => a >= v);
+    return hit !== void 0 ? hit : Math.ceil(v / 1e3) * 1e3;
+  };
+  const floorLegal = floor > 0 ? ceilLegal(floor) : 0;
+  const midA = ceilLegal(Math.max(base * tier.mult * city * uplift, floorLegal));
+  let low = toLegal(base * GIFT_TIERS.simple.mult * city * uplift);
+  let high = toLegal(base * GIFT_TIERS.generous.mult * city * uplift);
+  if (low >= midA) low = toLegal(Math.max(isFuneral2 ? 101 : 0, midA - stepOf(midA)));
+  if (high <= midA) high = ceilLegal(midA + stepOf(midA));
+  if (low >= midA) low = isFuneral2 ? 101 : 0;
+  if (high <= midA) high = ceilLegal(midA + 1e3);
+  reasons.push(`\u7EFC\u5408\u540E\u4E2D\u4F4D\u7EA6 ${fmtMoney(mid)}\uFF0C\u6309${isFuneral2 ? "\u767D\u4E8B\u5355\u6570" : "\u5E38\u89C1\u793C\u91D1"}\u89C4\u5219\u53D6\u6574\u4E3A ${fmtMoney(midA)}`);
+  if (isFuneral2) {
+    reasons.push("\u767D\u4E8B\u793C\u91D1\u6309\u5F53\u5730\u4E60\u60EF\u591A\u4E3A\u5355\u6570\uFF0C\u4E14\u5FCC\u7528\u559C\u4E8B\u5409\u6570\uFF1B\u5177\u4F53\u6570\u989D\u8BF7\u4EE5\u672C\u5730\u98CE\u4FD7\u4E3A\u51C6");
+  }
   return {
     low,
     mid: midA,
@@ -1213,17 +1453,51 @@ function giftAdvice(state, personId, occasion, opts = {}) {
     note: "\u793C\u91D1\u53D7\u5730\u533A\u3001\u4EB2\u758F\u3001\u5F53\u5730\u98CE\u4FD7\u5F71\u54CD\u5F88\u5927\uFF0C\u672C\u5EFA\u8BAE\u53EA\u662F\u53C2\u8C0B\uFF0C\u6700\u7EC8\u4EE5\u4F60\u7684\u5B9E\u9645\u5173\u7CFB\u548C\u5F53\u5730\u4E60\u60EF\u4E3A\u51C6\u3002"
   };
 }
+var GIFT_TABOO_RULES = [
+  { words: ["\u5EA7\u949F", "\u6302\u949F", "\u53F0\u949F", "\u95F9\u949F", "\u9001\u949F"], exempt: ["\u949F\u7231"], reason: "\u300C\u9001\u949F\u300D\u8C10\u97F3\u300C\u9001\u7EC8\u300D\uFF0C\u662F\u6700\u5E7F\u4E3A\u4EBA\u77E5\u7684\u5FCC\u8BB3\uFF0C\u5C24\u5176\u4E0D\u80FD\u9001\u957F\u8F88" },
+  { words: ["\u96E8\u4F1E", "\u9633\u4F1E", "\u6298\u53E0\u4F1E", "\u4E00\u628A\u4F1E"], exempt: ["\u4F1E\u67B6", "\u4F1E\u67C4"], reason: "\u300C\u4F1E\u300D\u8C10\u97F3\u300C\u6563\u300D\uFF0C\u5BD3\u610F\u5206\u6563\uFF0C\u4E0D\u9002\u5408\u4F5C\u4E3A\u793C\u7269" },
+  { words: ["\u96EA\u68A8", "\u9E2D\u68A8", "\u9999\u68A8", "\u68A8\u5B50", "\u4E00\u7BB1\u68A8", "\u679C\u7BEE\u542B\u68A8"], exempt: ["\u51E4\u68A8", "\u68A8\u818F", "\u68A8\u7CD6"], reason: "\u300C\u68A8\u300D\u8C10\u97F3\u300C\u79BB\u300D\uFF0C\u63A2\u75C5\u4E0E\u56E2\u5706\u573A\u5408\u90FD\u5C3D\u91CF\u907F\u5F00" },
+  { words: ["\u8FD0\u52A8\u978B", "\u76AE\u978B", "\u7403\u978B", "\u4E00\u53CC\u978B"], exempt: ["\u978B\u62D4", "\u978B\u67B6", "\u978B\u67DC"], reason: "\u300C\u978B\u300D\u8C10\u97F3\u300C\u90AA\u300D\uFF0C\u4E5F\u6709\u300C\u8D70\u6389\u300D\u4E4B\u610F\uFF0C\u9001\u4F34\u4FA3\u6216\u957F\u8F88\u8981\u8C28\u614E" },
+  { words: ["\u767D\u83CA", "\u83CA\u82B1\u675F", "\u83CA\u82B1\u7BEE"], exempt: ["\u83CA\u82B1\u8336", "\u83CA\u666E"], reason: "\u767D\u83CA\u591A\u7528\u4E8E\u796D\u5960\uFF0C\u559C\u5E86\u4E0E\u63A2\u75C5\u573A\u5408\u4E0D\u5B9C" },
+  { words: ["\u767D\u8721\u70DB", "\u8721\u70DB\u53F0"], reason: "\u767D\u8721\u70DB\u5C5E\u796D\u5960\u7528\u54C1\uFF0C\u4E0D\u53EF\u4F5C\u65E5\u5E38\u793C\u7269" },
+  { words: ["\u83DC\u5200", "\u526A\u5200", "\u5200\u5177", "\u4E00\u628A\u5200"], reason: "\u5200\u526A\u6709\u300C\u4E00\u5200\u4E24\u65AD\u300D\u4E4B\u610F\uFF0C\u5BB9\u6613\u8BA9\u4EBA\u591A\u60F3" }
+];
+function checkGiftTaboo(giftName, occasion) {
+  if (occasion === "\u767D\u4E8B") return [];
+  const name = String(giftName || "");
+  if (!name) return [];
+  const hits = [];
+  for (const rule of GIFT_TABOO_RULES) {
+    if (rule.exempt && rule.exempt.some((w) => name.includes(w))) continue;
+    const hit = rule.words.find((w) => name.includes(w));
+    if (hit) hits.push({ keyword: hit, reason: rule.reason });
+  }
+  return hits;
+}
+function giftAvoidTips(occasion) {
+  if (occasion === "\u767D\u4E8B") {
+    return ["\u5E1B\u91D1\u7528\u7D20\u8272\u4FE1\u5C01\u3001\u4E0D\u5305\u7EA2\u5C01\uFF1B\u4E0D\u9001\u53CC\u6570", "\u4E0D\u9001\u559C\u5E86\u82B1\u7BEE\u4E0E\u5F69\u5934\u793C\u54C1"];
+  }
+  if (occasion === "\u63A2\u75C5") {
+    return ["\u5FCC\u9001\u68A8\uFF08\u79BB\uFF09\u3001\u767D\u83CA\u3001\u949F\u8868\uFF1B\u907F\u514D\u9001\u9700\u8981\u75C5\u4EBA\u5FCC\u53E3\u7684\u4E1C\u897F"];
+  }
+  if (occasion === "\u5BFF\u5BB4" || occasion === "\u751F\u65E5") {
+    return ["\u5FCC\u9001\u949F\u8868\u3001\u978B\u3001\u4F1E\uFF1B\u53EF\u9009\u5BFF\u6843\u3001\u5BFF\u9762\u3001\u8336\u53F6\u6216\u5B9E\u7528\u4FDD\u5065\u54C1"];
+  }
+  return ["\u901A\u7528\u5FCC\u8BB3\uFF1A\u4E0D\u9001\u949F\u3001\u4F1E\u3001\u68A8\u3001\u978B\u3001\u767D\u83CA\u3001\u5200\u5177\uFF1B\u559C\u4E8B\u4E0D\u9001\u5355\u6570\uFF08\u767D\u4E8B\u9664\u5916\uFF09"];
+}
 
 // packages/core/src/health.ts
 function personHealth(state, p, now = Date.now()) {
   const m = computePerson(state, p, now);
   const l = personLedger(state, p.id);
   const evs = state.events.filter((e) => e.personId === p.id);
-  const conflicts = evs.filter((e) => e.type === "conflict" && now - e.time < 365 * DAY).length;
+  const conflicts = evs.filter((e) => e.type === "conflict" && e.time <= now && now - e.time < 365 * DAY).length;
   const reciprocity = l.net === 0 ? 100 : clamp(100 - Math.abs(l.net) / 30, 20, 95);
+  const debtPenalty = clamp(m.debt, 0, 100) * 0.18;
   const score = clamp(
     Math.round(
-      0.28 * m.heat + 0.22 * m.trust + 0.2 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6
+      0.28 * m.heat + 0.22 * m.trust + 0.2 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6 - debtPenalty
     ),
     0,
     100
@@ -1260,7 +1534,6 @@ function buildActions(state, limit = 6, now = Date.now()) {
   const push = (a) => out.push(a);
   for (const p of state.persons) {
     const m = computePerson(state, p, now);
-    const l = personLedger(state, p.id);
     if (p.birthday) {
       const d = daysUntil(p.birthday, now);
       if (d >= 0 && d <= 7) {
@@ -1306,29 +1579,58 @@ function buildActions(state, limit = 6, now = Date.now()) {
         secondary: { label: "\u8BB0\u4E00\u7B14", act: "eventQuick", arg: p.id }
       });
     }
-    if (l.net >= 300) {
+    const bal = balanceByKind(state, p.id);
+    if (bal.loan >= 300) {
       push({
-        key: "money-owe:" + p.id,
+        key: "loan-owe:" + p.id,
         personId: p.id,
         tone: "amber",
         icon: "money",
-        prio: 78,
-        title: `\u4F60\u5728\u8D26\u672C\u4E0A\u51C0\u6B20 ${p.name} ${fmtMoney(l.net)}`,
-        reason: "\u94B1\u548C\u793C\u90FD\u8981\u6709\u6765\u6709\u5F80\u3002\u5148\u786E\u8BA4\u662F\u793C\u91D1\u8FD8\u662F\u501F\u6B3E\uFF0C\u518D\u51B3\u5B9A\u56DE\u793C\u8FD8\u662F\u8FD8\u6B3E\u3002",
-        primary: { label: "\u8FD8\u793C\u53C2\u8C0B", act: "giftModal", arg: p.id },
-        secondary: { label: "\u53BB\u8BB0\u5F55", act: "eventQuick", arg: p.id }
+        prio: 88,
+        title: `\u4F60\u5411 ${p.name} \u501F\u4E86 ${fmtMoney(bal.loan)}`,
+        reason: "\u501F\u6B3E\u8981\u8FD8\u672C\u91D1\uFF0C\u548C\u968F\u793C\u4E0D\u662F\u4E00\u56DE\u4E8B\u3002\u7EA6\u4E2A\u660E\u786E\u65F6\u95F4\u8FD8\u4E0A\uFF0C\u6BD4\u62D6\u7740\u66F4\u4F53\u9762\u3002",
+        primary: { label: "\u8FD8\u6B3E\u8BDD\u672F", act: "scriptModal", arg: "repay_loan|" + p.id },
+        secondary: { label: "\u8BB0\u4E00\u7B14\u8FD8\u6B3E", act: "eventQuick", arg: p.id }
       });
-    } else if (l.net <= -300) {
+    } else if (bal.loan <= -300) {
       push({
-        key: "money-due:" + p.id,
+        key: "loan-due:" + p.id,
         personId: p.id,
         tone: "blue",
         icon: "money",
-        prio: 46,
-        title: `${p.name} \u8FD8\u6B20\u4F60 ${fmtMoney(-l.net)}`,
-        reason: "\u5982\u679C\u662F\u501F\u6B3E\uFF0C\u627E\u4E2A\u8F7B\u677E\u7684\u7531\u5934\u63D0\u4E00\u53E5\uFF1B\u5982\u679C\u662F\u793C\u91D1\uFF0C\u7B49\u5408\u9002\u573A\u5408\u81EA\u7136\u56DE\u793C\u5373\u53EF\u3002",
+        prio: 84,
+        title: `${p.name} \u8FD8\u6B20\u4F60 ${fmtMoney(-bal.loan)} \u501F\u6B3E`,
+        reason: "\u501F\u6B3E\u6309\u7EA6\u5B9A\u65F6\u95F4\u6536\u56DE\uFF1B\u6CA1\u6709\u7EA6\u5B9A\u5C31\u8BF4\u6E05\u81EA\u5DF1\u7684\u7528\u94B1\u5B89\u6392\uFF0C\u522B\u7528\u50AC\u793C\u7684\u8BED\u6C14\u3002",
         primary: { label: "\u50AC\u8FD8\u8BDD\u672F", act: "scriptModal", arg: "collect_debt|" + p.id },
         secondary: { label: "\u53BB\u8BB0\u5F55", act: "eventQuick", arg: p.id }
+      });
+    }
+    if (bal.gift >= 300) {
+      push({
+        key: "gift-owe:" + p.id,
+        personId: p.id,
+        tone: "amber",
+        icon: "gift",
+        prio: 78,
+        title: `\u4EBA\u60C5\u8D26\u4E0A\u4F60\u8FD8\u6B20 ${p.name} ${fmtMoney(bal.gift)}`,
+        reason: "\u793C\u91D1\u8BB2\u7A76\u6709\u6765\u6709\u5F80\u3002\u7B49\u5BF9\u65B9\u4E0B\u6B21\u529E\u4E8B\u65F6\u8FD8\u4E0A\uFF0C\u6216\u4EE5\u5B9E\u7269\u3001\u8BF7\u996D\u7684\u65B9\u5F0F\u7B54\u8C22\u3002",
+        primary: { label: "\u8FD8\u793C\u53C2\u8C0B", act: "giftModal", arg: p.id },
+        secondary: { label: "\u8BB0\u4E00\u7B14", act: "eventQuick", arg: p.id }
+      });
+    }
+    const recentGift = state.events.filter((e) => e.personId === p.id && e.type === "gift_get" && eventDir(e) === "in" && Number(e.amount) > 0 && e.time <= now && now - e.time <= 7 * DAY).sort((a, b) => b.time - a.time)[0];
+    if (recentGift) {
+      const age = Math.floor((now - recentGift.time) / DAY);
+      push({
+        key: "gift-thanks:" + p.id,
+        personId: p.id,
+        tone: "teal",
+        icon: "gift",
+        prio: 82,
+        title: `\u4E3A ${p.name} \u7684\u793C\u56DE\u4E2A\u8BDD`,
+        reason: `\u300C${recentGift.title || "\u5BF9\u65B9\u7684\u5FC3\u610F"}\u300D${age === 0 ? "\u662F\u4ECA\u5929" : age + " \u5929\u524D"}\u6536\u5230\u7684\u3002\u5148\u8BF4\u58F0\u8C22\u8C22\uFF0C\u518D\u628A\u8FD9\u4EFD\u4EBA\u60C5\u8BB0\u4E0B\u6765\uFF0C\u65E5\u540E\u597D\u8FD8\u3002`,
+        primary: { label: "\u9053\u8C22\u8BDD\u672F", act: "scriptModal", arg: "thanks|" + p.id },
+        secondary: { label: "\u8BB0\u4E00\u7B14", act: "eventQuick", arg: p.id }
       });
     }
     if (m.lastDays !== null && m.lastDays >= 60) {
@@ -1491,7 +1793,7 @@ var SCRIPT_SCENES = [
     label: "\u50AC\u8FD8/\u63D0\u9192",
     hint: "\u7ED9\u5177\u4F53\u65F6\u95F4\u70B9\uFF0C\u8BED\u6C14\u5E73\u548C\uFF0C\u522B\u8BA9\u4EBA\u4E0B\u4E0D\u6765\u53F0",
     build: (c) => ({
-      stable: `${c.name}\uFF0C\u6700\u8FD1\u6574\u7406\u8D26\u672C\u770B\u5230\u4E4B\u524D${c.context ? c.context : "\u90A3\u7B14\u94B1"}\uFF0C\u60F3\u8DDF\u60A8\u786E\u8BA4\u4E00\u4E0B\u5927\u6982\u4EC0\u4E48\u65F6\u5019\u65B9\u4FBF\uFF1F\u6211\u8FD9\u8FB9\u6700\u8FD1\u4E5F\u6709\u70B9\u5B89\u6392\uFF0C\u4E0D\u7740\u6025\uFF0C\u60A8\u65B9\u4FBF\u65F6\u56DE\u6211\u5C31\u884C\u3002`,
+      stable: `${c.name}\uFF0C\u6700\u8FD1\u6211\u8FD9\u8FB9\u6709\u70B9\u5B89\u6392\uFF0C\u60F3\u95EE\u4E00\u4E0B\u4E4B\u524D${c.context ? c.context : "\u90A3\u7B14\u94B1"}\u5927\u6982\u4EC0\u4E48\u65F6\u5019\u65B9\u4FBF\uFF1F\u4E0D\u7740\u6025\uFF0C\u60A8\u65B9\u4FBF\u65F6\u56DE\u6211\u5C31\u884C\u3002`,
       close: `${c.name}\uFF0C\u6700\u8FD1\u624B\u5934\u6709\u70B9\u7D27\uFF0C\u4E4B\u524D${c.context ? c.context : "\u90A3\u7B14\u94B1"}\u4F60\u770B\u8FD9\u5468\u65B9\u4FBF\u5148\u8FD8\u4E00\u90E8\u5206\u5417\uFF1F\u5269\u4E0B\u7684\u54B1\u4EEC\u518D\u5546\u91CF\u3002`,
       brief: `${c.name}\uFF0C\u4E4B\u524D\u90A3\u7B14\u94B1\u6700\u8FD1\u65B9\u4FBF\u8FD8\u5417\uFF1F\u6211\u8FD9\u8FB9\u6709\u70B9\u6025\u7528\u3002`
     })
@@ -1504,6 +1806,30 @@ var SCRIPT_SCENES = [
       stable: `${c.name}\uFF0C${c.context ? c.context : "\u60A8\u7684\u597D\u65E5\u5B50"}\u6211\u8BB0\u7740\u5462\u3002\u4E00\u70B9\u5FC3\u610F\uFF0C\u4E0D\u6210\u656C\u610F\uFF0C\u795D\u60A8\u4E00\u5207\u987A\u9042\u3002`,
       close: `${c.name}\uFF0C${c.context ? c.context : "\u4F60\u7684\u4E8B"}\u5C31\u662F\u6211\u7684\u4E8B\u3002\u7EA2\u5305\u6536\u4E0B\uFF0C\u522B\u8DDF\u6211\u5BA2\u6C14\uFF0C\u6539\u5929\u518D\u805A\u3002`,
       brief: `${c.name}\uFF0C\u4E00\u70B9\u5FC3\u610F\uFF0C\u795D\u597D\u3002`
+    })
+  },
+  {
+    /* 还款专用。以前 buildActions 的「还款话术」复用了 thanks 模板，
+       生成出来是「上次那事多亏您帮忙…改天请您吃饭」，与还款完全无关。 */
+    id: "repay_loan",
+    label: "\u8FD8\u6B3E\u8BF4\u660E",
+    hint: "\u628A\u91D1\u989D\u3001\u65B9\u5F0F\u3001\u65F6\u95F4\u8BF4\u6E05\u695A\uFF0C\u522B\u8BA9\u5BF9\u65B9\u5F00\u53E3\u50AC",
+    build: (c) => ({
+      stable: `${c.name}\uFF0C\u4E4B\u524D\u8DDF\u60A8\u501F\u7684${c.context ? c.context : "\u90A3\u7B14\u94B1"}\uFF0C\u6211\u8FD9\u8FB9\u5B89\u6392\u597D\u4E86\uFF0C\u4ECA\u5929\u8F6C\u7ED9\u60A8\u3002\u62D6\u4E86\u8FD9\u4E9B\u5929\uFF0C\u5B9E\u5728\u4E0D\u597D\u610F\u601D\uFF0C\u4E5F\u8C22\u8C22\u60A8\u5F53\u65F6\u5E2E\u5FD9\u3002`,
+      close: `${c.name}\uFF0C\u4E4B\u524D\u501F\u4F60\u7684${c.context ? c.context : "\u90A3\u7B14\u94B1"}\u6211\u8F6C\u8FC7\u53BB\u4E86\uFF0C\u4F60\u770B\u4E0B\u5230\u8D26\u6CA1\u3002\u8C22\u8C22\u554A\uFF0C\u5E2E\u4E86\u5927\u5FD9\u3002`,
+      brief: `${c.name}\uFF0C\u4E4B\u524D\u501F\u7684\u94B1\u5DF2\u8F6C\uFF0C\u6536\u5230\u8BF4\u4E00\u58F0\u3002\u8C22\u8C22\uFF01`
+    })
+  },
+  {
+    /* 白事是唯一没有第二次补救机会的场合：话要说少、说稳，忌道喜、
+       忌提钱、忌劝「想开点」。三条都按「到场 + 具体帮忙」来写。 */
+    id: "condolence",
+    label: "\u767D\u4E8B\u6170\u95EE",
+    hint: "\u5C11\u8BF4\u591A\u505A\uFF0C\u5230\u573A\u6BD4\u8BDD\u672F\u91CD\u8981\uFF1B\u5FCC\u9053\u559C\u3001\u5FCC\u529D\u60F3\u5F00",
+    build: (c) => ({
+      stable: `${c.name}\uFF0C\u60CA\u95FB${c.context ? c.context : "\u5BB6\u4E2D\u53D8\u6545"}\uFF0C\u5FC3\u91CC\u5F88\u4E0D\u597D\u53D7\u3002\u8FD9\u79CD\u65F6\u5019\u8BF4\u4EC0\u4E48\u90FD\u8F7B\uFF0C\u6211\u5148\u8FC7\u6765\u642D\u628A\u624B\uFF0C\u6709\u4EC0\u4E48\u8981\u8DD1\u7684\u3001\u8981\u63A5\u7684\uFF0C\u60A8\u5C3D\u7BA1\u5429\u5490\u3002`,
+      close: `${c.name}\uFF0C\u521A\u542C\u8BF4${c.context ? c.context : "\u5BB6\u91CC\u7684\u4E8B"}\uFF0C\u6211\u9A6C\u4E0A\u8FC7\u6765\u3002\u522B\u7684\u5148\u4E0D\u8BF4\uFF0C\u4F60\u9700\u8981\u8DD1\u817F\u3001\u63A5\u4EBA\u3001\u5B88\u591C\uFF0C\u968F\u65F6\u558A\u6211\u3002`,
+      brief: `${c.name}\uFF0C\u8282\u54C0\u3002\u9700\u8981\u5E2E\u5FD9\u968F\u65F6\u8BF4\uFF0C\u6211\u8FC7\u6765\u3002`
     })
   },
   {
@@ -1603,6 +1929,96 @@ function buildScripts(state, sceneId, personId, context) {
   const texts = sc.build(c);
   const variants = SCRIPT_TONES.map((t) => ({ tone: t.label, id: t.id, text: texts[t.id] }));
   return { scene: sc, person: p, variants };
+}
+
+// packages/core/src/etiquette.ts
+var isFuneral = (o) => o === "\u767D\u4E8B";
+var isJoy = (o) => ["\u5A5A\u793C", "\u6EE1\u6708", "\u4E54\u8FC1", "\u5BFF\u5BB4", "\u5347\u5B66", "\u5F00\u4E1A", "\u751F\u65E5", "\u8282\u65E5"].includes(o);
+var isSick = (o) => o === "\u63A2\u75C5";
+var RULES = [
+  {
+    id: "funeral-red",
+    scene: "\u767D\u4E8B",
+    severity: "high",
+    match: isFuneral,
+    text: "\u767D\u4E8B\u4E0D\u7A7F\u7EA2\u3001\u4E0D\u6234\u559C\u8272\u9996\u9970\uFF1B\u5E1B\u91D1\u7528\u7D20\u8272\uFF08\u767D/\u7D20\uFF09\u4FE1\u5C01\uFF0C\u522B\u7528\u7EA2\u5C01\u3002"
+  },
+  {
+    id: "funeral-congrats",
+    scene: "\u767D\u4E8B",
+    severity: "high",
+    match: isFuneral,
+    text: "\u5FCC\u8BF4\u300C\u606D\u559C\u300D\u300C\u597D\u65E5\u5B50\u300D\u300C\u518D\u89C1\u300D\uFF0C\u5FCC\u5728\u7075\u524D\u5BD2\u6684\u592A\u4E45\uFF1B\u300C\u8282\u54C0\u300D\u4E8C\u5B57\u8DB3\u591F\u3002"
+  },
+  {
+    id: "funeral-parity",
+    scene: "\u767D\u4E8B",
+    severity: "normal",
+    match: isFuneral,
+    text: "\u5E1B\u91D1\u591A\u53D6\u5355\u6570\uFF08\u5982 301\u3001501\uFF09\uFF0C\u5404\u5730\u6709\u5DEE\u5F02\uFF1B\u559C\u4E8B\u7684\u53CC\u6570\u5409\u6570\u4E0D\u8981\u5957\u7528\u3002"
+  },
+  {
+    id: "funeral-visit-time",
+    scene: "\u767D\u4E8B",
+    severity: "normal",
+    match: isFuneral,
+    text: "\u540A\u5501\u5B9C\u65E9\u4E0D\u5B9C\u8FDF\uFF0C\u9519\u8FC7\u51FA\u6BA1\u51E0\u4E4E\u65E0\u6CD5\u8865\uFF1B\u5230\u573A\u6BD4\u968F\u793C\u66F4\u91CD\u8981\u3002"
+  },
+  {
+    id: "sick-pear",
+    scene: "\u63A2\u75C5",
+    severity: "high",
+    match: isSick,
+    text: "\u63A2\u75C5\u5FCC\u9001\u68A8\uFF08\u8C10\u97F3\u300C\u79BB\u300D\uFF09\u3001\u767D\u83CA\u3001\u949F\u8868\uFF1B\u4E5F\u907F\u5F00\u75C5\u4EBA\u5FCC\u53E3\u7684\u4E1C\u897F\u3002"
+  },
+  {
+    id: "sick-time",
+    scene: "\u63A2\u75C5",
+    severity: "normal",
+    match: isSick,
+    text: "\u907F\u5F00\u624B\u672F\u5F53\u5929\u4E0E\u5348\u4F11\u65F6\u6BB5\uFF0C\u63A2\u89C6\u5B9C\u77ED\uFF1B\u591A\u95EE\u300C\u9700\u8981\u6211\u505A\u4EC0\u4E48\u300D\u5C11\u8BB2\u5927\u9053\u7406\u3002"
+  },
+  {
+    id: "sick-money",
+    scene: "\u63A2\u75C5",
+    severity: "normal",
+    match: isSick,
+    text: "\u63A2\u75C5\u4EE5\u5B9E\u7269\u6170\u95EE\uFF08\u6C34\u679C\u3001\u8425\u517B\u54C1\uFF09\u4E3A\u4E3B\uFF1B\u82E5\u5173\u7CFB\u5F88\u8FD1\u6216\u5BF9\u65B9\u786E\u6709\u7ECF\u6D4E\u538B\u529B\uFF0C\u518D\u8003\u8651\u73B0\u91D1\uFF0C\u91CF\u529B\u800C\u884C\u3002"
+  },
+  {
+    id: "joy-even",
+    scene: "\u559C\u4E8B",
+    severity: "normal",
+    match: isJoy,
+    text: "\u559C\u4E8B\u793C\u91D1\u504F\u597D\u53CC\u6570\u4E0E 6/8/9\uFF0C\u5FCC 4\uFF1B\u5177\u4F53\u5409\u6570\u5404\u5730\u4E0D\u540C\uFF0C\u6309\u5F53\u5730\u4E60\u60EF\u8C03\u6574\u3002"
+  },
+  {
+    id: "joy-clock",
+    scene: "\u559C\u4E8B",
+    severity: "high",
+    match: (o) => isJoy(o) || o === "\u751F\u65E5",
+    text: "\u4E0D\u9001\u949F\uFF08\u8C10\u97F3\u300C\u9001\u7EC8\u300D\uFF09\u3001\u4E0D\u9001\u4F1E\uFF08\u300C\u6563\u300D\uFF09\u3001\u4E0D\u9001\u978B\uFF08\u300C\u90AA\u300D\uFF09\uFF1B\u957F\u8F88\u5C24\u5176\u5FCC\u8BB3\u3002"
+  },
+  {
+    id: "elder-birthday",
+    scene: "\u5BFF\u5BB4",
+    severity: "normal",
+    // 只对长辈/家人提示；给同龄朋友看「长辈寿礼忌……」会答非所问。
+    match: (o) => o === "\u5BFF\u5BB4",
+    text: "\u5BFF\u793C\u5FCC\u949F\u8868\u3001\u978B\u3001\u4F1E\uFF1B\u5BFF\u6843/\u5BFF\u9762/\u8336\u53F6\u66F4\u7A33\u59A5\u3002\u90E8\u5206\u5730\u533A\u8BB2\u7A76\u300C\u8FC7\u4E5D\u4E0D\u8FC7\u5341\u300D\uFF0C\u5148\u95EE\u4E00\u53E5\u3002"
+  },
+  {
+    id: "leader-cash",
+    scene: "\u804C\u573A\u5408\u89C4",
+    severity: "high",
+    // 覆盖所有会送现金的场合（含日常、还礼）；这类风险与场合无关。
+    match: () => true,
+    text: "\u7ED9\u9886\u5BFC\u3001\u516C\u804C\u6216\u91C7\u8D2D\u5C97\u9001\u73B0\u91D1/\u8D2D\u7269\u5361\uFF0C\u5728\u591A\u6570\u5355\u4F4D\u5C5E\u8FDD\u89C4\uFF0C\u4E5F\u6709\u5408\u89C4\u98CE\u9669\uFF1B\u4EE5\u96C6\u4F53\u540D\u4E49\u6216\u5B9E\u7269\u66F4\u7A33\u59A5\u3002"
+  }
+];
+function etiquetteTips(occasion, identity = "") {
+  const risky = ["\u9886\u5BFC", "\u5BA2\u6237"].includes(identity);
+  return RULES.filter((r) => r.match(occasion)).filter((r) => r.id !== "leader-cash" || risky).map((r) => ({ id: r.id, scene: r.scene, severity: r.severity, text: r.text }));
 }
 
 // packages/core/src/ics.ts
@@ -1939,24 +2355,70 @@ function createLocalAdapter(options = {}) {
 }
 
 // packages/core/src/storage/migrate.ts
+var LEGACY_DROPPED_FIELDS = /* @__PURE__ */ new Set([
+  "updatedAt",
+  "lastContact",
+  "avatar",
+  "pinned",
+  "group",
+  "source",
+  "importedAt"
+]);
 function isObj2(x) {
   return !!x && typeof x === "object" && !Array.isArray(x);
 }
-function preservesInput(raw, clean, allowLegacyDate = false) {
+var TRUNCATABLE_KEYS = /* @__PURE__ */ new Set(["name", "note", "title", "likes", "taboos", "content", "identity", "occasion"]);
+function isSafeTruncation(key, raw, clean) {
+  if (typeof raw !== "string" || typeof clean !== "string") return false;
+  if (raw.length > clean.length && raw.startsWith(clean)) return TRUNCATABLE_KEYS.has(key) || clean.length > 0;
+  if (clean === "" && (key === "birthday" || key === "anniversary")) return true;
+  return false;
+}
+function preservesInputStrict(raw, clean) {
   if (Array.isArray(raw)) {
-    return Array.isArray(clean) && raw.length === clean.length && raw.every((item, i) => preservesInput(item, clean[i], allowLegacyDate));
+    return Array.isArray(clean) && raw.length === clean.length && raw.every((item, i) => preservesInputStrict(item, clean[i]));
   }
   if (isObj2(raw)) {
     return isObj2(clean) && Object.keys(raw).every((key) => {
       if (!Object.prototype.hasOwnProperty.call(clean, key)) return false;
+      return preservesInputStrict(raw[key], clean[key]);
+    });
+  }
+  return raw === clean;
+}
+function isValidMMDD(v) {
+  const m = v.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
+  if (!m) return false;
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const probe = new Date(2e3, month - 1, day);
+  return probe.getMonth() === month - 1 && probe.getDate() === day;
+}
+function preservesInput(raw, clean, allowLegacyDate = false) {
+  if (Array.isArray(raw)) {
+    if (!Array.isArray(clean) || raw.length !== clean.length) return false;
+    return raw.every((item, i) => preservesInput(item, clean[i], allowLegacyDate));
+  }
+  if (isObj2(raw)) {
+    return isObj2(clean) && Object.keys(raw).every((key) => {
+      if (LEGACY_DROPPED_FIELDS.has(key)) return true;
+      if (key === "tags" && Array.isArray(raw[key]) && Array.isArray(clean[key])) {
+        return true;
+      }
+      if (!Object.prototype.hasOwnProperty.call(clean, key)) return false;
       const value = raw[key];
-      if (allowLegacyDate && (key === "birthday" || key === "anniversary") && typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      if (isSafeTruncation(key, value, clean[key])) return true;
+      if (key === "dir" && (value === void 0 || value === null) && clean[key] === "none") return true;
+      if ((key === "birthday" || key === "anniversary") && typeof value === "string" && value !== "" && clean[key] === "" && !isValidMMDD(value)) return true;
+      if ((key === "birthday" || key === "anniversary") && typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
         const date = /* @__PURE__ */ new Date(`${value}T00:00:00Z`);
         if (Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value && clean[key] === value.slice(5)) return true;
       }
       return preservesInput(value, clean[key], allowLegacyDate);
     });
   }
+  if (typeof raw === "number" && typeof clean === "number") return true;
   return raw === clean;
 }
 function detectSchema(raw) {
@@ -2002,7 +2464,7 @@ function migrate(raw) {
   const fields = ["persons", "events", "reminders", "progress", "streak", "settings"];
   const rawMeta = isObj2(raw.meta) ? raw.meta : {};
   const legacy = from > 0 && from < to;
-  const backupRequired = legacy && !preservesInput(raw.persons, state.persons);
+  const backupRequired = !preservesInputStrict(raw, state) && ("persons" in raw || "events" in raw || "reminders" in raw);
   const invalidMeta = "meta" in raw && (!isObj2(raw.meta) || "schema" in rawMeta && (typeof rawMeta.schema !== "number" || !Number.isInteger(rawMeta.schema) || rawMeta.schema < 0) || "updatedAt" in rawMeta && (typeof rawMeta.updatedAt !== "number" || !Number.isFinite(rawMeta.updatedAt)));
   const invalidSchema = "schema" in raw && (typeof raw.schema !== "number" || !Number.isInteger(raw.schema) || raw.schema < 0);
   const unsafe = invalidMeta || invalidSchema || from > to || typeof raw.schema === "number" && raw.schema > to || typeof rawMeta.schema === "number" && rawMeta.schema > to || Object.keys(raw).some((key) => !["schema", "meta", ...fields].includes(key)) || Object.keys(rawMeta).some((key) => key !== "schema" && key !== "updatedAt") || fields.some((field) => field in raw && !preservesInput(raw[field], state[field], legacy && field === "persons"));
@@ -2051,8 +2513,13 @@ function createStore(adapter) {
         if (!writeProtected && migrated.backupRequired) {
           const backupKey = `${DB_KEY}_migration_backup`;
           const existing = adapter.getItem(backupKey);
-          if ("degraded" in adapter && adapter.degraded || existing !== null && existing !== raw || existing === null && !adapter.setItem(backupKey, raw) || adapter.getItem(backupKey) !== raw || "degraded" in adapter && adapter.degraded) {
+          if ("degraded" in adapter && adapter.degraded) {
             writeProtected = true;
+          } else if (existing === null) {
+            if (!adapter.setItem(backupKey, raw) || adapter.getItem(backupKey) !== raw) writeProtected = true;
+          } else if (existing !== raw) {
+            const altKey = `${backupKey}_${Date.now()}`;
+            if (!adapter.setItem(altKey, raw) || adapter.getItem(altKey) !== raw) writeProtected = true;
           }
         }
         if (!writeProtected && (fromLegacyKey || migrated.from !== SCHEMA_VERSION)) store.save();
@@ -2063,6 +2530,7 @@ function createStore(adapter) {
       }
     },
     save() {
+      var _a, _b, _c, _d;
       if (writeProtected) return false;
       try {
         const updatedAt = Date.now();
@@ -2077,7 +2545,44 @@ function createStore(adapter) {
           streak: state.streak,
           settings: state.settings
         };
-        return adapter.setItem(DB_KEY, JSON.stringify(body));
+        const normalized = sanitizeImport(body);
+        if (normalized.persons.length !== state.persons.length || normalized.events.length !== state.events.length || normalized.reminders.length !== state.reminders.length) {
+          return false;
+        }
+        for (let i = 0; i < state.events.length; i++) {
+          const before = state.events[i];
+          const after = normalized.events[i];
+          if (!after) return false;
+          if ((Number(before.amount) || 0) !== (Number(after.amount) || 0)) return false;
+          if (String((_a = before.title) != null ? _a : "").length > 80) return false;
+          if (String((_b = before.note) != null ? _b : "").length > 500) return false;
+        }
+        for (let i = 0; i < state.persons.length; i++) {
+          const before = state.persons[i];
+          const after = normalized.persons[i];
+          if (!after) return false;
+          if (String((_c = before.name) != null ? _c : "").length > 60) return false;
+          if (String((_d = before.note) != null ? _d : "").length > 500) return false;
+          if (Array.isArray(before.tags) && before.tags.length > 10) return false;
+        }
+        const payload = {
+          schema: SCHEMA_VERSION,
+          meta: state.meta,
+          persons: normalized.persons,
+          events: normalized.events,
+          reminders: normalized.reminders,
+          progress: normalized.progress,
+          streak: normalized.streak,
+          settings: normalized.settings
+        };
+        if (!adapter.setItem(DB_KEY, JSON.stringify(payload))) return false;
+        state.persons = normalized.persons;
+        state.events = normalized.events;
+        state.reminders = normalized.reminders;
+        state.progress = normalized.progress;
+        state.streak = normalized.streak;
+        state.settings = normalized.settings;
+        return true;
       } catch (e) {
         return false;
       }
@@ -2101,6 +2606,7 @@ function createStore(adapter) {
       return JSON.stringify(store.export(), null, 2);
     },
     importObjects(raw) {
+      var _a, _b, _c, _d;
       const warnings = [];
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
         warnings.push("\u5BFC\u5165\u5931\u8D25\uFF1A\u6587\u4EF6\u683C\u5F0F\u4E0D\u5BF9");
@@ -2116,11 +2622,28 @@ function createStore(adapter) {
         return { applied: false, clean: sanitizeImport({}), warnings };
       }
       const clean = sanitizeImport(obj);
-      store.applyImport(clean);
-      return { applied: true, clean, warnings };
+      warnings.push(...clean.warn);
+      if (clean.persons.length === 0) {
+        warnings.push("\u5BFC\u5165\u5931\u8D25\uFF1A\u6CA1\u6709\u53EF\u7528\u7684\u8054\u7CFB\u4EBA\uFF0C\u5DF2\u4FDD\u7559\u73B0\u6709\u6570\u636E");
+        return { applied: false, clean, warnings };
+      }
+      const rawEvents = obj.events || [];
+      for (let i = 0; i < rawEvents.length; i++) {
+        const rawAmount = Number((_b = (_a = rawEvents[i]) == null ? void 0 : _a.amount) != null ? _b : 0);
+        const cleanAmount = Number((_d = (_c = clean.events[i]) == null ? void 0 : _c.amount) != null ? _d : 0);
+        if (Number.isFinite(rawAmount) && rawAmount > 0 && rawAmount !== cleanAmount) {
+          warnings.push(`\u5BFC\u5165\u5931\u8D25\uFF1A\u7B2C ${i + 1} \u6761\u5F80\u6765\u91D1\u989D ${rawAmount} \u8D85\u51FA\u5141\u8BB8\u8303\u56F4\uFF08\u4E0A\u9650 1000 \u4E07\uFF09\uFF0C\u5DF2\u4FDD\u7559\u73B0\u6709\u6570\u636E`);
+          return { applied: false, clean, warnings };
+        }
+      }
+      const applied = store.applyImport(clean);
+      if (!applied) warnings.push("\u5BFC\u5165\u5931\u8D25\uFF1A\u5199\u5165\u672C\u673A\u5B58\u50A8\u5931\u8D25\uFF0C\u73B0\u6709\u6570\u636E\u672A\u6539\u52A8");
+      return { applied, clean, warnings };
     },
+    /** 返回是否真正落盘。先写入成功再替换内存，失败时保持原状态。 */
     applyImport(clean) {
-      state = {
+      const prev = state;
+      const next = {
         ...state,
         persons: clean.persons,
         events: clean.events,
@@ -2135,7 +2658,10 @@ function createStore(adapter) {
         sortBy: "heat",
         trainDiff: "\u5168\u90E8"
       };
-      store.save();
+      state = next;
+      if (store.save()) return true;
+      state = prev;
+      return false;
     },
     setAIKey(key) {
       return adapter.setItem(AI_KEY, String(key));

@@ -8,11 +8,17 @@ export function personHealth(state: AppState, p: Person, now: number = Date.now(
   const m = computePerson(state, p, now);
   const l = personLedger(state, p.id);
   const evs = state.events.filter((e) => e.personId === p.id);
-  const conflicts = evs.filter((e) => e.type === 'conflict' && now - e.time < 365 * DAY).length;
+  /* 未来冲突尚未发生，不参与「近一年摩擦」统计。 */
+  const conflicts = evs.filter((e) => e.type === 'conflict' && e.time <= now && now - e.time < 365 * DAY).length;
   const reciprocity = l.net === 0 ? 100 : clamp(100 - Math.abs(l.net) / 30, 20, 95);
+  /* 人情债必须进入评分。之前只算 heat/trust/intimacy/activity/reciprocity，
+     而收礼、受助会同时抬高前三项，结果「欠得越多分越高」：
+     实测一个人累计欠 62 点人情债，健康分 89「关系稳固」，
+     同一条 tips 却写着「人情债偏高，近期安排一次回礼」——分数与建议自相矛盾。 */
+  const debtPenalty = clamp(m.debt, 0, 100) * 0.18;
   const score = clamp(
     Math.round(
-      0.28 * m.heat + 0.22 * m.trust + 0.2 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6
+      0.28 * m.heat + 0.22 * m.trust + 0.2 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6 - debtPenalty
     ),
     0,
     100

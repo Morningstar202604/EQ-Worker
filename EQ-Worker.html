@@ -45,7 +45,7 @@ body{
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:repeating-linear-gradient(0deg, rgba(122,105,80,.035) 0 1px, transparent 1px 27px),
              repeating-linear-gradient(90deg, rgba(122,105,80,.024) 0 1px, transparent 1px 27px)}
-#app{max-width:720px;margin:0 auto;min-height:100vh;position:relative;z-index:1;padding-bottom:calc(66px + var(--sb))}
+#app{max-width:720px;margin:0 auto;min-height:100vh;position:relative;z-index:1;padding-bottom:calc(88px + var(--sb))}
 ::selection{background:rgba(95,133,117,.25)}
 
 /* ---------- 顶栏（日记扉页） ---------- */
@@ -185,9 +185,12 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
 
 /* ---------- 修炼（印章） ---------- */
 .level-banner{display:flex;align-items:center;gap:14px}
-.level-badge{flex:none;width:62px;height:62px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  border:2px solid var(--teal);color:var(--teal);font-weight:700;font-family:var(--kaiti);background:rgba(95,133,117,.06);box-shadow:0 0 0 4px rgba(95,133,117,.08)}
-.level-badge .lv{font-size:11px;color:var(--sub);font-weight:400;font-family:var(--serif)}
+/* 段位徽章：原来是 62px 圆形，四字段位名会被挤成三行。
+   改成圆角方块并限制行数，名称与智慧值分行显示。 */
+.level-badge{flex:none;min-width:76px;padding:10px 12px;border-radius:14px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;border:2px solid var(--teal);color:var(--teal);font-weight:700;font-family:var(--kaiti);
+  font-size:14px;line-height:1.2;white-space:nowrap;background:rgba(95,133,117,.06);box-shadow:0 0 0 4px rgba(95,133,117,.06)}
+.level-badge .lv{font-size:10.5px;color:var(--sub);font-weight:400;font-family:var(--serif);white-space:nowrap}
 .pbar{height:8px;border-radius:8px;background:rgba(122,105,80,.14);overflow:hidden;margin-top:8px}
 .pbar .fill{height:100%;background:linear-gradient(90deg,#7da08f,#5f8575);border-radius:8px;transition:width .3s}
 .scen-card{background:var(--card);border:1px solid var(--line2);border-radius:var(--radius);padding:14px;margin:0 14px 10px;cursor:pointer;transition:box-shadow .15s;box-shadow:var(--shadow2)}
@@ -276,6 +279,63 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
 .daterow:last-child{border-bottom:none}
 .datebadge{flex:none;min-width:42px;text-align:center;font-size:10px;font-weight:700;color:var(--teal);background:rgba(95,133,117,.11);border:1px solid rgba(95,133,117,.25);border-radius:8px;padding:4px 5px}
 .toolgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+/* ---------- 首页卡片宫格 ---------- */
+.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 14px}
+.entry-card{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);
+  border:1px solid var(--line2);border-radius:14px;padding:14px 12px;box-shadow:var(--shadow2);cursor:pointer;
+  font-family:var(--serif);color:var(--text);min-height:74px;transition:transform .08s,box-shadow .18s,border-color .15s}
+.entry-card:hover{box-shadow:0 8px 20px rgba(122,105,80,.12);border-color:rgba(95,133,117,.4)}
+.entry-card:active{transform:scale(.98)}
+.entry-ic{flex:none;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(95,133,117,.1)}
+.entry-ic svg{width:20px;height:20px;stroke:var(--teal);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.entry-card.tone-amber .entry-ic{background:rgba(201,168,106,.16)}.entry-card.tone-amber .entry-ic svg{stroke:var(--amber)}
+.entry-card.tone-blue .entry-ic{background:rgba(138,166,201,.16)}.entry-card.tone-blue .entry-ic svg{stroke:var(--blue)}
+.entry-card.tone-red .entry-ic{background:rgba(201,123,123,.15)}.entry-card.tone-red .entry-ic svg{stroke:var(--red)}
+.entry-card.tone-green .entry-ic{background:rgba(127,174,131,.16)}.entry-card.tone-green .entry-ic svg{stroke:var(--green)}
+.entry-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.entry-title{font-size:14px;font-weight:700;color:var(--inkdeep)}
+.entry-badge{font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-go{flex:none;color:var(--dim);font-size:18px;line-height:1}
+@media(max-width:380px){.entry-grid{grid-template-columns:1fr}}
+
+/* ---------- 二级页与返回 ---------- */
+.subpage{padding-top:2px}
+.backlink{display:inline-flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;
+  font-family:var(--serif);font-size:13.5px;color:var(--teal);padding:10px 14px 2px;min-height:40px}
+.backlink:hover{text-decoration:underline}
+
+/* ---------- 引导向导 ---------- */
+.wizard-teaser{background:linear-gradient(135deg,rgba(201,168,106,.10),rgba(95,133,117,.08)),var(--card);
+  border-color:rgba(201,168,106,.32)}
+.wt-kicker{font-size:11px;letter-spacing:2px;color:var(--amber);margin-bottom:6px}
+.wt-title{font-family:var(--kaiti);font-size:17px;color:var(--inkdeep);margin-bottom:10px}
+.wt-steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.wt-steps span{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--sub);
+  background:rgba(255,253,247,.85);border:1px solid var(--line2);border-radius:20px;padding:4px 10px}
+.wt-steps b{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;
+  background:var(--teal);color:#fffdf6;font-size:10px;font-weight:700}
+.step-bar{display:flex;gap:6px;margin:2px 0 16px}
+.step-bar i{flex:1;height:3px;border-radius:2px;background:rgba(185,164,128,.28)}
+.step-bar i.on{background:var(--teal)}
+.step-hint{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:8px}
+.wiz-title{font-family:var(--kaiti);font-size:19px;color:var(--inkdeep);margin-bottom:12px;line-height:1.5}
+.wiz-options{display:flex;flex-direction:column;gap:8px}
+.wiz-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2);
+  border:1px solid var(--line2);border-radius:12px;padding:13px 14px;font-family:var(--serif);font-size:14px;
+  color:var(--text);cursor:pointer;min-height:48px;transition:border-color .15s,transform .08s}
+.wiz-opt:hover{border-color:rgba(95,133,117,.45)}
+.wiz-opt:active{transform:scale(.99)}
+.wiz-opt .k{flex:none;width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  background:rgba(95,133,117,.1);color:var(--teal);font-size:12px;font-weight:700}
+.wiz-opt.main{background:linear-gradient(135deg,rgba(95,133,117,.14),rgba(95,133,117,.06));border-color:rgba(95,133,117,.4)}
+.wiz-result-range{font-family:var(--kaiti);font-size:30px;color:var(--teal);text-align:center;margin:6px 0 2px}
+.wiz-result-mid{text-align:center;font-size:12.5px;color:var(--sub);margin-bottom:12px}
+.wiz-block{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.wiz-block h4{font-size:13px;font-weight:700;color:var(--inkdeep);margin-bottom:6px}
+.wiz-block .line{font-size:12.5px;color:var(--sub);line-height:1.75}
+.wiz-quote{background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;
+  font-size:13px;line-height:1.8;color:var(--text);margin-top:6px}
+
 .tool{background:rgba(250,246,236,.85);border:1px solid var(--line2);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:3px}
 .tool b{font-size:12.5px;color:var(--inkdeep)}
 .tool span{font-size:11px;color:var(--sub);line-height:1.6}
@@ -324,7 +384,7 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
   <header class="topbar">
     <div class="brand">
       <svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>
-      <span>EQ-Worker<span class="slogan">人情世故助手</span></span><span class="ver">v3.5.0</span>
+      <span>EQ-Worker<span class="slogan">人情世故助手</span></span><span class="ver">v3.7.0</span>
     </div>
     <div class="scorebox">
       <div class="lab">人情指数</div>
@@ -343,11 +403,9 @@ textarea.inp{resize:vertical;min-height:64px;line-height:1.6}
 
   <!-- 底部导航 -->
   <nav class="tabbar" id="tabbar">
-    <button class="tab" data-act="go" data-arg="assistant"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2z"/><path d="M18 16l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>助手<span class="tabdot"></span></button>
-    <button class="tab" data-act="go" data-arg="radar"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6m9 3h-6"/></svg>雷达<span class="tabdot"></span></button>
+    <button class="tab" data-act="go" data-arg="home"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5h4v5"/></svg>首页<span class="tabdot"></span></button>
     <button class="tab" data-act="go" data-arg="persons"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.4c2.3.3 3.9 1.9 4.5 4.1"/></svg>人脉<span class="tabdot"></span></button>
-    <button class="tab" data-act="go" data-arg="record"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8m-4-4h8"/></svg>记录<span class="tabdot"></span></button>
-    <button class="tab" data-act="go" data-arg="train"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 2.4 3.2-.3.3 3.2L20.3 11l-2.4 2.4.3 3.2-3.2.3L12 19.5l-2.4-2.4-3.2.3-.3-3.2L3.7 13l2.4-2.4-.3-3.2 3.2-.3z"/><path d="M9.5 12.2l1.7 1.7 3.3-3.8"/></svg>修炼<span class="tabdot"></span></button>
+    <button class="tab" data-act="go" data-arg="play"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 2.4 3.2-.3.3 3.2L20.3 11l-2.4 2.4.3 3.2-3.2.3L12 19.5l-2.4-2.4-3.2.3-.3-3.2L3.7 13l2.4-2.4-.3-3.2 3.2-.3z"/><path d="M9.5 12.2l1.7 1.7 3.3-3.8"/></svg>玩法<span class="tabdot"></span></button>
     <button class="tab" data-act="go" data-arg="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.6"/><path d="M6.5 18.5c.9-2.6 2.9-3.9 5.5-3.9s4.6 1.3 5.5 3.9"/></svg>我的<span class="tabdot"></span></button>
   </nav>
 </div>
@@ -439,7 +497,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 /* 品牌（Logo / 名称 / Slogan 统一出口） */
 const LOGO_SVG = `<svg viewBox="0 0 32 32" fill="none"><path d="M16 3 29 16 16 29 3 16Z" stroke="#5f8575" stroke-width="1.8" stroke-linejoin="round" fill="rgba(95,133,117,.10)"/><path d="M16 9.5 23 16l-7 6.5L9 16z" stroke="#9cbfa8" stroke-width="1.2" stroke-linejoin="round"/><path d="M5 20.5c6-7.5 16-7.5 22 0" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="16" r="2.2" fill="#5f8575" stroke="none"/></svg>`;
-const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: 'v3.5.0' };
+const BRAND = { name: 'EQ-Worker', cn: '人情世故助手', slogan: '把人情账记明白，把关系经营成细水长流', en: 'EQ · WORKER', version: 'v3.7.0' };
 
 function timeAgo(ts) {
   const s = (Date.now() - ts) / 1000;
@@ -465,10 +523,18 @@ function toDateInput(v) { // 'MM-DD' → 'YYYY-MM-DD'（存储格式 → date �
   if (!v) return '';
   const m = String(v).match(/^(\d{2})-(\d{2})$/);
   if (!m) return String(v);
-  const y = new Date().getFullYear();
-  const d = new Date(y, +m[1] - 1, +m[2]);
-  if (d.getMonth() !== +m[1] - 1) return y + '-02-28'; // 2/29 非闰年 → 2/28，避免 date 控件吞掉生日
-  return y + '-' + m[1] + '-' + m[2];
+  const year = new Date().getFullYear(), month = +m[1], day = +m[2];
+  /* 02-29 必须保留：非闰年回显成 02-28 会让用户编辑一次就把生日永久改掉。
+     用最近的闰年做回显载体，读回时只取月日，语义不变。 */
+  const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  if (month === 2 && day === 29 && !isLeap(year)) {
+    let ly = year;
+    for (let d = 1; d <= 8; d++) { if (isLeap(year + d)) { ly = year + d; break; } if (isLeap(year - d)) { ly = year - d; break; } }
+    return ly + '-02-29';
+  }
+  const d = new Date(year, month - 1, day);
+  if (d.getMonth() !== month - 1) return year + '-02-28';
+  return year + '-' + m[1] + '-' + m[2];
 }
 function daysUntil(birthday) { // 'MM-DD' → 距下次生日的天数
   const bd = toMMDD(birthday);
@@ -570,7 +636,14 @@ function sanitizeImport(d) {
   const mmdd = (x) => {
     const s = str(x, 10);
     const m = s.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
-    return m ? m[1] + '-' + m[2] : '';
+    if (!m) return '';
+    /* 只做正则会把 13-45、02-30 当成合法生日，之后 daysUntil 用 Date 溢出
+       折算成别的日子，于是一个虚构的生日开始每天提醒用户。 */
+    const month = Number(m[1]), day = Number(m[2]);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+    const probe = new Date(2000, month - 1, day);
+    if (probe.getMonth() !== month - 1 || probe.getDate() !== day) return '';
+    return m[1] + '-' + m[2];
   };
   /* 事件人情值：缺省取类型基准；负向事件（dHeat<0）强制为负，
      防止旧数据里「冲突」被存成 +7 后反向升温。 */
@@ -580,13 +653,14 @@ function sanitizeImport(d) {
     if (t.dHeat < 0 && n > 0) n = -n;
     return n;
   };
-  /* 金额方向：旧数据没有 dir 字段，按事件类型推断；金额为 0 时统一 none。 */
+  /* 金额方向：礼金按类型可推断；money 不猜（缺省保持 none）。
+     以前 money 一律判 'in'：既把旧数据的 dir:'none' 改写成「借入」导致永久写保护，
+     又把「借出」算成「我欠对方」，金额直接算反。 */
   const fixDir = (type, dir, amount) => {
     if (!(amount > 0)) return 'none';
     if (dir === 'in' || dir === 'out') return dir;
     if (type === 'gift_get') return 'in';
     if (type === 'gift_give') return 'out';
-    if (type === 'money') return 'in';
     return 'none';
   };
 
@@ -665,11 +739,15 @@ function sanitizeImport(d) {
     schemaMismatch: (typeof d.schema === 'number' && d.schema !== SCHEMA_VERSION)
   };
 }
+/* 旧版写入过、当前模型不再保留的字段：清洗时丢弃是正确行为，
+   不能让它们触发写保护（否则用户数据能看、改不动、重启依旧）。 */
+const LEGACY_DROPPED_FIELDS = ['updatedAt', 'lastContact', 'avatar', 'pinned', 'group', 'source', 'importedAt'];
 function preservesStoredValue(raw, clean, path, dates) {
   if (Array.isArray(raw)) return Array.isArray(clean) && raw.length === clean.length && raw.every((v, i) => preservesStoredValue(v, clean[i], path.concat(i), dates));
   if (raw && typeof raw === 'object') {
     return clean && typeof clean === 'object' && !Array.isArray(clean) && Object.keys(raw).every(k =>
-      Object.prototype.hasOwnProperty.call(clean, k) && preservesStoredValue(raw[k], clean[k], path.concat(k), dates));
+      LEGACY_DROPPED_FIELDS.includes(k) ||
+      (Object.prototype.hasOwnProperty.call(clean, k) && preservesStoredValue(raw[k], clean[k], path.concat(k), dates)));
   }
   if (path.length === 3 && path[0] === 'persons' && (path[2] === 'birthday' || path[2] === 'anniversary') && typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     const date = new Date(raw + 'T00:00:00Z');
@@ -724,12 +802,50 @@ const store = {
   save() {
     if (this.locked) { this.lock(); return false; }
     try {
-      localStorage.setItem(DB_KEY, JSON.stringify({
+      /* 写盘前用读盘同一套规则规范化，保证「写出去的就是下次能原样读回的」。
+         不做这一步时，任何非规范值（金额配 dir:none、标签超 10 个、note 超长、
+         全日期生日、冲突正权重）都会在下一次 load 时被清洗，进而被判成数据丢失、
+         进入永久写保护——用户表现为「昨天能用今天改不动」。
+         规范化不得改变条目数量：数量变了说明真丢数据，宁可拒写。 */
+      const body = {
         schema: SCHEMA_VERSION,
         persons: state.persons, events: state.events,
         reminders: state.reminders, progress: state.progress,
         streak: state.streak, settings: state.settings
+      };
+      const normalized = sanitizeImport(body);
+      if (normalized.persons.length !== state.persons.length ||
+          normalized.events.length !== state.events.length ||
+          normalized.reminders.length !== state.reminders.length) {
+        return false;
+      }
+      /* 金额被 clamp、关键文本被截断属于「看到的和存下的不一致」，
+         条目数不变也要拒写，避免静默改数后还提示成功。 */
+      for (let i = 0; i < state.events.length; i++) {
+        const b = state.events[i], a = normalized.events[i];
+        if (!a) return false;
+        if ((Number(b.amount) || 0) !== (Number(a.amount) || 0)) return false;
+        if (String(b.title || '').length > 80 || String(b.note || '').length > 500) return false;
+      }
+      for (let i = 0; i < state.persons.length; i++) {
+        const b = state.persons[i], a = normalized.persons[i];
+        if (!a) return false;
+        if (String(b.name || '').length > 60 || String(b.note || '').length > 500) return false;
+        if (Array.isArray(b.tags) && b.tags.length > 10) return false;
+      }
+      localStorage.setItem(DB_KEY, JSON.stringify({
+        schema: SCHEMA_VERSION,
+        persons: normalized.persons, events: normalized.events,
+        reminders: normalized.reminders, progress: normalized.progress,
+        streak: normalized.streak, settings: normalized.settings
       }));
+      // 内存与磁盘保持一致，避免后续运算基于旧的规范化前数据。
+      state.persons = normalized.persons;
+      state.events = normalized.events;
+      state.reminders = normalized.reminders;
+      state.progress = normalized.progress;
+      state.streak = normalized.streak;
+      state.settings = normalized.settings;
       return true;
     } catch (e) { toast('保存失败：本地存储空间不足'); return false; }
   },
@@ -781,6 +897,22 @@ const store = {
       catch (e) { toast('导入失败：不是合法的 JSON 文件'); return; }
       if (!d || typeof d !== 'object' || !Array.isArray(d.persons)) { toast('导入失败：文件格式不对（缺少 persons）'); return; }
       const clean = sanitizeImport(d);
+      /* 空导入必须拒绝：清洗会丢掉没有名字的联系人，一份全是无效联系人的备份
+         清洗后就是 0 条——照单全收等于用空数据静默覆盖现有账本。 */
+      if (clean.persons.length === 0) {
+        toast('导入失败：没有可用的联系人，已保留现有数据');
+        return;
+      }
+      /* 备份恢复是最后的兜底：金额被 clamp 等于把备份改坏，必须拒绝。 */
+      const rawEvts = Array.isArray(d.events) ? d.events : [];
+      for (let i = 0; i < rawEvts.length; i++) {
+        const rawAmt = Number(rawEvts[i] && rawEvts[i].amount) || 0;
+        const clAmt = Number(clean.events[i] && clean.events[i].amount) || 0;
+        if (rawAmt > 0 && rawAmt !== clAmt) {
+          toast('导入失败：第 ' + (i + 1) + ' 条金额超出上限，已保留现有数据');
+          return;
+        }
+      }
       const apply = () => store.applyImport(clean);
       if (state.persons.length) {
         confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', apply, true);
@@ -852,17 +984,27 @@ function computePerson(p) {
   const now = Date.now();
   let heat = 50, trust = 40, intim = 35, debt = 0, lastTs = null;
   for (const ev of evs) {
+    /* 未来时间戳必须挡掉：days 为负时 ratio > 1，一笔明年的饭局就能把指标推到上限。 */
+    if (ev.time > now) continue;
     const days = (now - ev.time) / DAY;
     const ratio = Math.pow(0.5, days / 90);           // 90 天半衰期
     const t = EVENT_TYPES[ev.type] || EVENT_TYPES.other;
     /* 归一化到类型基准：必须保留 dHeat 的符号，否则 conflict（dHeat<0）会导致
        热度/信任/亲密反向增长（记一次冲突反而升温）。无基准或权重非法时按 1 倍计。 */
     const denom = Number.isFinite(t.dHeat) && t.dHeat !== 0 ? t.dHeat : 1;
-    const w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
+    let w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
+    /* 冲突类型 dHeat 为负，若 weight 也为负会负负得正，统一取绝对值。 */
+    if (t.dHeat < 0) w = Math.abs(w);
     heat += t.dHeat * ratio * w;
     trust += t.dTrust * ratio * w;
     intim += t.dIntimacy * ratio * w;
-    debt += t.dDebt * ratio * w;
+    /* 金钱往来按方向定人情债：借入才是欠人情，借出不欠，无方向不计。 */
+    if (ev.type === 'money') {
+      if (ev.dir === 'in') debt += 4 * ratio * w;
+      else if (ev.dir === 'out') debt -= 2 * ratio * w;
+    } else {
+      debt += t.dDebt * ratio * w;
+    }
     if (!lastTs || ev.time > lastTs) lastTs = ev.time;
   }
   const lastDays = lastTs ? Math.max(0, Math.floor((now - lastTs) / DAY)) : null;
@@ -885,7 +1027,7 @@ function overallMetrics() {
   const pms = state.persons.map(p => computedFor(p.id));
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map(p => p.heat));
-  const n30 = state.events.filter(e => now - e.time < 30 * DAY).length;
+  const n30 = state.events.filter(e => e.time <= now && now - e.time < 30 * DAY).length;
   const freq = Math.round(100 * (1 - Math.exp(-n30 / 6))); // 软饱和：每笔都有增量，不封死
   const credit = clamp(100 - avg(pms.map(p => p.debt)), 0, 100);
   const wisdom = getWisdom();
@@ -985,7 +1127,7 @@ function relationRead(p) {
 }
 
 /* ---------------- 3.5 人情账本 · 随礼参谋 · 关系体检 · 行动引擎 ---------------- */
-const OCCASIONS = ['日常', '生日', '婚礼', '满月', '乔迁', '探病', '节日', '还礼', '其他'];
+const OCCASIONS = ['日常', '生日', '婚礼', '满月', '乔迁', '探病', '节日', '还礼', '白事', '寿宴', '升学', '开业', '其他'];
 const GIFT_TIERS = {
   simple: { label: '从简', mult: 0.7 },
   standard: { label: '得体', mult: 1 },
@@ -994,16 +1136,18 @@ const GIFT_TIERS = {
 const CITY_TIERS = { '三线': 0.8, '二线': 1, '一线': 1.25 };
 /* 各身份 × 场合的「得体档」参考中位数（元）。不是标准答案，只是参谋的起点。 */
 const GIFT_BASE = {
-  领导: { 生日: 500, 婚礼: 1000, 满月: 800, 乔迁: 500, 探病: 500, 节日: 500, 还礼: 500, 日常: 300, 其他: 500 },
-  同事: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
-  客户: { 生日: 300, 婚礼: 800, 满月: 600, 乔迁: 500, 探病: 500, 节日: 500, 还礼: 500, 日常: 300, 其他: 300 },
-  朋友: { 生日: 200, 婚礼: 600, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
-  家人: { 生日: 500, 婚礼: 1600, 满月: 1000, 乔迁: 800, 探病: 800, 节日: 500, 还礼: 500, 日常: 300, 其他: 500 },
-  长辈: { 生日: 500, 婚礼: 1200, 满月: 1000, 乔迁: 500, 探病: 600, 节日: 500, 还礼: 500, 日常: 300, 其他: 500 },
-  同学: { 生日: 200, 婚礼: 600, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
-  邻居: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 },
-  其他: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 其他: 200 }
+  领导: { 生日: 500, 婚礼: 1000, 满月: 800, 乔迁: 500, 探病: 500, 节日: 500, 还礼: 500, 日常: 300, 白事: 500, 寿宴: 800, 升学: 500, 开业: 500, 其他: 500 },
+  同事: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 白事: 300, 寿宴: 300, 升学: 200, 开业: 200, 其他: 200 },
+  客户: { 生日: 300, 婚礼: 800, 满月: 600, 乔迁: 500, 探病: 500, 节日: 500, 还礼: 500, 日常: 300, 白事: 500, 寿宴: 600, 升学: 300, 开业: 500, 其他: 300 },
+  朋友: { 生日: 200, 婚礼: 600, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 白事: 300, 寿宴: 300, 升学: 200, 开业: 300, 其他: 200 },
+  家人: { 生日: 500, 婚礼: 1600, 满月: 1000, 乔迁: 800, 探病: 800, 节日: 500, 还礼: 500, 日常: 300, 白事: 800, 寿宴: 1000, 升学: 500, 开业: 800, 其他: 500 },
+  长辈: { 生日: 500, 婚礼: 1200, 满月: 1000, 乔迁: 500, 探病: 600, 节日: 500, 还礼: 500, 日常: 300, 白事: 600, 寿宴: 800, 升学: 500, 开业: 500, 其他: 500 },
+  同学: { 生日: 200, 婚礼: 600, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 白事: 300, 寿宴: 300, 升学: 200, 开业: 200, 其他: 200 },
+  邻居: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 白事: 300, 寿宴: 300, 升学: 200, 开业: 200, 其他: 200 },
+  其他: { 生日: 200, 婚礼: 500, 满月: 500, 乔迁: 300, 探病: 300, 节日: 200, 还礼: 300, 日常: 200, 白事: 300, 寿宴: 300, 升学: 200, 开业: 200, 其他: 200 }
 };
+/* 白事帛金只取单数档，不用喜事吉数。 */
+const CONDOLENCE_AMOUNTS = [101, 201, 301, 501, 701, 1001, 1201, 1501, 2001, 3001];
 const LEDGER_STATUS = {
   owe: { label: '我欠对方', cls: 'amber' },
   due: { label: '对方欠我', cls: 'blue' },
@@ -1020,11 +1164,13 @@ function eventDir(e) {
 }
 
 /* 单人账本：收到 - 送出 = 净额。正数代表「我欠对方」，负数代表「对方欠我」。 */
-function personLedger(personId) {
+function personLedger(personId, now) {
+  const tNow = typeof now === 'number' ? now : Date.now();
   let given = 0, received = 0, givenCount = 0, receivedCount = 0;
   let lastAmount = 0, lastDir = 'none', lastTime = 0;
   for (const e of state.events) {
     if (e.personId !== personId) continue;
+    if (e.time > tNow) continue;   // 未来事件还没发生，不计入账本
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;
     const dir = eventDir(e);
@@ -1086,13 +1232,33 @@ function ledgerInsights() {
 }
 
 /* 结清预填：把账本净额变成一笔可保存的还款/回礼记录。 */
+/* 按「钱的性质」拆账：借款本金 vs 礼金，唯一口径，供 settle/gift/actions 共用。 */
+function balanceByKind(personId, now) {
+  const tNow = typeof now === 'number' ? now : Date.now();
+  let loan = 0, gift = 0;
+  for (const e of state.events) {
+    if (e.personId !== personId) continue;
+    if (e.time > tNow) continue;
+    const amt = Number(e.amount) || 0;
+    if (amt <= 0) continue;
+    const dir = eventDir(e);
+    if (dir === 'none') continue;
+    const sign = dir === 'in' ? amt : -amt;
+    if (e.type === 'money') loan += sign;
+    else if (e.type === 'gift_get' || e.type === 'gift_give') gift += sign;
+  }
+  return { loan, gift };
+}
+
 function settlePrefill(personId, kind) {
   const p = state.persons.find(x => x.id === personId);
   if (!p) return null;
-  const l = personLedger(personId);
-  if (!l.net) return null;
-  const owe = l.net > 0;
-  const amount = Math.abs(l.net);
+  /* 借款与礼金分开结，且只统计对应类型的事件（餐饮/帮忙不算钱债）。 */
+  const bal = balanceByKind(personId);
+  const target = kind === 'loan' ? bal.loan : bal.gift;
+  if (!target) return null;
+  const owe = target > 0;
+  const amount = Math.abs(target);
   const isLoan = kind === 'loan';
   return {
     personId,
@@ -1101,17 +1267,87 @@ function settlePrefill(personId, kind) {
     amount,
     occasion: isLoan ? '其他' : '还礼',
     title: isLoan ? (owe ? '还款' : '收回借款') : (owe ? '回礼' : '收到回礼'),
-    net: l.net,
+    net: target,
     owe
   };
 }
 
 /* 把一个金额修成常见的礼金数字，避免「¥873」这种不自然的数。 */
 const NICE_AMOUNTS = [0, 50, 100, 200, 300, 500, 600, 800, 1000, 1200, 1500, 1600, 2000, 3000, 5000, 8000, 10000];
+
+/* 送礼忌讳：第一道门槛不是「送多贵」，而是「别送错」。
+   只收全国通行、争议最小的几条；地域差异交给用户自己补。 */
+const GIFT_TABOO_RULES = [
+  { words: ['座钟', '挂钟', '台钟', '闹钟', '送钟'], exempt: ['钟爱'], reason: '「送钟」谐音「送终」，是最广为人知的忌讳，尤其不能送长辈' },
+  { words: ['雨伞', '阳伞', '折叠伞', '一把伞'], exempt: ['伞架', '伞柄'], reason: '「伞」谐音「散」，寓意分散，不适合作为礼物' },
+  { words: ['雪梨', '鸭梨', '香梨', '梨子', '一箱梨'], exempt: ['凤梨', '梨膏', '梨糖'], reason: '「梨」谐音「离」，探病与团圆场合都尽量避开' },
+  { words: ['运动鞋', '皮鞋', '球鞋', '一双鞋'], exempt: ['鞋拔', '鞋架', '鞋柜'], reason: '「鞋」谐音「邪」，也有「走掉」之意，送伴侣或长辈要谨慎' },
+  { words: ['白菊', '菊花束', '菊花篮'], exempt: ['菊花茶', '菊普'], reason: '白菊多用于祭奠，喜庆与探病场合不宜' },
+  { words: ['白蜡烛', '蜡烛台'], reason: '白蜡烛属祭奠用品，不可作日常礼物' },
+  { words: ['菜刀', '剪刀', '刀具', '一把刀'], reason: '刀剪有「一刀两断」之意，容易让人多想' }
+];
+function checkGiftTaboo(giftName, occasion) {
+  if (occasion === '白事') return [];
+  const name = String(giftName || '');
+  if (!name) return [];
+  const out = [];
+  for (const rule of GIFT_TABOO_RULES) {
+    if (rule.exempt && rule.exempt.some(w => name.includes(w))) continue;
+    const hit = rule.words.find(w => name.includes(w));
+    if (hit) out.push({ keyword: hit, reason: rule.reason });
+  }
+  return out;
+}
+/* 礼俗：红白事的「不能做什么」。金额错了是失礼，忌讳踩了是结仇。 */
+function etiquetteTips(occasion, identity) {
+  const risky = ['领导', '客户'].includes(identity || '');
+  const isFuneral = occasion === '白事';
+  const isJoy = ['婚礼', '满月', '乔迁', '寿宴', '升学', '开业', '生日', '节日'].includes(occasion);
+  const isSick = occasion === '探病';
+  const out = [];
+  if (isFuneral) {
+    out.push({ severity: 'high', text: '白事不穿红、不戴喜色首饰；帛金用素色信封，别用红封。' });
+    out.push({ severity: 'high', text: '忌说「恭喜」「好日子」，忌在灵前寒暄太久；「节哀」二字足够。' });
+    out.push({ severity: 'normal', text: '帛金多取单数（如 301、501），各地有差异；喜事双数不要套用。' });
+    out.push({ severity: 'normal', text: '吊唁宜早不宜迟，错过出殡几乎无法补；到场比随礼更重要。' });
+  }
+  if (isSick) {
+    out.push({ severity: 'high', text: '探病忌送梨（谐音「离」）、白菊、钟表；也避开病人忌口的东西。' });
+    out.push({ severity: 'normal', text: '避开手术当天与午休时段，探视宜短；多问「需要我做什么」。' });
+    out.push({ severity: 'normal', text: '探病以实物慰问（水果、营养品）为主；若关系很近或对方确有经济压力，再考虑现金。' });
+  }
+  if (isJoy) {
+    out.push({ severity: 'normal', text: '喜事礼金偏好双数与 6/8/9，忌 4；具体吉数按当地习惯。' });
+  }
+  if (isJoy || occasion === '生日') {
+    out.push({ severity: 'high', text: '不送钟（「送终」）、不送伞（「散」）、不送鞋（「邪」）；长辈尤其忌讳。' });
+  }
+  if (occasion === '寿宴') {
+    out.push({ severity: 'normal', text: '寿礼忌钟表、鞋、伞；寿桃/寿面/茶叶更稳妥，部分地区讲「过九不过十」。' });
+  }
+  if (risky) {
+    out.push({ severity: 'high', text: '给领导、公职或采购岗送现金/购物卡，在多数单位属违规；以集体名义或实物更稳妥。' });
+  }
+  return out;
+}
+
+function giftAvoidTips(occasion) {
+  if (occasion === '白事') return ['帛金用素色信封、不包红封；不送双数', '不送喜庆花篮与彩头礼品'];
+  if (occasion === '探病') return ['忌送梨（离）、白菊、钟表；避免送需要病人忌口的东西'];
+  if (occasion === '寿宴' || occasion === '生日') return ['忌送钟表、鞋、伞；可选寿桃、寿面、茶叶或实用保健品'];
+  return ['通用忌讳：不送钟、伞、梨、鞋、白菊、刀具；喜事不送单数（白事除外）'];
+}
 function niceAmount(n) {
   n = Math.max(0, Number(n) || 0);
   if (n > 10000) return Math.round(n / 1000) * 1000;
   return NICE_AMOUNTS.reduce((a, b) => Math.abs(b - n) < Math.abs(a - n) ? b : a, 0);
+}
+
+/* 白事取整：只向上取到单数档，绝不把帛金凑成 800 这类喜宴数字。 */
+function condolenceAmount(n) {
+  const v = Number.isFinite(Number(n)) ? Math.max(0, Number(n)) : 0;
+  const up = CONDOLENCE_AMOUNTS.find(a => a >= v);
+  return up !== undefined ? up : Math.ceil(v / 100) * 100 + 1;
 }
 
 /* 随礼参谋：关系 × 场合 × 档位 × 城市系数，再叠加历史往来锚点。 */
@@ -1120,40 +1356,71 @@ function giftAdvice(personId, occasion, opts) {
   const p = state.persons.find(x => x.id === personId) || null;
   const identity = (p && p.identity) || '其他';
   const occ = OCCASIONS.includes(occasion) ? occasion : '其他';
+  const isFuneral = occ === '白事';
   const table = GIFT_BASE[identity] || GIFT_BASE['其他'];
   const base = table[occ] || table['其他'];
   const st = state.settings || {};
   const tier = GIFT_TIERS[opts.tier] || GIFT_TIERS[st.giftTier] || GIFT_TIERS.standard;
   const cityName = CITY_TIERS[opts.city] ? opts.city : (CITY_TIERS[st.cityTier] ? st.cityTier : '二线');
   const city = CITY_TIERS[cityName];
-  let mid = base * tier.mult * city;
+  /* uplift 单独记录「因净欠上浮」系数，最后参与三档计算。
+     直接改 mid 会被后面的重算覆盖，造成「文案写上浮、金额没变」。 */
+  let uplift = 1;
+  const mid = base * tier.mult * city;
   const reasons = [
     `关系「${identity}」× 场合「${occ}」的基准参考约 ${fmtMoney(base)}（未乘档位/城市系数）`,
     `档位「${tier.label}」× 城市「${cityName}」系数 ${city}`
   ];
   const l = personLedger(personId);
-  const sameOcc = state.events
-    .filter(e => e.personId === personId && Number(e.amount) > 0 && eventDir(e) === 'in' && e.occasion === occ)
+  const bal = balanceByKind(personId);
+  /* 锚点只看礼金类事件：把借款算进来会把「还礼」中位推到借款金额。 */
+  const giftInEvents = state.events
+    .filter(e => e.personId === personId && (e.type === 'gift_get' || e.type === 'gift_give') && eventDir(e) === 'in' && e.time <= Date.now());
+  const sameOcc = giftInEvents
+    .filter(e => e.occasion === occ)
     .reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
-  const maxReceived = state.events
-    .filter(e => e.personId === personId && Number(e.amount) > 0 && eventDir(e) === 'in')
-    .reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  const maxReceived = giftInEvents.reduce((mx, e) => Math.max(mx, Number(e.amount)), 0);
+  let floor = 0;
   if (sameOcc > 0) {
-    mid = Math.max(mid, sameOcc);
+    floor = sameOcc;
     reasons.push(`对方在「${occ}」给过你 ${fmtMoney(sameOcc)}，还礼不低于此数才不失礼`);
   } else if (occ === '还礼' && maxReceived > 0) {
-    mid = Math.max(mid, maxReceived);
-    reasons.push(`对方累计给过你 ${fmtMoney(maxReceived)}，还礼建议不低于此数`);
-  } else if (l.net >= 300) {
-    mid *= 1.1;
-    reasons.push(`账本上你净欠对方 ${fmtMoney(l.net)}，建议适度上浮 10%`);
+    floor = maxReceived;
+    reasons.push(`对方给过你的最大单笔是 ${fmtMoney(maxReceived)}，还礼建议不低于此数`);
+  } else if (bal.gift >= 300) {
+    uplift = 1.1;
+    reasons.push(`人情账上你净欠对方 ${fmtMoney(bal.gift)}，建议适度上浮 10%`);
   }
   if (p && p.likes) reasons.push(`对方喜欢：${p.likes}，可优先按喜好挑礼物`);
   if (p && p.taboos) reasons.push(`需要避开：${p.taboos}`);
-  const midA = niceAmount(mid);
-  const low = niceAmount(midA * 0.7);
-  const high = niceAmount(midA * 1.3);
-  reasons.push(`综合后中位约 ${fmtMoney(mid)}，按常见礼金数字取整为 ${fmtMoney(midA)}`);
+  /* 红白事不可对冲：收过对方帛金的人，在对方喜事上要按喜事行情单独随。 */
+  const funeralIn = state.events
+    .filter(e => e.personId === personId && eventDir(e) === 'in' && e.occasion === '白事')
+    .reduce((a, e) => a + (Number(e.amount) || 0), 0);
+  const isJoyOcc = ['婚礼', '满月', '乔迁', '寿宴', '升学', '开业', '生日', '节日'].includes(occ);
+  if (funeralIn > 0 && isJoyOcc) {
+    reasons.push(`你收过对方的白事帛金 ${fmtMoney(funeralIn)}；白事与喜事不能等额对冲，本场请按喜事行情单独随礼`);
+  }
+  /* 三档构造：见 core ledger.ts 的同一实现说明。
+     ① low<mid<high ② mid/high 不低于锚点（向上取整）③ 白事全单数 ④ 从简可低于锚点 */
+  const toLegal = (v) => (isFuneral ? condolenceAmount(v) : niceAmount(v));
+  const ceilLegal = (v) => {
+    if (isFuneral) return condolenceAmount(v);
+    if (v <= 0) return 0;
+    const hit = NICE_AMOUNTS.find(a => a >= v);
+    return hit !== undefined ? hit : Math.ceil(v / 1000) * 1000;
+  };
+  const stepOf = (v) => (isFuneral ? 100 : Math.max(100, Math.round(v * 0.2 / 100) * 100));
+  const floorLegal = floor > 0 ? ceilLegal(floor) : 0;
+  const midA = ceilLegal(Math.max(base * tier.mult * city * uplift, floorLegal));
+  let low = toLegal(base * GIFT_TIERS.simple.mult * city * uplift);
+  let high = toLegal(base * GIFT_TIERS.generous.mult * city * uplift);
+  if (low >= midA) low = toLegal(Math.max(isFuneral ? 101 : 0, midA - stepOf(midA)));
+  if (high <= midA) high = ceilLegal(midA + stepOf(midA));
+  if (low >= midA) low = isFuneral ? 101 : 0;
+  if (high <= midA) high = ceilLegal(midA + 1000);
+  reasons.push(`综合后中位约 ${fmtMoney(mid)}，按${isFuneral ? '白事单数' : '常见礼金'}规则取整为 ${fmtMoney(midA)}`);
+  if (isFuneral) reasons.push('白事礼金按当地习惯多为单数，且忌用喜事吉数；具体数额请以本地风俗为准');
   return {
     low, mid: midA, high, identity, occasion: occ, tier: tier.label, city: cityName,
     ledger: l, reasons,
@@ -1166,10 +1433,12 @@ function personHealth(p) {
   const m = computedFor(p.id);
   const l = personLedger(p.id);
   const evs = state.events.filter(e => e.personId === p.id);
-  const conflicts = evs.filter(e => e.type === 'conflict' && Date.now() - e.time < 365 * DAY).length;
+  const conflicts = evs.filter(e => e.type === 'conflict' && e.time <= Date.now() && Date.now() - e.time < 365 * DAY).length;
   const reciprocity = l.net === 0 ? 100 : clamp(100 - Math.abs(l.net) / 30, 20, 95);
+  /* 人情债必须进评分，否则「欠得越多分越高」，与 tips 自相矛盾。 */
+  const debtPenalty = clamp(m.debt, 0, 100) * 0.18;
   const score = clamp(Math.round(
-    0.28 * m.heat + 0.22 * m.trust + 0.20 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6
+    0.28 * m.heat + 0.22 * m.trust + 0.20 * m.intimacy + 0.15 * m.activity + 0.15 * reciprocity - conflicts * 6 - debtPenalty
   ), 0, 100);
   let level = '需要经营', cls = 'red';
   if (score >= 80) { level = '关系稳固'; cls = 'teal'; }
@@ -1201,7 +1470,6 @@ function buildActions(limit) {
   const now = Date.now();
   for (const p of state.persons) {
     const m = computedFor(p.id);
-    const l = personLedger(p.id);
     if (p.birthday) {
       const d = daysUntil(p.birthday);
       if (d >= 0 && d <= 7) push({
@@ -1229,20 +1497,44 @@ function buildActions(limit) {
       primary: { label: '怎么回礼', act: 'giftModal', arg: p.id },
       secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
     });
-    if (l.net >= 300) push({
-      key: 'money-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'money', prio: 78,
-      title: `你在账本上净欠 ${p.name} ${fmtMoney(l.net)}`,
-      reason: '钱和礼都要有来有往。先确认是礼金还是借款，再决定回礼还是还款。',
-      primary: { label: '还礼参谋', act: 'giftModal', arg: p.id },
-      secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
+    /* 礼金与借款分开判断，统一走 balanceByKind 口径。
+       以前 giftBal 忽略 dir，一笔 gift_get/dir:out 会被算成「对方给了你」。 */
+    const bal = balanceByKind(p.id);
+    if (bal.loan >= 300) push({
+      key: 'loan-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'money', prio: 88,
+      title: `你向 ${p.name} 借了 ${fmtMoney(bal.loan)}`,
+      reason: '借款要还本金，和随礼不是一回事。约个明确时间还上，比拖着更体面。',
+      primary: { label: '还款话术', act: 'scriptModal', arg: 'repay_loan|' + p.id },
+      secondary: { label: '记一笔还款', act: 'eventQuick', arg: p.id }
     });
-    else if (l.net <= -300) push({
-      key: 'money-due:' + p.id, personId: p.id, tone: 'blue', icon: 'money', prio: 46,
-      title: `${p.name} 还欠你 ${fmtMoney(-l.net)}`,
-      reason: '如果是借款，找个轻松的由头提一句；如果是礼金，等合适场合自然回礼即可。',
+    else if (bal.loan <= -300) push({
+      key: 'loan-due:' + p.id, personId: p.id, tone: 'blue', icon: 'money', prio: 84,
+      title: `${p.name} 还欠你 ${fmtMoney(-bal.loan)} 借款`,
+      reason: '借款按约定时间收回；没有约定就说清自己的用钱安排，别用催礼的语气。',
       primary: { label: '催还话术', act: 'scriptModal', arg: 'collect_debt|' + p.id },
       secondary: { label: '去记录', act: 'eventQuick', arg: p.id }
     });
+    if (bal.gift >= 300) push({
+      key: 'gift-owe:' + p.id, personId: p.id, tone: 'amber', icon: 'gift', prio: 78,
+      title: `人情账上你还欠 ${p.name} ${fmtMoney(bal.gift)}`,
+      reason: '礼金讲究有来有往。等对方下次办事时还上，或以实物、请饭的方式答谢。',
+      primary: { label: '还礼参谋', act: 'giftModal', arg: p.id },
+      secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+    });
+    /* 优先级低于借款（88/84）：借款有明确到期语义，不该被寒暄类动作压掉。 */
+    const recentGift = state.events
+      .filter(e => e.personId === p.id && e.type === 'gift_get' && eventDir(e) === 'in' && Number(e.amount) > 0 && e.time <= now && now - e.time <= 7 * DAY)
+      .sort((a, b) => b.time - a.time)[0];
+    if (recentGift) {
+      const giftAge = Math.floor((now - recentGift.time) / DAY);
+      push({
+        key: 'gift-thanks:' + p.id, personId: p.id, tone: 'teal', icon: 'gift', prio: 82,
+        title: `为 ${p.name} 的礼回个话`,
+        reason: `「${recentGift.title || '对方的心意'}」${giftAge === 0 ? '是今天' : giftAge + ' 天前'}收到的。先说声谢谢，再把这份人情记下来，日后好还。`,
+        primary: { label: '道谢话术', act: 'scriptModal', arg: 'thanks|' + p.id },
+        secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
+      });
+    }
     if (m.lastDays !== null && m.lastDays >= 60) push({
       key: 'stale:' + p.id, personId: p.id, tone: 'red', icon: 'stale', prio: 72,
       title: `和 ${p.name} 已 ${m.lastDays} 天没往来`,
@@ -1471,6 +1763,115 @@ const SCENARIOS = [
       { t: '追着说「老板再发一个」', s: 30, r: '没分寸，一次就败好感。' }
     ],
     tip: '红包礼仪：领了要表态；手气最佳时「收了再散」是最高段位——热闹了群，还了情，谁也不欠。'
+  },
+  {
+    id: 'funeral', diff: '高手', tag: '红白事', title: '同事的父亲过世，你去不去？随多少？',
+    scene: '关系不错的同事老陈，父亲昨晚过世。办公室几个人在商量要不要去、随多少。',
+    choices: [
+      { t: '当没听说，等他回来再说', s: 20, r: '白事最讲「到场」，错过吊唁几乎无法补。事后一句「节哀」也显得敷衍。' },
+      { t: '当天就去，随一份帛金（单数，如 301），到场帮忙跑腿，不多说话', s: 92, r: '白事重在场与出力，金额取单数、素色信封，到场比说辞更重要。' },
+      { t: '随 800，跟婚礼一个标准，显得重视', s: 40, r: '白事忌用喜事吉数与双数，800 这种数字在灵前很不合时宜。' },
+      { t: '微信转 500，附一句「恭喜发财」系误发', s: 5, r: '既没有到场，又用错语境，比不去更伤人。' }
+    ],
+    tip: '白事三原则：到场优先、金额取单数、少说多做。它和喜事不是一套礼数，不能套用婚礼标准。'
+  },
+  {
+    id: 'condolence_words', diff: '进阶', tag: '红白事', title: '去吊唁，家属哭着说「他走得太突然」',
+    scene: '你到灵前上香，家属红着眼睛说：「他走得太突然了，一句话都没留下。」',
+    choices: [
+      { t: '「别难过了，人死不能复生，想开点」', s: 25, r: '「想开点」是最常见的无效安慰，等于否定对方的悲伤。' },
+      { t: '「您节哀，有什么要办的我帮着跑」', s: 90, r: '承认悲伤、给出具体帮助，是吊唁场合最稳妥的回应。' },
+      { t: '「他生前还跟我说过您的好」', s: 75, r: '追忆逝者是好方向，但要看家属状态，不宜展开太长。' },
+      { t: '沉默点头，转去帮忙搬东西', s: 70, r: '不说话直接做事，在这种场合往往比说话得体。' }
+    ],
+    tip: '吊唁话术只做两件事：承认对方的失去，给一个具体可执行的帮助。最忌「想开点」「别哭了」。'
+  },
+  {
+    id: 'school_banquet', diff: '进阶', tag: '礼尚往来', title: '孩子考上大学，同事办了升学宴',
+    scene: '同部门的李姐孩子考上重点大学，在群里发了升学宴邀请，附了酒店地址。',
+    choices: [
+      { t: '不去也不随，反正只是同事', s: 25, r: '升学宴是明确的人情邀约，同事圈子里缺席会被记住。' },
+      { t: '按同事行情随 200-300，人到场说句「孩子争气」', s: 90, r: '升学宴量级低于婚礼，按同辈关系随礼即可，重点在到场祝贺。' },
+      { t: '按婚礼标准随 600', s: 55, r: '超出行情会让对方有压力，也可能抬高下次的期待。' },
+      { t: '只发微信红包，不写备注', s: 45, r: '红包不留名，对方事后对不上人，人情等于白送。' }
+    ],
+    tip: '升学宴属「轻喜事」，礼金量级低于婚礼；到场+一句真诚的夸奖，比加钱更得体。'
+  },
+  {
+    id: 'funeral_money_return', diff: '高手', tag: '红白事', title: '收过对方白事的帛金，对方家又办喜事',
+    scene: '三年前你父亲过世，邻居张叔随了 501 元帛金。下月张叔儿子结婚。',
+    choices: [
+      { t: '按当年 501 元回，一分不多', s: 45, r: '白事与喜事不能等额对冲，且 501 是单数，用婚礼上不合礼数。' },
+      { t: '按婚礼行情随 600-800，双数，正常到场', s: 92, r: '红白事各自按本场合规矩办：当年帛金是情分，如今婚礼按喜事行情还。' },
+      { t: '干脆不去，当年那 501 就算两清', s: 20, r: '把白事帛金当债务对冲，在人情上是最伤人的算法。' }
+    ],
+    tip: '红白事不可对冲。白事收的帛金要记情，但还的时候按对方当下这场事的规矩来。'
+  },
+  {
+    id: 'seating', diff: '高手', tag: '饭局酒桌', title: '请客吃饭，主位该留给谁？',
+    scene: '你张罗了一场饭局，请了部门领导和两位老同事。包间是圆桌，进门正对的那把椅子空着。',
+    choices: [
+      { t: '自己坐主位，方便照应全场', s: 25, r: '主位是给最尊贵客人的，主人坐了会显得不懂规矩。' },
+      { t: '让领导坐正对门的主位，自己坐靠近门口的位置好招呼服务员', s: 92, r: '主位给尊客、主人坐近门照应，是最通行的座次逻辑。' },
+      { t: '按到场先后随便坐', s: 40, r: '饭局座次本身就是一种表态，随便坐容易让敏感的人多想。' },
+      { t: '让年纪最大的老同事坐主位', s: 65, r: '年龄是重要因素，但职场饭局里职级与主客关系通常优先；拿不准可先让一次。' }
+    ],
+    tip: '圆桌三原则：正对门是主位给尊客，主人坐近门照应，主宾两侧按亲疏与职级交错。'
+  },
+  {
+    id: 'proxy_gift', diff: '进阶', tag: '礼尚往来', title: '同事让你帮忙代随礼，要给吗？',
+    scene: '同事小李临时出差，让你帮他把婚礼礼金带给新郎，说「回头转你」。',
+    choices: [
+      { t: '先垫上，事后再说', s: 60, r: '帮忙可以，但金额和凭证不说清楚，事后容易扯不清。' },
+      { t: '问清金额，代随后在礼簿上写小李的名字，并把金额和截图发给他', s: 92, r: '代随的关键是「记谁的名」与「留痕」：礼簿写他的名字，情分归他；凭证留给你，钱不糊涂。' },
+      { t: '直接拒绝，让他自己想办法', s: 35, r: '举手之劳的忙拒绝得太干脆，会伤同事关系。' },
+      { t: '帮他随了，但礼簿上写自己的名字', s: 20, r: '钱是他出的，名字写你就等于吞了他的情分，这是最不该犯的错。' }
+    ],
+    tip: '代随三件事：问清金额、礼簿写对方名字、截图留痕。做对了是顺手人情，做错了是纠纷。'
+  },
+  {
+    id: 'gift_rejected', diff: '进阶', tag: '礼尚往来', title: '送出去的礼被退回来了，怎么办？',
+    scene: '你给客户送了一盒茶叶，第二天对方让助理原样退回，说「心意领了，东西不能收」。',
+    choices: [
+      { t: '再送一次，加重分量', s: 20, r: '对方已经明确拒绝，再加码会让关系变紧张，也可能让对方为难。' },
+      { t: '接受退回，换成一张手写卡片或一句真诚的话，不再送实物', s: 90, r: '退礼往往是不想欠人情或有合规顾虑。改用不构成负担的表达，既保面子也不违规。' },
+      { t: '当场问「是不是嫌少」', s: 15, r: '把对方的顾虑理解成嫌少，会让场面很难看。' },
+      { t: '什么都不说，以后不再来往', s: 30, r: '一次退礼不等于关系破裂，冷处理反而真的断了。' }
+    ],
+    tip: '被退礼先想「对方在避什么」：避人情、避合规、避负担。换一种不构成负担的表达，比加钱有用。'
+  },
+  {
+    id: 'elder_birthday', diff: '进阶', tag: '家庭饭桌', title: '长辈七十大寿，送什么合适？',
+    scene: '外婆七十大寿，家里要办寿宴。你想送份礼，但不确定送什么不会踩忌讳。',
+    choices: [
+      { t: '送一套高档钟表，实用又有面子', s: 15, r: '「送钟」谐音「送终」，是寿礼最典型的忌讳，尤其不能送长辈。' },
+      { t: '送寿桃寿面，再加一件她平时念叨过的实用物件', s: 92, r: '寿礼重「意头」也重「实用」：寿桃寿面应景，加上她真正需要的东西才贴心。' },
+      { t: '直接给一个大红包，最省事', s: 55, r: '红包不出错，但对直系长辈略显敷衍，配一件小物会更暖。' },
+      { t: '送一双好鞋，祝她走得更远', s: 25, r: '「鞋」谐音「邪」，也有「走掉」之意，送长辈并不吉利。' }
+    ],
+    tip: '寿礼忌钟、鞋、伞；寿桃寿面是安全牌。部分地区讲究「过九不过十」，办之前先问一句家里的规矩。'
+  },
+  {
+    id: 'colleague_debt', diff: '高手', tag: '金钱往来', title: '同事借了钱一直不提，怎么开口？',
+    scene: '三个月前同事老周借了你 3000，说「下月发工资就还」。现在他换了新手机，却一次没提过还钱。',
+    choices: [
+      { t: '在办公室里当众提一句，让他下不来台', s: 15, r: '当众催债等于撕破脸，钱也许能要回来，关系一定没了。' },
+      { t: '私下找他，说自己最近有笔支出，问他什么时候方便', s: 90, r: '给一个「我也需要用钱」的由头，既提醒了对方，也给了他台阶。' },
+      { t: '继续等，怕伤感情', s: 35, r: '拖得越久越难开口，对方也可能真的忘了；沉默不是体面，是积累怨气。' },
+      { t: '让共同的朋友去转告', s: 30, r: '第三人传话会让事情变复杂，还容易被解读成「到处说他欠钱」。' }
+    ],
+    tip: '催还的原则：私下、给由头、给台阶。说「我最近要用钱」比说「你该还我了」有效得多。'
+  },
+  {
+    id: 'income_question', diff: '进阶', tag: '家庭饭桌', title: '亲戚当众问「你一个月挣多少」',
+    scene: '家族聚会上，二舅端着酒杯问：「听说你在大城市混得不错，一个月挣多少啊？」满桌人都看过来。',
+    choices: [
+      { t: '如实报数字，显得坦诚', s: 45, r: '收入一旦说出口，很快就会变成亲戚间的比较和借钱的由头。' },
+      { t: '笑着说「够花，比不上您家孩子」，把话头递回去', s: 90, r: '不正面回答、又不冷场，把话题转回对方身上，是这类问题的标准解法。' },
+      { t: '冷脸说「这个不方便说」', s: 55, r: '边界是对的，但语气硬会让满桌尴尬，长辈也会觉得你不给面子。' },
+      { t: '编一个很低的数字', s: 40, r: '短期省事，但后续容易被戳穿，也可能引来「那你怎么还买这买那」的追问。' }
+    ],
+    tip: '被问收入的通用解法：不报数字、不冷场、把球踢回去。「够花」+ 反问，比真话和假话都安全。'
   }
 ];
 
@@ -1532,7 +1933,7 @@ const SCRIPT_SCENES = [
   {
     id: 'collect_debt', label: '催还/提醒', hint: '给具体时间点，语气平和，别让人下不来台',
     build: (c) => ({
-      stable: `${c.name}，最近整理账本看到之前${c.context ? c.context : '那笔钱'}，想跟您确认一下大概什么时候方便？我这边最近也有点安排，不着急，您方便时回我就行。`,
+      stable: `${c.name}，最近我这边有点安排，想问一下之前${c.context ? c.context : '那笔钱'}大概什么时候方便？不着急，您方便时回我就行。`,
       close: `${c.name}，最近手头有点紧，之前${c.context ? c.context : '那笔钱'}你看这周方便先还一部分吗？剩下的咱们再商量。`,
       brief: `${c.name}，之前那笔钱最近方便还吗？我这边有点急用。`
     })
@@ -1543,6 +1944,24 @@ const SCRIPT_SCENES = [
       stable: `${c.name}，${c.context ? c.context : '您的好日子'}我记着呢。一点心意，不成敬意，祝您一切顺遂。`,
       close: `${c.name}，${c.context ? c.context : '你的事'}就是我的事。红包收下，别跟我客气，改天再聚。`,
       brief: `${c.name}，一点心意，祝好。`
+    })
+  },
+  {
+    /* 还款专用：不能复用 thanks 模板（那生成的是「多亏您帮忙…请您吃饭」）。 */
+    id: 'repay_loan', label: '还款说明', hint: '把金额、方式、时间说清楚，别让对方开口催',
+    build: (c) => ({
+      stable: `${c.name}，之前跟您借的${c.context ? c.context : '那笔钱'}，我这边安排好了，今天转给您。拖了这些天，实在不好意思，也谢谢您当时帮忙。`,
+      close: `${c.name}，之前借你的${c.context ? c.context : '那笔钱'}我转过去了，你看下到账没。谢谢啊，帮了大忙。`,
+      brief: `${c.name}，之前借的钱已转，收到说一声。谢谢！`
+    })
+  },
+  {
+    /* 白事是唯一没有第二次补救机会的场合：话少、说稳，忌道喜、忌提钱、忌劝「想开点」。 */
+    id: 'condolence', label: '白事慰问', hint: '少说多做，到场比话术重要；忌道喜、忌劝想开',
+    build: (c) => ({
+      stable: `${c.name}，惊闻${c.context ? c.context : '家中变故'}，心里很不好受。这种时候说什么都轻，我先过来搭把手，有什么要跑的、要接的，您尽管吩咐。`,
+      close: `${c.name}，刚听说${c.context ? c.context : '家里的事'}，我马上过来。别的先不说，你需要跑腿、接人、守夜，随时喊我。`,
+      brief: `${c.name}，节哀。需要帮忙随时说，我过来。`
     })
   },
   {
@@ -1741,6 +2160,9 @@ function saveOrRestore(before) {
   if (!lastSaveFailed) return true;
   Object.assign(state, before);
   invalidateCache();
+  /* 以前这里静默回滚：保存被拒（内容超长、金额越界、存储写满）时用户什么都看不到，
+     以为记上了，刷新后消失。必须明确告知失败原因。 */
+  toast('保存失败：内容超出长度限制或金额过大，本次修改未写入');
   return false;
 }
 const IDENTITIES = ['领导', '同事', '客户', '朋友', '家人', '长辈', '同学', '邻居', '其他'];
@@ -1896,15 +2318,27 @@ function render() {
   disposeCharts();
   const v = $('#view');
   switch (state.tab) {
-    case 'assistant': v.innerHTML = viewAssistant(); break;
-    case 'radar': v.innerHTML = viewRadar(); break;
+    /* 四 Tab 布局：首页（卡片宫格）/ 人脉 / 玩法 / 我的。
+       二级页通过 homePage 动作进入，用 state.sub 标记，返回用 homeBack。
+       旧 tab 名（assistant/radar/record/train）保留为别名，
+       避免已有用户的书签、eqworker_tab 持久化值与旧 e2e 直接失效。 */
+    case 'assistant': v.innerHTML = viewHome(); break;
+    case 'home': v.innerHTML = viewHome(); break;
+    case 'radar': v.innerHTML = viewPlayPage(); break;
+    case 'play': v.innerHTML = viewPlayPage(); break;
     case 'persons': v.innerHTML = viewPersons(); break;
     case 'record': v.innerHTML = viewRecord(); break;
-    case 'train': v.innerHTML = viewTrain(); break;
+    case 'train': v.innerHTML = viewPlayPage(); break;
     case 'me': v.innerHTML = viewMe(); break;
+    case 'actions': v.innerHTML = viewActionsPage(); break;
+    case 'ledgerPage': v.innerHTML = viewLedgerPage(); break;
+    case 'healthPage': v.innerHTML = viewHealthPage(); break;
   }
   renderTop();
-  $$('#tabbar .tab').forEach(t => t.classList.toggle('active', t.dataset.arg === state.tab));
+  /* 4 个 Tab；旧别名（assistant/radar/train）映射到新 Tab 上，保证高亮正确。 */
+  const _tabAlias = { assistant: 'home', radar: 'play', train: 'play', record: 'home', actions: 'home', ledgerPage: 'home', healthPage: 'home' };
+  const _activeTab = _tabAlias[state.tab] || state.tab;
+  $$('#tabbar .tab').forEach(t => t.classList.toggle('active', t.dataset.arg === _activeTab));
   afterRender();
 }
 function renderTop() {
@@ -1917,11 +2351,13 @@ function renderTop() {
 }
 function afterRender() {
   /* 各视图图表在 html 注入后由本钩子创建 */
-  if (state.tab === 'radar') {
+  const _playTab = state.tab === 'radar' || state.tab === 'play' || state.tab === 'train';
+  if (_playTab && document.getElementById('homeChart')) {
     const m = overallMetrics();
     if (m) makeChart('homeChart', radarOption(['人脉规模', '人情热度', '往来频率', '人情信用', '处世智慧'],
       [m.scale, Math.round(m.heatAvg), m.freq, Math.round(m.credit), m.wisdom]), onHomeChartClick);
   }
+  if (_playTab && document.getElementById('network-canvas')) drawNetwork(document.getElementById('network-canvas'));
   if (state.tab === 'me' && document.getElementById('trendChart')) {
     const now = new Date();
     const months = [];
@@ -1943,9 +2379,7 @@ function afterRender() {
       tooltip: { trigger: 'axis', backgroundColor: '#fffdf7', borderColor: 'rgba(185,164,128,.35)', borderWidth: 1, textStyle: { color: '#4a4238', fontSize: 12 }, formatter: (ps) => ps[0].axisValue + '：' + ps[0].value + ' 笔往来' }
     });
   }
-  if (state.tab === 'me' && document.getElementById('network-canvas')) {
-    drawNetwork(document.getElementById('network-canvas'));
-  }
+  /* 关系网络已迁到「玩法」页，由 _playTab 分支统一绘制。 */
   if (state.tab === 'me' && document.getElementById('typeChart')) {
     const nowT = new Date();
     const yStartT = `${nowT.getFullYear() - 1}-${String(nowT.getMonth() + 1).padStart(2, '0')}-01`;
@@ -2083,7 +2517,11 @@ function actionIcon(kind) {
     thanks: '<path d="M4 12l5-5v3h8v4H9v3z"/><path d="M17 8l3 4-3 4"/>',
     key: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M17 8l4 4-4 4"/>',
     todo: '<path d="M4 6h16v12H4z"/><path d="M8 4v4m8-4v4"/><path d="M8 12l3 3 5-5"/>',
-    fest: '<path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/>'
+    fest: '<path d="M12 3l8 5v8l-8 5-8-5V8z"/><path d="M12 8v5m0 3h.01"/>',
+    /* 礼盒与餐具：首页卡片与引导会用到；缺省会退化成空圆圈。 */
+    gift: '<path d="M4 10h16v10H4z"/><path d="M4 10l2-4h5v4m2 0V6h5l2 4"/><path d="M12 10v10"/>',
+    meal: '<path d="M6 3v8a3 3 0 0 0 6 0V3"/><path d="M9 11v10"/><path d="M17 3c-1.5 2-2 3.5-2 6s.5 4 2 6v6"/>',
+    talk: '<path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8m-8 3h5"/>'
   }[kind] || '<circle cx="12" cy="12" r="9"/>';
 }
 function actionCard(a) {
@@ -2099,6 +2537,345 @@ function actionCard(a) {
     </div>
   </div>`;
 }
+/* 今日情景：与旧版 viewTrain 同一算法（按天取模），抽成函数供「玩法」页复用。 */
+function todayScenario() {
+  return SCENARIOS[Math.floor(Date.now() / DAY) % SCENARIOS.length];
+}
+
+/* ---------------- 首页：卡片宫格 + 引导 ----------------
+   设计意图：入口不再按「功能分类」平铺，而是按「用户想干什么」组织成卡片。
+   每张卡带实时状态角标（不是静态说明），点进去是二级页，二级页有返回。 */
+
+/* 卡片入口定义：icon / 标题 / 动态角标 / 目标动作 */
+function homeEntries() {
+  const actions = buildActions(99);
+  const lt = ledgerTotals();
+  const health = healthRanking();
+  const weak = health.filter(x => x.h.score < 60).length;
+  const pending = state.reminders.filter(r => r.status === 'pending').length;
+  return [
+    {
+      id: 'actions', title: '今日行动', icon: 'bday',
+      badge: actions.length ? actions.length + ' 件待办' : '今天清完了',
+      tone: actions.length ? 'teal' : 'green',
+      act: 'homePage', arg: 'actions'
+    },
+    {
+      id: 'ledger', title: '人情账本', icon: 'money',
+      badge: lt.net ? ledgerNetShort(Math.abs(lt.net)) : '两清',
+      tone: lt.net > 0 ? 'amber' : lt.net < 0 ? 'blue' : 'green',
+      act: 'homePage', arg: 'ledger'
+    },
+    {
+      id: 'health', title: '关系体检', icon: 'key',
+      badge: weak ? weak + ' 段需经营' : '都还不错',
+      tone: weak ? 'red' : 'green',
+      act: 'homePage', arg: 'health'
+    },
+    {
+      id: 'gift', title: '随礼参谋', icon: 'gift',
+      badge: '按关系算三档',
+      tone: 'amber',
+      act: 'wizard'
+    },
+    {
+      id: 'script', title: '话术参谋', icon: 'talk',
+      badge: SCRIPT_SCENES.filter(function (s) { return s && s.build; }).length + ' 个场景',
+      tone: 'blue',
+      act: 'scriptModal', arg: 'reconnect|'
+    },
+    {
+      id: 'record', title: '记一笔', icon: 'meal',
+      badge: pending ? pending + ' 项待办' : '10 秒记完',
+      tone: 'teal',
+      act: 'go', arg: 'record'
+    }
+  ];
+}
+
+function entryCardHtml(e) {
+  return '<button class="entry-card tone-' + e.tone + '" data-act="' + e.act + '" data-arg="' + esc(e.arg || '') + '" aria-label="' + esc(e.title) + '，' + esc(e.badge) + '">' +
+    '<span class="entry-ic"><svg viewBox="0 0 24 24">' + actionIcon(e.icon) + '</svg></span>' +
+    '<span class="entry-body">' +
+      '<span class="entry-title">' + esc(e.title) + '</span>' +
+      '<span class="entry-badge">' + esc(e.badge) + '</span>' +
+    '</span>' +
+    '<span class="entry-go" aria-hidden="true">›</span>' +
+  '</button>';
+}
+
+/* 新手引导入口：一次一问，三步给出可执行结果 */
+function wizardTeaser() {
+  const has = state.persons.length > 0;
+  return '<div class="card wizard-teaser">' +
+    '<div class="wt-kicker">不知道从哪开始？</div>' +
+    '<div class="wt-title">跟着问三个问题，直接给答案</div>' +
+    '<div class="wt-steps">' +
+      '<span><b>1</b>要办什么事</span>' +
+      '<span><b>2</b>给谁</span>' +
+      '<span><b>3</b>给多少、怎么说</span>' +
+    '</div>' +
+    '<button class="btn primary block" data-act="wizard">开始引导' + (has ? '' : '（先加一位人脉也行）') + '</button>' +
+  '</div>';
+}
+
+/* ---------------- 三步引导向导 ----------------
+   目标：不用先理解「账本/参谋/体检」这些概念，跟着问答走完就能拿到结果。
+   全程复用既有计算：giftAdvice / etiquetteTips / giftAvoidTips / checkGiftTaboo / buildScripts。
+   引导状态存在 window.__wiz，不写进 state（避免污染持久化数据）。 */
+
+const WIZ_SCENES = [
+  { id: '婚礼', label: '婚礼 / 订婚', hint: '最常见的一类，金额按关系分档' },
+  { id: '满月', label: '满月 / 百日', hint: '看关系亲疏，实物礼也合适' },
+  { id: '乔迁', label: '乔迁 / 新居', hint: '关系一般可以送实用物件' },
+  { id: '寿宴', label: '寿宴 / 长辈生日', hint: '寿礼讲究多，忌讳也要避' },
+  { id: '白事', label: '白事 / 吊唁', hint: '帛金取单数，到场比金额重要' },
+  { id: '探病', label: '探病 / 慰问', hint: '以实物慰问为主，忌讳较多' },
+  { id: '生日', label: '生日', hint: '朋友轻松、长辈庄重' },
+  { id: '日常', label: '就日常走动', hint: '请顿饭或带点小东西' }
+];
+
+function startWizard() {
+  window.__wiz = { step: 1, scene: '', personId: '' };
+  renderWizard();
+}
+
+function renderWizard() {
+  const w = window.__wiz;
+  if (!w) { startWizard(); return; }
+  const bar = '<div class="step-bar">' +
+    [1, 2, 3].map(function (n) { return '<i class="' + (w.step >= n ? 'on' : '') + '"></i>'; }).join('') +
+  '</div>';
+  let body = '';
+  if (w.step === 1) {
+    body = '<div class="step-hint">第 1 / 3 步</div>' +
+      '<div class="wiz-title">最近要办什么事？</div>' +
+      '<div class="wiz-options">' +
+      WIZ_SCENES.map(function (s, i) {
+        return '<button class="wiz-opt" data-act="wizardScene" data-arg="' + esc(s.id) + '">' +
+          '<span class="k">' + (i + 1) + '</span>' +
+          '<span style="flex:1"><b style="display:block;font-size:14px">' + esc(s.label) + '</b>' +
+          '<span style="font-size:11.5px;color:var(--sub)">' + esc(s.hint) + '</span></span>' +
+          '<span style="color:var(--dim)">›</span></button>';
+      }).join('') +
+      '</div>';
+  } else if (w.step === 2) {
+    const opts = state.persons.map(function (p) {
+      return '<button class="wiz-opt" data-act="wizardPerson" data-arg="' + p.id + '">' +
+        '<span class="k">' + esc(initials(p.name)) + '</span>' +
+        '<span style="flex:1"><b style="display:block;font-size:14px">' + esc(p.name) + '</b>' +
+        '<span style="font-size:11.5px;color:var(--sub)">' + esc(p.identity || '朋友') +
+        ((p.tags || []).length ? ' · ' + esc((p.tags || []).slice(0, 2).join('、')) : '') + '</span></span>' +
+        '<span style="color:var(--dim)">›</span></button>';
+    }).join('');
+    body = '<div class="step-hint">第 2 / 3 步</div>' +
+      '<div class="wiz-title">这份心意给谁？</div>' +
+      '<div class="wiz-options">' +
+        (opts || '<div class="line" style="font-size:13px;color:var(--sub)">还没有人脉。可以先加一位，或直接按「通用」估算。</div>') +
+        '<button class="wiz-opt main" data-act="wizardPerson" data-arg="__generic__">' +
+          '<span class="k">?</span><span style="flex:1"><b style="display:block;font-size:14px">不确定 / 通用参考</b>' +
+          '<span style="font-size:11.5px;color:var(--sub)">按普通朋友关系估算</span></span><span style="color:var(--dim)">›</span></button>' +
+        '<button class="wiz-opt" data-act="personForm"><span class="k">＋</span>' +
+          '<span style="flex:1"><b style="display:block;font-size:14px">先添加一位人脉</b>' +
+          '<span style="font-size:11.5px;color:var(--sub)">加完可以再回来走引导</span></span></button>' +
+      '</div>';
+  } else {
+    body = renderWizardResult();
+  }
+  openSheet('跟着走三步', bar + body, true);
+  if (!window.__wiz || window.__wiz.step === 1) { /* noop */ }
+}
+
+function wizardPickScene(scene) {
+  if (!window.__wiz) window.__wiz = { step: 1, scene: '', personId: '' };
+  window.__wiz.scene = scene;
+  window.__wiz.step = 2;
+  renderWizard();
+}
+
+function wizardPickPerson(personId) {
+  if (!window.__wiz) window.__wiz = { step: 2, scene: '婚礼', personId: '' };
+  window.__wiz.personId = personId === '__generic__' ? '' : personId;
+  window.__wiz.step = 3;
+  renderWizard();
+}
+
+function renderWizardResult() {
+  const w = window.__wiz || { scene: '婚礼', personId: '' };
+  const scene = w.scene || '婚礼';
+  const person = w.personId ? state.persons.find(function (p) { return p.id === w.personId; }) : null;
+  const advice = giftAdvice(person ? person.id : '', scene);
+  const identity = advice.identity;
+  const etiquette = etiquetteTips(scene, identity);
+  const avoid = giftAvoidTips(scene);
+  const scriptScene = scene === '白事' ? 'condolence' : scene === '探病' ? 'visit_sick' : 'gift';
+  const scripts = buildScripts(scriptScene, person ? person.id : '', '');
+
+  const high = etiquette.filter(function (t) { return t.severity === 'high'; });
+  const normal = etiquette.filter(function (t) { return t.severity !== 'high'; });
+
+  const range = '<div class="wiz-result-range">' + esc(fmtMoney(advice.low)) + ' — ' + esc(fmtMoney(advice.high)) + '</div>' +
+    '<div class="wiz-result-mid">建议中位 ' + esc(fmtMoney(advice.mid)) + ' · ' +
+    esc(advice.identity) + ' · ' + esc(advice.occasion) + '</div>';
+
+  const why = '<div class="wiz-block"><h4>为什么是这个数</h4>' +
+    advice.reasons.map(function (r) { return '<div class="line">· ' + esc(r) + '</div>'; }).join('') +
+    '</div>';
+
+  const tabooLines = avoid.concat(high.map(function (t) { return t.text; }));
+  const taboo = '<div class="wiz-block"><h4>别踩这些坑</h4>' +
+    tabooLines.map(function (t) { return '<div class="line" style="color:#b25d5d">· ' + esc(t) + '</div>'; }).join('') +
+    (normal.length ? normal.map(function (t) { return '<div class="line">· ' + esc(t.text) + '</div>'; }).join('') : '') +
+    '<button class="btn sm" style="margin-top:8px" data-act="giftModal" data-arg="' + (person ? person.id : '') + '">查礼物忌讳</button>' +
+    '</div>';
+
+  const best = scripts.variants && scripts.variants[0];
+  const say = '<div class="wiz-block"><h4>这么说就对了</h4>' +
+    (best ? '<div class="wiz-quote">' + esc(best.text) + '</div>' +
+      '<button class="btn sm" style="margin-top:8px" data-act="copyScript" data-arg="0">复制这句</button>' : '') +
+    '<button class="btn sm ghost" style="margin-top:8px" data-act="scriptModal" data-arg="' + scriptScene + '|' + (person ? person.id : '') + '">换三种语气</button>' +
+    '</div>';
+
+  const actions = '<div class="wiz-block" style="border-top:none;padding-top:4px">' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button class="btn primary" style="flex:1;min-width:130px" data-act="giftToEvent">按这个记一笔</button>' +
+      '<button class="btn" style="flex:1;min-width:130px" data-act="wizardRestart">换个场合再问</button>' +
+    '</div>' +
+    '<div class="sub" style="margin-top:10px;font-size:11px;line-height:1.7;opacity:.8">' + esc(advice.note) + '</div>' +
+    '</div>';
+
+  /* giftToEvent 依赖 window.__gift，这里补齐上下文，复用既有逻辑。 */
+  window.__gift = { personId: person ? person.id : '', occasion: scene, tier: 'standard', city: '二线', advice: advice };
+
+  return '<div class="step-hint">第 3 / 3 步 · 结果</div>' +
+    '<div class="wiz-title">' + (person ? esc(person.name) + ' · ' : '') + esc(advice.occasion) + '</div>' +
+    range + why + taboo + say + actions;
+}
+
+function viewHome() {
+  if (!state.persons.length) {
+    return '<div class="sec-t"><h2>首页</h2><span class="sub">' + todayLabel() + '</span></div>' +
+      '<div class="card hero-card">' +
+        '<div class="hero-kicker">EQ-Worker · 人情世故助手</div>' +
+        '<h3 class="hero-title">把人情顾好，不用靠记性</h3>' +
+        '<div class="sub" style="margin-top:8px;line-height:1.8">先添加几位重要的人，或者载入演示数据看看。之后每天打开，这里会告诉你：今天该联系谁、该还谁的人情、该准备多少礼。</div>' +
+        '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' +
+          '<button class="btn primary" data-act="personForm">添加第一份人脉</button>' +
+          '<button class="btn" data-act="demo">载入演示数据</button>' +
+          '<button class="btn" data-act="wizard">跟着引导走一遍</button>' +
+        '</div>' +
+      '</div>' +
+      wizardTeaser();
+  }
+  const actions = buildActions(3);
+  const heroLine = actions.length
+    ? '今天有 ' + actions.length + ' 件事值得上心。先处理「' + actions[0].title + '」。'
+    : '今天没有紧急的人情事。可以记一笔最近的走动，或给久未联系的人发句问候。';
+  return '<div class="sec-t"><h2>首页</h2><span class="sub">' + todayLabel() + '</span></div>' +
+    '<div class="card hero-card home-hero">' +
+      '<div class="hero-kicker">今日人情简报</div>' +
+      '<h3 class="hero-title">' + (actions.length ? '把该走动的关系，今天走一步' : '今天可以慢一点') + '</h3>' +
+      '<div class="sub" style="margin-top:8px;line-height:1.8">' + esc(heroLine) + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' +
+        '<button class="btn primary" style="flex:1;min-width:140px" data-act="homePage" data-arg="actions">' + (actions.length ? '开始处理 →' : '看看今天') + '</button>' +
+        '<button class="btn" style="flex:1;min-width:140px" data-act="wizard">我不知道做什么</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="entry-grid">' + homeEntries().map(entryCardHtml).join('') + '</div>' +
+    wizardTeaser();
+}
+
+/* 二级页外壳：统一「← 返回首页」+ 标题 */
+function subPage(title, sub, body) {
+  return '<div class="subpage">' +
+    '<button class="backlink" data-act="homeBack">‹ 返回首页</button>' +
+    '<div class="sec-t"><h2>' + esc(title) + '</h2><span class="sub">' + esc(sub) + '</span></div>' +
+    body +
+  '</div>';
+}
+
+/* 二级页：今日行动（完整清单） */
+function viewActionsPage() {
+  const actions = buildActions(30);
+  const body = actions.length
+    ? '<div class="card"><div class="actlist">' + actions.map(actionCard).join('') + '</div></div>'
+    : '<div class="card"><div class="sub">今天没有需要紧急处理的事。保持节奏就好。</div>' +
+      '<button class="btn sm" style="margin-top:10px" data-act="go" data-arg="record">记一笔最近的走动</button></div>';
+  return subPage('今日行动', actions.length + ' 件', body);
+}
+
+/* 二级页：人情账本（原 ledgerModal 内容改为页面） */
+function viewLedgerPage() {
+  return subPage('人情账本', '送出 / 收到 / 谁欠谁', ledgerBody());
+}
+
+/* 二级页：关系体检（原 healthCheck 弹窗改为页面） */
+function viewHealthPage() {
+  const rows = healthRanking();
+  if (!rows.length) {
+    return subPage('关系体检', '还没有数据', '<div class="card"><div class="sub">先添加人脉并记录往来，体检才有数据。</div>' +
+      '<button class="btn primary" style="margin-top:10px" data-act="personForm">添加人脉</button></div>');
+  }
+  const list = rows.map(function (x) {
+    const p = x.p, h = x.h;
+    return '<div class="healthrow" data-act="openPerson" data-arg="' + p.id + '">' +
+      '<div class="avatar" style="width:36px;height:36px;font-size:13px;flex:none">' + esc(initials(p.name)) + '</div>' +
+      '<div class="healthmain">' +
+        '<div class="healthhead"><b>' + esc(p.name) + '</b><span class="chip ' + h.cls + '">' + h.level + '</span>' +
+          '<span class="healthnum">' + h.score + '<span>/100</span></span></div>' +
+        '<div class="track" style="margin-top:5px"><div class="fill" style="width:' + h.score + '%;background:linear-gradient(90deg,var(--teal2),var(--teal))"></div></div>' +
+        '<div class="sub" style="margin-top:4px;font-size:11px">' + esc(h.tips[0]) + '</div>' +
+      '</div></div>';
+  }).join('');
+  return subPage('关系体检', '按健康度从低到高，共 ' + rows.length + ' 人', '<div class="card"><div class="healthlist">' + list + '</div></div>');
+}
+
+/* 二级页：玩法（修炼 + 成就 + 年度 + 雷达 + 网络） */
+function viewPlayPage() {
+  const w = getWisdom(), lv = getLevel(w);
+  const today = todayScenario();
+  const doneToday = state.progress[today.id] && state.streak.last === todayStr();
+  const streak = state.streak.n || 0;
+  const ach = achievementsList();
+  const achDone = ach.filter(function (a) { return a.done; }).length;
+  const nextLine = lv.nxt
+    ? '<div class="meter" style="margin-top:8px"><span style="width:' + lv.pct + '%"></span></div><div class="sub" style="font-size:11px">再得 ' + (lv.nxt.min - w) + ' 点到「' + esc(lv.nxt.name) + '」</div>'
+    : '';
+  return '<div class="sec-t"><h2>玩法</h2><span class="sub">练、看、复盘</span></div>' +
+    '<div class="card level-banner">' +
+      '<div class="level-badge">' + esc(lv.cur.name) + '<span class="lv">' + w + ' 智慧值</span></div>' +
+      '<div class="level-body">' +
+        '<div class="level-desc">' + esc(lv.cur.desc) + '</div>' +
+        '<div class="sub" style="margin-top:6px">连续修炼 <b>' + streak + '</b> 天' + (doneToday ? ' · 今天已练' : ' · 今天还没练') + '</div>' +
+        nextLine +
+      '</div>' +
+    '</div>' +
+    '<div class="card today-scenario">' +
+      '<div class="card-head"><h3>今日情景 · ' + esc(today.tag) + '</h3><span class="chip">' + esc(today.diff) + '</span></div>' +
+      '<div class="sub" style="margin-top:6px">' + esc(today.title) + '</div>' +
+      '<button class="btn primary block" style="margin-top:12px" data-act="scenario" data-arg="' + today.id + '">' + (doneToday ? '再练一次' : '开始这一题') + '</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>成就 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">' + achDone + ' / ' + ach.length + '</span></h3>' +
+      achievementsHtml() +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>年度回顾</h3>' +
+      '<div class="sub" style="margin-top:6px">12 个月节奏、最常走动的人、人情债复盘。</div>' +
+      '<button class="btn primary block" style="margin-top:10px" data-act="annualReport">打开年度报告</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>人脉雷达</h3>' +
+      '<div class="radar-stage" style="padding:0;margin-top:8px"><div id="homeChart" class="chart"></div></div>' +
+      '<div class="sub" style="margin-top:6px">点雷达任一维度可以看解读与提升建议。</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>关系网络</h3>' +
+      '<div class="network-box"><canvas id="network-canvas"></canvas></div>' +
+      '<div class="sub" style="margin-top:6px">点任意节点打开该人脉详情。</div>' +
+    '</div>';
+}
+
 function viewAssistant() {
   const actions = buildActions(6);
   const lt = ledgerTotals();
@@ -2253,24 +3030,33 @@ function settleModal(personId) {
   const p = state.persons.find(x => x.id === personId);
   if (!p) return;
   const l = personLedger(personId);
-  if (!l.net) { toast('这笔账已经两清了'); return; }
+  /* 结清必须按「借款」「礼金」两本账分别展示。
+     以前用总净额：礼金 1000 + 一顿饭 300 会显示「欠 700」，
+     而点还款时 settlePrefill 的借款余额是 0，直接提示「已两清」——按钮是死的。 */
+  const bal = balanceByKind(personId);
+  if (!bal.loan && !bal.gift) { toast('这笔账已经两清了'); return; }
+  const loanBtn = bal.loan
+    ? `<button class="settle-opt" data-act="settleGo" data-arg="${personId}|loan">
+        <b>${bal.loan > 0 ? '还款' : '记收款'}</b>
+        <span>${bal.loan > 0 ? `转给对方 ${fmtMoney(bal.loan)}` : `对方转给你 ${fmtMoney(-bal.loan)}`}</span>
+      </button>`
+    : '';
+  const giftBtn = bal.gift
+    ? `<button class="settle-opt" data-act="settleGo" data-arg="${personId}|gift">
+        <b>${bal.gift > 0 ? '回礼' : '对方回礼'}</b>
+        <span>按礼金往来结清 ${fmtMoney(Math.abs(bal.gift))}</span>
+      </button>`
+    : '';
   openSheet(`和 ${esc(p.name)} 结清`, `
     <div class="card" style="margin:0 0 12px;padding:14px">
-      <div class="sub">当前账本</div>
-      <div class="settle-net ${l.net > 0 ? 'neg' : 'pos'}">${ledgerNetLabel(l.net)}</div>
-      <div class="sub" style="margin-top:4px">累计送出 ${fmtMoney(l.given)} · 累计收到 ${fmtMoney(l.received)}</div>
+      <div class="sub">借款</div>
+      <div class="settle-net ${bal.loan > 0 ? 'neg' : 'pos'}">${bal.loan ? ledgerNetLabel(bal.loan) : '两清'}</div>
+      <div class="sub" style="margin-top:8px">礼金</div>
+      <div class="settle-net ${bal.gift > 0 ? 'neg' : 'pos'}">${bal.gift ? ledgerNetLabel(bal.gift) : '两清'}</div>
+      <div class="sub" style="margin-top:6px">累计送出 ${fmtMoney(l.given)} · 累计收到 ${fmtMoney(l.received)}</div>
     </div>
-    <div class="settle-grid">
-      <button class="settle-opt" data-act="settleGo" data-arg="${personId}|loan">
-        <b>${l.net > 0 ? '还款' : '记收款'}</b>
-        <span>${l.net > 0 ? `转给对方 ${fmtMoney(l.net)}` : `对方转给你 ${fmtMoney(-l.net)}`}</span>
-      </button>
-      <button class="settle-opt" data-act="settleGo" data-arg="${personId}|gift">
-        <b>${l.net > 0 ? '回礼' : '对方回礼'}</b>
-        <span>按礼金往来结清</span>
-      </button>
-    </div>
-    <div class="sub" style="margin-top:10px;line-height:1.7">保存前可以把金额改小，只结一部分；金额只进账本，不影响人情分。</div>
+    <div class="settle-grid">${loanBtn}${giftBtn}</div>
+    <div class="sub" style="margin-top:10px;line-height:1.7">借款与礼金分开结：借款要还本金，礼金等对方办事时还，两者不能互相折算。保存前可以把金额改小，只结一部分。</div>
   `, true);
 }
 function settleGo(arg) {
@@ -2328,6 +3114,7 @@ function giftModal(personId) {
       <div class="field" style="flex:1"><label>档位</label><select class="inp" id="gfTier" data-change="giftCalc">${tierOpts}</select></div>
       <div class="field" style="flex:1"><label>城市</label><select class="inp" id="gfCity" data-change="giftCalc">${cityOpts}</select></div>
     </div>
+    <div class="field"><label>打算送什么（可选，用来查忌讳）</label><input class="inp" id="gfGiftName" placeholder="如：茶叶 / 一座挂钟" data-change="giftName"></div>
     <div id="giftResult"></div>
   `, false);
   window.__gift = { personId: selected, occasion: '婚礼', tier: st.giftTier || 'standard', city: st.cityTier || '二线' };
@@ -2339,7 +3126,8 @@ function renderGiftResult() {
   const g = window.__gift;
   const advice = giftAdvice(g.personId, g.occasion, { tier: g.tier, city: g.city });
   const p = state.persons.find(x => x.id === g.personId);
-  const st = LEDGER_STATUS[advice.ledger.status];
+  const giftBal = balanceByKind(g.personId).gift;
+  const st = LEDGER_STATUS[giftBal > 0 ? 'owe' : giftBal < 0 ? 'due' : 'clear'];
   const reasons = advice.reasons.map(r => `<div class="reasonline">· ${esc(r)}</div>`).join('');
   box.innerHTML = `
     <div class="gift-range">
@@ -2349,7 +3137,7 @@ function renderGiftResult() {
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px">
       ${p ? `<span class="chip">${esc(p.identity || '朋友')}</span>` : ''}
-      <span class="chip ${st.cls}">${ledgerNetLabel(advice.ledger.net)}</span>
+      <span class="chip ${st.cls}">${ledgerNetLabel(giftBal)}</span>
       <span class="chip">${esc(advice.tier)}档 · ${esc(advice.city)}</span>
     </div>
     ${p && (p.likes || p.taboos) ? `<div class="sub" style="margin-top:8px">${p.likes ? `喜欢：${esc(p.likes)}` : ''}${p.likes && p.taboos ? ' · ' : ''}${p.taboos ? `避开：${esc(p.taboos)}` : ''}</div>` : ''}
@@ -2359,6 +3147,19 @@ function renderGiftResult() {
       <button class="btn sm ghost" data-act="ledgerModal">看账本</button>
     </div>
     <div class="gift-reasons" style="margin-top:10px">${reasons}</div>
+    ${(() => {
+      const nameEl = document.getElementById('gfGiftName');
+      const hits = nameEl && nameEl.value ? checkGiftTaboo(nameEl.value, g.occasion) : [];
+      if (!hits.length) return '';
+      return `<div class="gift-reasons" style="margin-top:10px"><div class="sub" style="font-weight:600;margin-bottom:4px;color:#b25d5d">这份礼物不建议送</div>${hits.map(h => `<div class="reasonline" style="color:#b25d5d">· 「${esc(h.keyword)}」${esc(h.reason)}</div>`).join('')}</div>`;
+    })()}
+    ${(() => {
+      const et = etiquetteTips(g.occasion, advice.identity);
+      const av = giftAvoidTips(g.occasion);
+      const items = [...av.map(t => ({ severity: 'normal', text: t })), ...et];
+      if (!items.length) return '';
+      return `<div class="gift-reasons" style="margin-top:10px"><div class="sub" style="font-weight:600;margin-bottom:4px">礼俗提醒</div>${items.map(t => `<div class="reasonline" ${t.severity === 'high' ? 'style="color:#b25d5d"' : ''}>· ${esc(t.text)}</div>`).join('')}</div>`;
+    })()}
     <div class="sub" style="margin-top:10px;font-size:11px;line-height:1.7;opacity:.8">${esc(advice.note)}</div>`;
   window.__gift.advice = advice;
 }
@@ -2922,153 +3723,88 @@ function achievementsHtml() {
         <div class="sub" style="font-size:11px">${esc(x.d)}</div>
       </div>
       <div style="font-size:11px;color:${x.done ? 'var(--teal)' : 'var(--sub)'};font-weight:600;white-space:nowrap">${x.done ? '已达成' : x.cur + '/' + x.need}</div>
-    </div>`).join('');
-  return `<div class="card">
-    <h3>成就徽章 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">${got} / ${list.length} 已达成</span></h3>
+    </div>
+    <div class="track" style="margin:0 10px 9px"><div class="fill" style="width:${x.need ? Math.min(100, Math.round(x.cur / x.need * 100)) : 0}%;background:${x.done ? 'linear-gradient(90deg,var(--teal2),var(--teal))' : 'rgba(185,164,128,.45)'}"></div></div>`).join('');
+  return `<div>
     <div class="sub" style="margin:8px 0 12px">用真实往来解锁徽章：记录、走动、修炼、还清人情，都会留下痕迹。</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">${items}</div>
   </div>`;
 }
 
+/* ---------------- 我的：4 个区块 ----------------
+   重排前的「我的」纵向堆了 13 张卡（概览/待办/洞察/Top3/趋势/类型分布/画像/网络/成就/工具/数据/安装/品牌），
+   是全应用最乱的一页。现在按职责收敛：
+     ① 数据概览 + 入口（玩法相关全部移到「玩法」页）
+     ② 待办提醒（用户最常操作）
+     ③ 数据管理（导出/导入/清空）
+     ④ 关于（版本与说明，折叠） */
 function viewMe() {
-  const m = overallMetrics();
-  const w = getWisdom(), lv = getLevel(w);
   const pending = state.reminders.filter(r => r.status === 'pending').length;
-  const ins = monthInsights();
+  const w = getWisdom();
   const installCardHtml = installCard();
   const stats = [
-    { n: state.persons.length, l: '人脉' }, { n: state.events.length, l: '往来记录' },
-    { n: pending, l: '待办' }, { n: w, l: '智慧值' }
-  ].map(s => `<div class="stat"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>`).join('');
-  const rems = state.reminders.slice().sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
-  const remRows = rems.map(r => {
-    const rp = state.persons.find(x => x.id === r.personId);
-    return `<div class="alertitem">
-      <div class="ic" style="background:#8aa6c922;color:#8aa6c9"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 4v4m8-4v4"/><path d="M8 12l3 3 5-5"/></svg></div>
-      <div class="tx" style="flex:1">${esc(r.content)}<div class="tm">${rp ? `<b style="color:var(--teal)">${esc(rp.name)}</b> · ` : ''}${r.date || '不限'} · ${r.status === 'done' ? '已完成' : '待办'}</div></div>
-      ${r.status === 'pending' ? `<button class="btn sm ghost" data-act="reminderDone" data-arg="${r.id}">完成</button>` : ''}
-      <button class="btn sm ghost danger" data-act="delReminder" data-arg="${r.id}">删</button>
-    </div>`;
+    { n: state.persons.length, l: '人脉' },
+    { n: state.events.length, l: '往来记录' },
+    { n: pending, l: '待办' },
+    { n: w, l: '智慧值' }
+  ].map(s => '<div class="stat"><div class="n">' + s.n + '</div><div class="l">' + s.l + '</div></div>').join('');
+
+  const rems = state.reminders.slice().sort(function (a, b) {
+    return (a.date || '9999').localeCompare(b.date || '9999');
+  });
+  const remRows = rems.map(function (r) {
+    const rp = state.persons.find(function (x) { return x.id === r.personId; });
+    return '<div class="alertitem">' +
+      '<div class="ic" style="background:#8aa6c922;color:#8aa6c9"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 4v4m8-4v4"/><path d="M8 12l3 3 5-5"/></svg></div>' +
+      '<div class="tx" style="flex:1">' + esc(r.content) +
+        '<div class="tm">' + (rp ? '<b style="color:var(--teal)">' + esc(rp.name) + '</b> · ' : '') +
+        esc(r.date || '不限') + ' · ' + (r.status === 'done' ? '已完成' : '待办') + '</div></div>' +
+      (r.status === 'pending' ? '<button class="btn sm ghost" data-act="reminderDone" data-arg="' + r.id + '">完成</button>' : '') +
+      '<button class="btn sm ghost danger" data-act="delReminder" data-arg="' + r.id + '">删</button>' +
+    '</div>';
   }).join('');
-  const dims = m ? [
-    ['人脉规模', m.scale], ['人情热度', Math.round(m.heatAvg)], ['往来频率', m.freq],
-    ['人情信用', Math.round(m.credit)], ['处世智慧', m.wisdom]
-  ] : [];
-  /* 最值得经营的人：热度 Top3 */
-  const top3 = state.persons.map(p => ({ p, h: computedFor(p.id) }))
-    .sort((a, b) => b.h.heat - a.h.heat).slice(0, 3);
-  const top3Html = top3.map(x => {
-    const mh = x.h;
-    const last = mh.lastDays === null ? '尚无往来'
-      : timeAgo(state.events.filter(e => e.personId === x.p.id).reduce((mx, e) => Math.max(mx, e.time), 0));
-    return `<div class="personcard" data-act="openPerson" data-arg="${x.p.id}" style="margin-bottom:8px">
-      <div class="avatar">${esc(initials(x.p.name))}</div>
-      <div class="pc-main">
-        <div class="pc-name">${esc(x.p.name)} <span class="chip teal">${esc(x.p.identity || '朋友')}</span></div>
-        <div class="pc-meta">${(x.p.tags || []).slice(0, 2).map(t => `<span class="chip">${esc(t)}</span>`).join('')}<span style="font-size:12px;color:var(--dim)">${last}</span></div>
-        <div class="heatbar"><span style="font-size:11px;color:var(--dim)">热度</span>
-          <div class="track"><div class="fill" style="width:${mh.heat}%"></div></div>
-          <span class="val">${Math.round(mh.heat)}</span></div>
-      </div>
-    </div>`;
-  }).join('');
-  /* 往来类型分布（近 12 个月） */
-  const nowT = new Date();
-  const yStartT = `${nowT.getFullYear() - 1}-${String(nowT.getMonth() + 1).padStart(2, '0')}-01`;
-  const tCnt = Object.create(null);
-  for (const e of state.events) if (fmtDate(e.time) >= yStartT) tCnt[e.type] = (tCnt[e.type] || 0) + 1;
-  const tTotal = Object.values(tCnt).reduce((s, v) => s + v, 0);
-  return `
-    <div class="sec-t"><h2>我的</h2></div>
-    <div class="card"><div class="statgrid">${stats}</div></div>
-    <div class="card">
-      <h3>待办提醒 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">${pending} 项待办</span></h3>
-      ${remRows || '<div class="sub" style="margin-top:6px">还没有提醒。可以给人脉加个提醒，比如「月底前请老张吃饭还人情」。</div>'}
-      <button class="btn sm" style="margin-top:10px" data-act="reminderModal" data-arg="">＋ 添加提醒</button>
-    </div>
-    <div class="card">
-      <h3>本月洞察（${ins.ym}）</h3>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <div class="stat" style="flex:1"><div class="n">${ins.count}</div><div class="l">本月往来</div></div>
-        <div class="stat" style="flex:1"><div class="n">${ins.np}</div><div class="l">本月新人脉</div></div>
-      </div>
-      <div class="sub" style="margin-top:12px;line-height:1.8">
-        最常走动：<b style="color:var(--teal)">${ins.top}</b><br>
-        人情债前三：${ins.debts}<br>
-        提醒：本月${ins.count ? '有 ' + ins.count + ' 笔往来，保持节奏' : '还没有往来记录，去「记录」页记一笔吧'}
-      </div>
-    </div>
-    ${top3.length >= 2 ? `<div class="card">
-      <h3>最值得经营的人 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">热度 Top 3</span></h3>
-      <div class="sub" style="margin-top:4px">热度最高、最该保持走动的人，点卡片看细节。</div>
-      <div style="margin-top:10px">${top3Html}</div>
-    </div>` : ''}
-    <div class="card">
-      <h3>近 6 月往来趋势</h3>
-      <div class="sub" style="margin-top:4px">每月记了多少笔往来，看看自己的经营节奏。</div>
-      <div id="trendChart" class="chart" style="height:170px;margin-top:6px"></div>
-    </div>
-    <div class="card">
-      <h3>往来类型分布</h3>
-      <div class="sub" style="margin-top:4px">近 12 个月，饭局、互助、送礼……哪些往来占了多数。</div>
-      ${tTotal ? `<div id="typeChart" class="chart" style="height:180px;margin-top:6px"></div>`
-        : '<div class="sub" style="margin-top:10px">还没有数据，记录往来后这里会画出你的往来结构。</div>'}
-    </div>
-    <div class="card">
-      <h3>人情画像</h3>
-      ${m ? dims.map(d => `<div class="dimrow" style="margin-top:10px"><span class="nm">${d[0]}</span>
-        <div class="track"><div class="fill" style="width:${d[1]}%;background:linear-gradient(90deg,var(--teal2),var(--teal))"></div></div>
-        <span class="v">${d[1]}</span></div>`).join('')
-        : '<div class="sub" style="margin-top:6px">添加人脉并记录往来后，这里会生成你的画像。</div>'}
-      <div class="sub" style="margin-top:10px">当前段位：<b style="color:var(--teal)">${lv.cur.name}</b></div>
-      <button class="btn sm" style="margin-top:12px" data-act="annualReport">年度人情报告</button>
-    </div>
-    <div id="relation-network" class="card">
-      <h3>关系网络</h3>
-      <div class="sub" style="margin-top:4px">点击节点可查看人脉详情；节点越大热度越高，连线表示两人有共同标签</div>
-      <canvas id="network-canvas" style="width:100%;display:block;margin-top:10px"></canvas>
-    </div>
-    ${achievementsHtml()}
-    <div class="card">
-      <h3>人情工具</h3>
-      <div class="sub" style="margin:6px 0 10px">账本、随礼、话术、日历，都在这里。</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn sm" data-act="ledgerModal">人情账本</button>
-        <button class="btn sm" data-act="healthCheck">关系体检</button>
-        <button class="btn sm" data-act="giftModal" data-arg="">随礼参谋</button>
-        <button class="btn sm" data-act="scriptModal" data-arg="reconnect|">话术参谋</button>
-        <button class="btn sm" data-act="exportICS">导出重要日子 (.ics)</button>
-      </div>
-    </div>
-    <div class="card">
-      <h3>数据管理</h3>
-      <div class="sub" style="margin:8px 0 12px">所有数据只保存在本机浏览器，不上传任何服务器。换设备前记得导出备份，或用剪贴板把数据搬到新设备。</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" data-act="export">导出备份</button>
-        <button class="btn" data-act="exportCsv">导出人脉+账本(CSV)</button>
-        <button class="btn" data-act="import">导入备份</button>
-        <button class="btn" data-act="copyBackup">复制备份</button>
-        <button class="btn" data-act="pasteImport">粘贴导入</button>
-        <button class="btn danger" data-act="reset">清空数据</button>
-        <input type="file" id="importFile" accept=".json,application/json" style="display:none" data-change="importFile">
-      </div>
-    </div>
-    ${installCardHtml}
-    <div class="card">
-      <div class="brandcard">${LOGO_SVG}
-        <div class="bn">EQ-Worker</div>
-        <div class="bs">${BRAND.slogan}</div>
-        <div class="bv">${BRAND.version} · 本地优先 · 数据只存本机<br>${BRAND.en}</div>
-      </div>
-      <div class="sub" style="text-align:center">
-        以「今日行动 → 人情账本 → 随礼参谋 → 话术参谋 → 关系体检」为主线，
-        帮你把人情顾好、把关系经营成细水长流。<br><br>
-        · 所有建议由本地规则生成，不调用外部 AI、不上传通讯录<br>
-        · 雷达图由开源可视化库 ECharts 绘制，全程无手写 Canvas<br>
-        · 数据存储使用浏览器本地存储，隐私安全<br>
-        · 礼金与话术仅供参考，人情没有唯一解，最终以你的真实关系和当地习惯为准
-      </div>
-    </div>`;
+
+  return '<div class="sec-t"><h2>我的</h2></div>' +
+    '<div class="card"><div class="statgrid">' + stats + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
+        '<button class="btn sm" data-act="go" data-arg="play">玩法与成就</button>' +
+        '<button class="btn sm" data-act="annualReport">年度报告</button>' +
+        '<button class="btn sm" data-act="exportICS">导出重要日子</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>待办提醒 <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--sub)">' + pending + ' 项待办</span></h3>' +
+      (remRows || '<div class="sub" style="margin-top:6px">还没有提醒。可以给人脉加个提醒，比如「月底前请老张吃饭还人情」。</div>') +
+      '<button class="btn sm" style="margin-top:10px" data-act="reminderModal" data-arg="">＋ 添加提醒</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>数据管理</h3>' +
+      '<div class="sub" style="margin:8px 0 12px">所有数据只保存在本机浏览器，不上传任何服务器。换设备前记得导出备份，或用剪贴板把数据搬到新设备。</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn" data-act="export">导出备份</button>' +
+        '<button class="btn" data-act="exportCsv">导出人脉+账本(CSV)</button>' +
+        '<button class="btn" data-act="import">导入备份</button>' +
+        '<button class="btn" data-act="copyBackup">复制备份</button>' +
+        '<button class="btn" data-act="pasteImport">粘贴导入</button>' +
+        '<button class="btn danger" data-act="reset">清空数据</button>' +
+        '<input type="file" id="importFile" accept=".json,application/json" style="display:none" data-change="importFile">' +
+      '</div>' +
+    '</div>' +
+    installCardHtml +
+    '<div class="card">' +
+      '<div class="brandcard">' + LOGO_SVG +
+        '<div class="bn">EQ-Worker</div>' +
+        '<div class="bs">' + BRAND.slogan + '</div>' +
+        '<div class="bv">' + BRAND.version + ' · 数据只存本机<br>' + BRAND.en + '</div>' +
+      '</div>' +
+      '<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">关于与使用边界</summary>' +
+        '<div class="sub" style="text-align:left;margin-top:8px;line-height:1.8">' +
+          '· 所有建议由本地规则生成，不调用外部 AI、不上传通讯录<br>' +
+          '· 数据存储使用浏览器本地存储<br>' +
+          '· 礼金与话术仅供参考，人情没有唯一解，最终以你的真实关系和当地习惯为准' +
+        '</div>' +
+      '</details>' +
+    '</div>';
 }
 
 /* ---------------- 8. 弹层 ---------------- */
@@ -3249,11 +3985,13 @@ function personForm(id) {
 }
 
 /* ---------- 事件表单 ---------- */
-const DIR_OPTIONS = [['none', '不涉及金额'], ['in', '对方给我'], ['out', '我给对方']];
+const DIR_OPTIONS = [['none', '不涉及金额'], ['in', '对方给我 / 我借入'], ['out', '我给对方 / 我借出']];
 function defaultDir(type) {
   if (type === 'gift_get') return 'in';
   if (type === 'gift_give') return 'out';
-  if (type === 'money') return 'in';
+  /* 金钱往来绝不预填方向：预填「对方给我」会让用户顺手保存成
+     「我借出 5000」→「我欠对方 5000」，方向反一倍。
+     必须由用户显式选择；选不涉及金额则不记入账本。 */
   return 'none';
 }
 function dirOptions(sel) {
@@ -3420,10 +4158,34 @@ function onClick(e) {
   const act = el.dataset.act, arg = el.dataset.arg;
   switch (act) {
     case 'go': {
+      /* 弹层内点 go 以前只切 tab、不关弹层，目标页被遮罩挡在后面。
+         先关弹层再切页，用户才真的看得到结果。 */
+      if ($('#modal-root') && $('#modal-root').innerHTML.trim()) closeModal();
       state.tab = arg; render();
       try { localStorage.setItem('eqworker_tab', arg); } catch (e) {}
       break;
     }
+
+    case 'homePage': {
+      /* 首页卡片进入二级页；state.homeFrom 记住来处，返回时回到首页。 */
+      state.tab = arg === 'actions' ? 'actions' : arg === 'ledger' ? 'ledgerPage' : 'healthPage';
+      if ($('#modal-root') && $('#modal-root').innerHTML.trim()) closeModal();
+      render();
+      try { localStorage.setItem('eqworker_tab', 'home'); } catch (e) {}
+      break;
+    }
+
+    case 'homeBack': {
+      state.tab = 'home';
+      render();
+      try { localStorage.setItem('eqworker_tab', 'home'); } catch (e) {}
+      break;
+    }
+
+    case 'wizard': startWizard(); break;
+    case 'wizardScene': wizardPickScene(arg); break;
+    case 'wizardPerson': wizardPickPerson(arg); break;
+    case 'wizardRestart': startWizard(); break;
 
     case 'openPerson': openPerson(arg); break;
     case 'ledgerModal': openLedger(); break;
@@ -3691,6 +4453,9 @@ function onClick(e) {
         /* 与文件导入走同一条清洗链：剪贴板内容同样是外部输入，
            直接 applyImport 会把 progress.best='oops' 之类的脏值带进 state。 */
         const clean = sanitizeImport(d);
+        /* 剪贴板与文件导入必须同一套空数据保护：清洗会丢掉没有名字的联系人，
+           一份全无效的备份清洗后就是 0 条，照单全收等于静默清空现有账本。 */
+        if (clean.persons.length === 0) { toast('导入失败：没有可用的联系人，已保留现有数据'); break; }
         if (state.persons.length) {
           const importView = $('#modal-root').innerHTML;
           confirmModal('导入会覆盖当前所有数据（建议先导出备份）。确定继续吗？', () => {
@@ -3822,6 +4587,10 @@ function onInput(e) {
       const si = $('#fSearch');
       if (si) { si.focus(); const v = si.value; si.setSelectionRange(v.length, v.length); }
     }, 180);
+  } else if (act === 'giftName') {
+    /* 礼物名称只影响「忌讳提示」，不影响金额；防抖后重渲染结果区即可。 */
+    clearTimeout(window.__giftNameTimer);
+    window.__giftNameTimer = setTimeout(() => { renderGiftResult(); }, 200);
   } else if (act === 'scriptInput') {
     if (!window.__script) return;
     window.__script.context = el.value;

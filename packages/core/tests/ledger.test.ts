@@ -109,9 +109,11 @@ describe('ledger', () => {
       event('e1', 'p1', 'gift_get', 600, NOW, { dir: 'in', occasion: '节日' })
     ]);
     const a = giftAdvice(s, 'p1', '婚礼', { tier: 'standard', city: '二线' });
-    expect(a.mid).toBe(1000);
+    /* 上浮必须真正落到报价上：以前只改文案不改金额，
+       文案写「上浮 10% 约 1,100」而返回的 mid 仍是 1,000。 */
+    const base = giftAdvice({ ...s, events: [] } as never, 'p1', '婚礼', { tier: 'standard', city: '二线' });
+    expect(a.mid).toBeGreaterThan(base.mid);
     expect(a.reasons.some((r) => r.includes('10%'))).toBe(true);
-    expect(a.reasons.some((r) => r.includes('1,100'))).toBe(true);
   });
 
   it('ledgerInsights：本月收支、平均与最花心思的场合', () => {
@@ -130,19 +132,34 @@ describe('ledger', () => {
     expect(ins.topOccasionAmount).toBe(1000);
   });
 
-  it('settlePrefill：我欠对方时支出，对方欠我时收入，净额为 0 返回 null', () => {
+  it('settlePrefill：礼金结礼金、借款结借款，两者不混算', () => {
+    /* 语义已修正：以前用总净额结清，会把「收礼 800 + 借款 5000」算成 5800。
+       借款余额与礼金余额必须各自独立结算，否则还错钱会永久改写账本。 */
     const owe = stateWith([person('p1', '张三')], [event('e1', 'p1', 'gift_get', 800, NOW, { dir: 'in' })]);
-    const loan = settlePrefill(owe, 'p1', 'loan');
-    expect(loan).toMatchObject({ type: 'money', dir: 'out', amount: 800, title: '还款' });
+    // 纯礼金：没有借款，借款结清应为空
+    expect(settlePrefill(owe, 'p1', 'loan')).toBeNull();
     const gift = settlePrefill(owe, 'p1', 'gift');
-    expect(gift).toMatchObject({ type: 'gift_give', occasion: '还礼' });
+    expect(gift).toMatchObject({ type: 'gift_give', occasion: '还礼', amount: 800, dir: 'out' });
 
     const due = stateWith([person('p1', '张三')], [event('e1', 'p1', 'gift_give', 1200, NOW, { dir: 'out' })]);
-    expect(settlePrefill(due, 'p1', 'loan')).toMatchObject({ dir: 'in', title: '收回借款' });
-    expect(settlePrefill(due, 'p1', 'gift')).toMatchObject({ type: 'gift_get', dir: 'in' });
+    expect(settlePrefill(due, 'p1', 'loan')).toBeNull();
+    expect(settlePrefill(due, 'p1', 'gift')).toMatchObject({ type: 'gift_get', dir: 'in', amount: 1200 });
 
     const clear = stateWith([person('p1', '张三')], []);
     expect(settlePrefill(clear, 'p1', 'loan')).toBeNull();
     expect(settlePrefill(clear, 'nope', 'loan')).toBeNull();
+  });
+
+  it('settlePrefill：借款与礼金分开结算，不用总净额', () => {
+    const mixed = stateWith(
+      [person('p1', '张三')],
+      [
+        event('e1', 'p1', 'gift_get', 1000, NOW, { dir: 'in' }),
+        event('e2', 'p1', 'money', 5000, NOW, { dir: 'in' })
+      ]
+    );
+    // 借款 5000 + 礼金 1000：借款结清只还 5000，不能是 6000
+    expect(settlePrefill(mixed, 'p1', 'loan')).toMatchObject({ type: 'money', amount: 5000, dir: 'out' });
+    expect(settlePrefill(mixed, 'p1', 'gift')).toMatchObject({ type: 'gift_give', amount: 1000, dir: 'out' });
   });
 });

@@ -392,7 +392,10 @@ test('H5 文件导入特殊进度键后保存并重新加载', () => {
   const mem = new Map();
   const app = loadH5(mem);
   const progress = JSON.parse('{"__proto__":{"best":91,"times":2},"constructor":{"best":82,"times":3},"toString":{"best":73,"times":4},"ordinary":{"best":64,"times":5}}');
-  app.store.import({ text: JSON.stringify({ persons: [], progress }) });
+  /* 这条用例真正要锁的是「原型污染键被当作普通数据」。
+     必须带一个真实人脉：空 persons 的导入现在会被拒绝（防止静默清空账本），
+     若只传空数组，测的就不是原型键而是导入策略了。 */
+  app.store.import({ text: JSON.stringify({ persons: [{ id: 'p1', name: '甲' }], progress }) });
   const saved = JSON.parse(mem.get('eqworker_db_v1'));
   assert.deepEqual(saved.progress, progress);
   const reloaded = loadH5(mem);
@@ -405,6 +408,17 @@ test('H5 文件导入特殊进度键后保存并重新加载', () => {
   const restored = loadH5(mem);
   assert.equal(restored.store.load(), true);
   assert.deepEqual(JSON.parse(JSON.stringify(restored.state.progress)), progress);
+});
+
+test('H5 导入空 persons 被拒绝，现有账本不会被清空', () => {
+  const mem = new Map();
+  const app = loadH5(mem);
+  app.store.import({ text: JSON.stringify({ persons: [{ id: 'p1', name: '甲' }] }) });
+  const before = JSON.parse(mem.get('eqworker_db_v1')).persons.length;
+  app.store.import({ text: JSON.stringify({ persons: [] }) });
+  const after = JSON.parse(mem.get('eqworker_db_v1')).persons.length;
+  assert.equal(before, 1);
+  assert.equal(after, 1, '空导入不应覆盖现有数据');
 });
 
 test('原型名称作为人脉、事件类型和场合时仍按普通数据计算', () => {
@@ -644,32 +658,44 @@ test('ledgerInsights：本月收支、平均与最花心思的场合', () => {
   assert.equal(ins.topOccasionAmount, 1000);
 });
 
-test('settlePrefill：我欠对方时预填还款/回礼 out', () => {
+test('settlePrefill：礼金只结礼金，纯礼金场景不产生借款结清', () => {
   const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
   reset([p], [
     { id: 'e1', personId: 'p1', type: 'gift_get', time: Date.now(), weight: 4, amount: 800, dir: 'in', occasion: '生日' }
   ]);
-  const loan = H.settlePrefill('p1', 'loan');
-  assert.equal(loan.type, 'money');
-  assert.equal(loan.dir, 'out');
-  assert.equal(loan.amount, 800);
-  assert.equal(loan.title, '还款');
+  // 语义已修正：借款与礼金分开结，纯礼金不该出现「还款」
+  assert.equal(H.settlePrefill('p1', 'loan'), null);
   const gift = H.settlePrefill('p1', 'gift');
   assert.equal(gift.type, 'gift_give');
+  assert.equal(gift.dir, 'out');
+  assert.equal(gift.amount, 800);
   assert.equal(gift.occasion, '还礼');
 });
 
-test('settlePrefill：对方欠我时预填收款/回礼 in', () => {
+test('settlePrefill：对方欠我礼金时预填收款 in', () => {
   const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
   reset([p], [
     { id: 'e1', personId: 'p1', type: 'gift_give', time: Date.now(), weight: 4, amount: 1200, dir: 'out', occasion: '婚礼' }
   ]);
-  const loan = H.settlePrefill('p1', 'loan');
-  assert.equal(loan.dir, 'in');
-  assert.equal(loan.title, '收回借款');
+  assert.equal(H.settlePrefill('p1', 'loan'), null);
   const gift = H.settlePrefill('p1', 'gift');
   assert.equal(gift.type, 'gift_get');
   assert.equal(gift.dir, 'in');
+  assert.equal(gift.amount, 1200);
+});
+
+test('settlePrefill：借款与礼金混在一起时各自结算，不用总净额', () => {
+  const p = { id: 'p1', name: '张三', identity: '朋友', adjust: 0 };
+  reset([p], [
+    { id: 'e1', personId: 'p1', type: 'gift_get', time: Date.now(), weight: 4, amount: 1000, dir: 'in', occasion: '婚礼' },
+    { id: 'e2', personId: 'p1', type: 'money', time: Date.now(), weight: 5, amount: 5000, dir: 'in', occasion: '其他' }
+  ]);
+  const loan = H.settlePrefill('p1', 'loan');
+  assert.equal(loan.type, 'money');
+  assert.equal(loan.amount, 5000, '借款结清只应含借款，不能把礼金算进去');
+  const gift = H.settlePrefill('p1', 'gift');
+  assert.equal(gift.type, 'gift_give');
+  assert.equal(gift.amount, 1000, '礼金结清只应含礼金');
 });
 
 test('settlePrefill：净额为 0 或人不存在返回 null', () => {

@@ -134,8 +134,13 @@ export class StudioStore {
     this.nowFn = options.now ?? (() => Date.now());
     this.fetchImpl = options.fetchImpl;
     this.sessionKeys = options.sessionKeyStore === undefined ? browserSessionStorage() : options.sessionKeyStore;
-    const loaded = this.store.load();
-    if ((!loaded && hadStoredValue && !this.storageWarning) || this.store.isWriteProtected()) warnRead();
+    this.store.load();
+    /* store 内部进入写保护（备份写不进去、或清洗会真丢数据）时，
+       不会经过 adapter 的 warn 回调。这里补一次判定，让用户知道原因；
+       文案用「写保护」而不是「保存失败」，因为数据仍在、只是改不动。 */
+    /* hadStoredValue 用于区分「首次使用」和「有数据但读不出来」：
+       后者才是需要告警的情况。 */
+    if ((this.store.isWriteProtected() || hadStoredValue && this.store.getState().persons.length === 0) && !this.storageWarning) warnRead();
     this.appState = this.store.getState();
     this.selectedId = this.appState.persons[0]?.id ?? null;
     this.aiForm = {
@@ -329,12 +334,24 @@ export class StudioStore {
       weight: meta.dHeat,
       note: '',
       amount: Math.max(0, Number(input.amount) || 0),
+      /* 借款方向必须由用户明确选择：缺省 none，绝不猜成 in。
+         猜成 in 会把「我借给对方 5000」记成「我欠对方 5000」。 */
       dir: input.dir,
       occasion: input.occasion
     };
+    const prevEvents = this.appState.events;
+    const prevLast = this.appState.lastEventId;
     this.appState.events = [event, ...this.appState.events];
     this.appState.lastEventId = event.id;
-    this.store.save();
+    /* 落盘失败必须回滚并返回 false：以前忽略返回值，
+       界面显示「已记录」，刷新后这条往来就没了。 */
+    if (!this.store.save()) {
+      this.appState.events = prevEvents;
+      this.appState.lastEventId = prevLast;
+      this.invalidateAIContext('保存失败，本次记录未写入');
+      this.notify();
+      return false;
+    }
     this.invalidateAIContext('往来已记录，请重新生成预览');
     this.notify();
     return true;

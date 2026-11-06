@@ -56,7 +56,15 @@ function str(x: unknown, max: number): string {
 function mmdd(x: unknown): string {
   const s = str(x, 10);
   const m = s.match(/^(?:\d{4}-)?(\d{2})-(\d{2})$/);
-  return m ? m[1] + '-' + m[2] : '';
+  if (!m) return '';
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  // 只做正则会把 13-45、02-30 当成合法生日，之后 daysUntil 用 Date 溢出
+  // 折算成别的日子，于是一个虚构的生日开始每天提醒用户。
+  if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+  const probe = new Date(2000, month - 1, day); // 2000 是闰年，能容纳 02-29
+  if (probe.getMonth() !== month - 1 || probe.getDate() !== day) return '';
+  return m[1] + '-' + m[2];
 }
 
 function fixWeight(type: EventType, w: unknown): number {
@@ -71,7 +79,11 @@ function fixDir(type: EventType, dir: unknown, amount: number): Dir {
   if (dir === 'in' || dir === 'out') return dir;
   if (type === 'gift_get') return 'in';
   if (type === 'gift_give') return 'out';
-  if (type === 'money') return 'in';
+  /* money 不猜方向。以前缺省一律判成 'in'，后果有两个：
+     ① 旧数据（旧版 CLI/MCP 写入的 dir:'none'）一加载就被改写成「借入」，
+        与原值不等，被判数据丢失 → 永久写保护，用户改不动任何东西；
+     ② 语义上把「借出」也算成「我欠对方」，金额直接算反。
+     方向未知就保持 none：这笔钱不计入两本账，等用户补一个方向。 */
   return 'none';
 }
 

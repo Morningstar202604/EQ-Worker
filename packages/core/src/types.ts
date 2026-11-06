@@ -12,7 +12,22 @@ export type EventType =
 
 export type GiftTier = 'simple' | 'standard' | 'generous';
 export type CityTier = '三线' | '二线' | '一线';
-export type Occasion = '日常' | '生日' | '婚礼' | '满月' | '乔迁' | '探病' | '节日' | '还礼' | '其他';
+/* 场合是「什么事」。红白事在礼数上是两套规则：白事不能用喜事的吉数、
+   不能用「恭喜/红包」，所以必须是独立场合，不能靠「其他」兜底。 */
+export type Occasion =
+  | '日常'
+  | '生日'
+  | '婚礼'
+  | '满月'
+  | '乔迁'
+  | '探病'
+  | '节日'
+  | '还礼'
+  | '白事'
+  | '寿宴'
+  | '升学'
+  | '开业'
+  | '其他';
 export type Dir = 'in' | 'out' | 'none';
 export type LedgerStatus = 'owe' | 'due' | 'clear';
 export type Diff = '入门' | '进阶' | '高手';

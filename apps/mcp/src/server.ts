@@ -43,7 +43,7 @@ import {
   type EventType
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.5.0';
+const VERSION = '3.7.0';
 const file = resolveDataFile();
 const store = createFileStore(file);
 const state = (): AppState => store.getState();
@@ -211,7 +211,7 @@ server.registerTool(
     description: '根据关系、场合、档位和城市，给出从简/建议/重视三档礼金参考及计算依据。回答「该随多少礼」时使用。',
     inputSchema: {
       personName: z.string().optional().describe('给谁（姓名）。不填则按通用关系估算'),
-      occasion: z.enum(['日常', '生日', '婚礼', '满月', '乔迁', '探病', '节日', '还礼', '其他']).describe('场合'),
+      occasion: z.enum(OCCASIONS as unknown as [string, ...string[]]).describe(`场合，可选：${OCCASIONS.join('、')}`),
       tier: z.enum(['simple', 'standard', 'generous']).optional().describe('档位：simple 从简、standard 得体、generous 重视'),
       city: z.enum(['三线', '二线', '一线']).optional().describe('城市线级，影响地区系数')
     },
@@ -304,11 +304,12 @@ server.registerTool(
       amount: z.number().min(0).optional().describe('金额（元），可选'),
       occasion: z.string().optional().describe(`场合，可选：${OCCASIONS.join(', ')}`),
       date: z.string().optional().describe('日期 ISO 格式如 2026-11-04，默认今天'),
+      dir: z.enum(['in', 'out']).optional().describe('金额方向：in=我收到/借入，out=我给出/借出。借款类必填，否则无法入账'),
       note: z.string().optional().describe('备注')
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
   },
-  async ({ personName, type, title, amount, occasion, date, note }) => {
+  async ({ personName, type, title, amount, occasion, date, dir, note }) => {
     const s = state();
     const p = s.persons.find((x) => x.name === personName || x.id === personName);
     if (!p) return text(`找不到「${personName}」。请先确认姓名，或用 add_person 添加。`);
@@ -316,7 +317,12 @@ server.registerTool(
       return text(`事件类型不支持：${type}。可选：${Object.keys(EVENT_TYPES).join(', ')}`);
     }
     const meta = EVENT_TYPES[type as EventType];
-    const dir: 'in' | 'out' | 'none' = type === 'gift_get' ? 'in' : type === 'gift_give' ? 'out' : 'none';
+    /* money 必须接受调用方给的方向；缺省 none（不猜），否则借出会被记成借入。 */
+    const dirValue: 'in' | 'out' | 'none' =
+      type === 'gift_get' ? 'in'
+      : type === 'gift_give' ? 'out'
+      : type === 'money' && (dir === 'in' || dir === 'out') ? dir
+      : 'none';
     const event = {
       id: uid(),
       personId: p.id,
@@ -326,7 +332,7 @@ server.registerTool(
       weight: meta.dHeat,
       note: (note ?? '').slice(0, 500),
       amount: Number.isFinite(amount) && (amount ?? 0) > 0 ? (amount as number) : 0,
-      dir,
+      dir: dirValue,
       occasion: occasion ?? '日常'
     };
     s.events.unshift(event);

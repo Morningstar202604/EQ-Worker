@@ -58,7 +58,7 @@ export const SCRIPT_SCENES: ScriptScene[] = [
   {
     id: 'collect_debt', label: '催还/提醒', hint: '给具体时间点，语气平和，别让人下不来台',
     build: (c) => ({
-      stable: `${c.name}，最近整理账本看到之前${c.context ? c.context : '那笔钱'}，想跟您确认一下大概什么时候方便？我这边最近也有点安排，不着急，您方便时回我就行。`,
+      stable: `${c.name}，最近我这边有点安排，想问一下之前${c.context ? c.context : '那笔钱'}大概什么时候方便？不着急，您方便时回我就行。`,
       close: `${c.name}，最近手头有点紧，之前${c.context ? c.context : '那笔钱'}你看这周方便先还一部分吗？剩下的咱们再商量。`,
       brief: `${c.name}，之前那笔钱最近方便还吗？我这边有点急用。`
     })
@@ -69,6 +69,26 @@ export const SCRIPT_SCENES: ScriptScene[] = [
       stable: `${c.name}，${c.context ? c.context : '您的好日子'}我记着呢。一点心意，不成敬意，祝您一切顺遂。`,
       close: `${c.name}，${c.context ? c.context : '你的事'}就是我的事。红包收下，别跟我客气，改天再聚。`,
       brief: `${c.name}，一点心意，祝好。`
+    })
+  },
+  {
+    /* 还款专用。以前 buildActions 的「还款话术」复用了 thanks 模板，
+       生成出来是「上次那事多亏您帮忙…改天请您吃饭」，与还款完全无关。 */
+    id: 'repay_loan', label: '还款说明', hint: '把金额、方式、时间说清楚，别让对方开口催',
+    build: (c) => ({
+      stable: `${c.name}，之前跟您借的${c.context ? c.context : '那笔钱'}，我这边安排好了，今天转给您。拖了这些天，实在不好意思，也谢谢您当时帮忙。`,
+      close: `${c.name}，之前借你的${c.context ? c.context : '那笔钱'}我转过去了，你看下到账没。谢谢啊，帮了大忙。`,
+      brief: `${c.name}，之前借的钱已转，收到说一声。谢谢！`
+    })
+  },
+  {
+    /* 白事是唯一没有第二次补救机会的场合：话要说少、说稳，忌道喜、
+       忌提钱、忌劝「想开点」。三条都按「到场 + 具体帮忙」来写。 */
+    id: 'condolence', label: '白事慰问', hint: '少说多做，到场比话术重要；忌道喜、忌劝想开',
+    build: (c) => ({
+      stable: `${c.name}，惊闻${c.context ? c.context : '家中变故'}，心里很不好受。这种时候说什么都轻，我先过来搭把手，有什么要跑的、要接的，您尽管吩咐。`,
+      close: `${c.name}，刚听说${c.context ? c.context : '家里的事'}，我马上过来。别的先不说，你需要跑腿、接人、守夜，随时喊我。`,
+      brief: `${c.name}，节哀。需要帮忙随时说，我过来。`
     })
   },
   {

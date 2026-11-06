@@ -120,10 +120,14 @@ function applySettings(raw) {
 const BACKUP_KEY = DB_KEY + '_migration_backup';
 let writeProtected = true;
 
+/* 旧版写入过、当前模型不再保留的字段：丢弃是预期行为，不能触发写保护。 */
+const LEGACY_DROPPED_FIELDS = ['updatedAt', 'lastContact', 'avatar', 'pinned', 'group', 'source', 'importedAt'];
+
 function preservesInput(raw, clean, allowDates) {
   if (Array.isArray(raw)) return Array.isArray(clean) && raw.length === clean.length && raw.every((v, i) => preservesInput(v, clean[i], allowDates));
   if (raw && typeof raw === 'object') {
     return clean && typeof clean === 'object' && !Array.isArray(clean) && Object.keys(raw).every(key => {
+      if (LEGACY_DROPPED_FIELDS.includes(key)) return true;
       if (!Object.prototype.hasOwnProperty.call(clean, key)) return false;
       const value = raw[key];
       if (allowDates && (key === 'birthday' || key === 'anniversary') && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -170,8 +174,38 @@ function load() {
 function save() {
   invalidateCache();
   if (writeProtected) { wx.showToast({ title: '数据异常，禁止覆盖', icon: 'none' }); return false; }
-  try { wx.setStorageSync(DB_KEY, { schema: SCHEMA_VERSION, ...S }); return true; }
-  catch (_e) { wx.showToast({ title: '保存失败', icon: 'none' }); return false; }
+  try {
+    /* 写盘前用读盘同一套规则规范化，保证「写出去的就是下次能原样读回的」。
+       不这样做时，任何非规范值都会在下一次 load 时被判成数据丢失、进入永久写保护。 */
+    const body = { persons: S.persons, events: S.events, reminders: S.reminders, progress: S.progress, streak: S.streak, settings: S.settings };
+    const normalized = sanitizeImport(body);
+    if (normalized.persons.length !== S.persons.length ||
+        normalized.events.length !== S.events.length ||
+        normalized.reminders.length !== S.reminders.length) return false;
+    /* 金额被 clamp、关键文本被截断也是「看到的和存下的不一致」，必须拒写。 */
+    for (let i = 0; i < S.events.length; i++) {
+      const b = S.events[i], a = normalized.events[i];
+      if (!a) return false;
+      // undefined 与 0 等价（旧表单/记录页可能没写 amount 字段）
+      if ((Number(b.amount) || 0) !== (Number(a.amount) || 0)) return false;
+      if (String(b.title || '').length > 80 || String(b.note || '').length > 500) return false;
+    }
+    for (let i = 0; i < S.persons.length; i++) {
+      const b = S.persons[i], a = normalized.persons[i];
+      if (!a) return false;
+      if (String(b.name || '').length > 60 || String(b.note || '').length > 500) return false;
+      if (Array.isArray(b.tags) && b.tags.length > 10) return false;
+    }
+    wx.setStorageSync(DB_KEY, {
+      schema: SCHEMA_VERSION,
+      persons: normalized.persons, events: normalized.events, reminders: normalized.reminders,
+      progress: normalized.progress, streak: normalized.streak, settings: applySettings(normalized.settings),
+      lastEventId: S.lastEventId
+    });
+    S.persons = normalized.persons; S.events = normalized.events; S.reminders = normalized.reminders;
+    S.progress = normalized.progress; S.streak = normalized.streak; S.settings = applySettings(normalized.settings);
+    return true;
+  } catch (_e) { wx.showToast({ title: '保存失败', icon: 'none' }); return false; }
 }
 function update(change) {
   const before = JSON.stringify(S);
@@ -188,6 +222,9 @@ function restoreText(txt) {
   const d = JSON.parse(txt);
   if (!d || !Array.isArray(d.persons)) throw new Error('bad');
   const clean = sanitizeImport(d);
+  /* 空导入必须拒绝：清洗会丢掉无名字的联系人，全无效的备份清洗后为 0 条，
+     照单全收等于用空数据静默覆盖现有账本。 */
+  if (clean.persons.length === 0) throw new Error('empty');
   return update(() => {
     S.persons = clean.persons; S.events = clean.events; S.reminders = clean.reminders;
     S.progress = clean.progress; S.streak = clean.streak; S.settings = applySettings(clean.settings);

@@ -109,13 +109,16 @@ test('bundle 备份写入失败时保留原始数据', () => {
   assert.equal(adapter.getItem(key), raw);
 });
 
-test('bundle 已有不同备份时保留备份与原始数据', () => {
+test('bundle 已有不同备份时保留旧备份，当前原文另存且主库可写', () => {
+  /* 与 core 同步的设计取舍：旧备份不能覆盖，但也不能因此把用户锁死。 */
   const raw = JSON.stringify(v4);
   const adapter = core.createMemoryAdapter({ [key]: raw, [backup]: 'previous backup' });
+  const keysBefore = new Set(adapter.keys());
   const store = core.createStore(adapter);
   assert.equal(store.load(), true);
-  assert.equal(store.isWriteProtected(), true);
-  assert.equal(store.save(), false);
-  assert.equal(adapter.getItem(key), raw);
   assert.equal(adapter.getItem(backup), 'previous backup');
+  const added = adapter.keys().filter((k) => !keysBefore.has(k) && k.startsWith(backup));
+  assert.ok(added.length > 0, '当前原文应另存为一个独立备份键');
+  assert.equal(adapter.getItem(added[0]), raw);
+  assert.equal(store.save(), true);
 });

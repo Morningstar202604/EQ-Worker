@@ -164,15 +164,22 @@ describe('store', () => {
     expect(adapter.getItem(DB_KEY)).toBe(raw);
   });
 
-  it('旧备份不同于原始数据时不覆盖备份或数据库', () => {
+  it('旧备份不同于原始数据时，不覆盖旧备份，但当前原文另存且主库可写', () => {
+    /* 设计取舍：旧备份是更早一次迁移的原始数据，不能覆盖；
+       但也不能因此把用户锁死——把当前原文另存为独立键，两份都保全。 */
     const raw = JSON.stringify(V4);
     const backupKey = `${DB_KEY}_migration_backup`;
     const adapter = createMemoryAdapter({ [DB_KEY]: raw, [backupKey]: 'previous backup' });
     const store = createStore(adapter);
+    const keysBefore = new Set(adapter.keys());
     expect(store.load()).toBe(true);
-    expect(store.save()).toBe(false);
-    expect(adapter.getItem(DB_KEY)).toBe(raw);
     expect(adapter.getItem(backupKey)).toBe('previous backup');
+    // 当前原文被另存到一个新键
+    const added = adapter.keys().filter((k) => !keysBefore.has(k) && k.startsWith(backupKey));
+    expect(added.length).toBeGreaterThan(0);
+    expect(adapter.getItem(added[0] as string)).toBe(raw);
+    // 主库仍可写，用户不会因为「有过一次旧备份」而永久只读
+    expect(store.save()).toBe(true);
   });
 
   it.each(['{bad', '', 'null', '{"persons":{}}'])('损坏原始值 %s 不被后续保存覆盖', (raw) => {

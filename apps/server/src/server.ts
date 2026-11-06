@@ -157,7 +157,7 @@ export function createAppServer(options: ServerOptions = {}) {
 
     // 健康检查不需要令牌：让 CLI/脚本能探活
     if (path === '/health') {
-      json(res, 200, { ok: true, version: '3.5.0', dataFile });
+      json(res, 200, { ok: true, version: '3.7.0', dataFile });
       return;
     }
     if (!authed(req)) {
@@ -255,7 +255,7 @@ export function createAppServer(options: ServerOptions = {}) {
           id: uid(),
           name,
           identity: String(body.identity ?? '朋友').slice(0, 20),
-          tags: Array.isArray(body.tags) ? body.tags.map((t) => String(t).slice(0, 20)).slice(0, 12) : [],
+          tags: Array.isArray(body.tags) ? body.tags.map((t) => String(t).slice(0, 20)).slice(0, 10) : [],
           birthday: String(body.birthday ?? '').slice(0, 10),
           anniversary: String(body.anniversary ?? '').slice(0, 10),
           likes: String(body.likes ?? '').slice(0, 200),
@@ -264,9 +264,18 @@ export function createAppServer(options: ServerOptions = {}) {
           adjust: 0,
           createdAt: Date.now()
         };
-        state.persons.push(person);
+        /* 失败必须回滚内存：以前 push 后 save 失败只报 500，
+           内存里留着这条没落盘的人脉，读接口照样返回它，
+           之后所有写操作都因「规范化失败」继续 500，直到重启。 */
+        const beforePersons = state.persons;
+        state.persons = [...state.persons, person];
         s.setState(state);
-        if (!s.save()) { json(res, 500, { error: '保存失败，存储不可写' }); return; }
+        if (!s.save()) {
+          state.persons = beforePersons;
+          s.setState(state);
+          json(res, 500, { error: '保存失败：内容超出限制或存储不可写，未写入' });
+          return;
+        }
         json(res, 201, person);
         return;
       }
@@ -277,7 +286,15 @@ export function createAppServer(options: ServerOptions = {}) {
       if (!EVENT_TYPES[type]) { json(res, 400, { error: `事件类型不支持：${type}` }); return; }
       const meta = EVENT_TYPES[type];
       const amount = Number(body.amount ?? 0);
-      const dir: 'in' | 'out' | 'none' = type === 'gift_get' ? 'in' : type === 'gift_give' ? 'out' : 'none';
+      /* money 必须接受调用方给出的方向：借入是 in、借出是 out。
+         之前一律置 none，保存时又被 fixDir 归一成 in，
+         于是接口永远只能记「借钱进来」，借出功能在 HTTP 层不可用。 */
+      const dirInput = String(body.dir ?? '');
+      const dir: 'in' | 'out' | 'none' =
+        type === 'gift_get' ? 'in'
+        : type === 'gift_give' ? 'out'
+        : type === 'money' && (dirInput === 'in' || dirInput === 'out') ? dirInput
+        : 'none';
       const event = {
         id: uid(),
         personId,
@@ -290,10 +307,21 @@ export function createAppServer(options: ServerOptions = {}) {
         dir,
         occasion: String(body.occasion ?? '日常').slice(0, 20)
       };
-      state.events.unshift(event);
+      /* 非法日期（new Date('x') → NaN）会被清洗丢弃，进而 save 拒写。
+         必须在写入前拦掉，否则内存里留下这条坏事件，进程后续所有写操作全 500。 */
+      if (!Number.isFinite(event.time)) { json(res, 400, { error: '日期格式不正确' }); return; }
+      const beforeEvents = state.events;
+      const beforeLast = state.lastEventId;
+      state.events = [event, ...state.events];
       state.lastEventId = event.id;
       s.setState(state);
-      if (!s.save()) { json(res, 500, { error: '保存失败，存储不可写' }); return; }
+      if (!s.save()) {
+        state.events = beforeEvents;
+        state.lastEventId = beforeLast;
+        s.setState(state);
+        json(res, 500, { error: '保存失败：内容超出限制或存储不可写，未写入' });
+        return;
+      }
       json(res, 201, event);
       return;
     }
@@ -320,12 +348,15 @@ export function createAppServer(options: ServerOptions = {}) {
       }
       if (body_isExportWrapper(raw)) raw = (raw as { data?: unknown }).data;
       const clean = sanitizeImport(raw as Parameters<typeof sanitizeImport>[0]);
-      if (!clean.persons.length && !clean.events.length) {
-        json(res, 400, { error: '备份里没有可用数据，已拒绝导入' });
+      /* 必须是「没有联系人」就拒绝，不能只看 persons+events 都为空：
+         一份只有事件的备份会把现有联系人清空，只留一堆指向 ghost 的孤儿事件。 */
+      if (!clean.persons.length) {
+        json(res, 400, { error: '备份里没有可用的联系人，已拒绝导入（现有数据未改动）' });
         return;
       }
-      s.applyImport(clean);
-      if (!s.save()) { json(res, 500, { error: '保存失败' }); return; }
+      /* applyImport 内部已负责落盘并在失败时回滚；不能再 save() 一次，
+         否则回滚后第二次 save 会成功，接口报 200 但导入其实没发生。 */
+      if (!s.applyImport(clean)) { json(res, 500, { error: '保存失败，未修改现有数据' }); return; }
       const st = s.getState();
       json(res, 200, { ok: true, persons: st.persons.length, events: st.events.length, warnings: clean.warn });
       return;

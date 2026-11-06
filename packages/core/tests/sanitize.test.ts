@@ -40,7 +40,10 @@ describe('sanitizeImport', () => {
         { id: 'e4', personId: 'p', type: 'gift_get', time: 1, amount: 0 }
       ]
     });
-    expect(c.events.map((e) => e.dir)).toEqual(['in', 'out', 'in', 'none']);
+    /* money 不再猜方向：缺省保持 none。
+       以前一律判成 in，会把旧数据的 none 改写成「借入」→ 判数据丢失 → 永久写保护，
+       语义上也把「借出」算成「我欠对方」。 */
+    expect(c.events.map((e) => e.dir)).toEqual(['in', 'out', 'none', 'none']);
   });
 
   it('姓名超长截断到 60，标签截断到 20 字最多 10 个', () => {

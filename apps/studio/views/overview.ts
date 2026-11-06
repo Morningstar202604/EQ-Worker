@@ -52,6 +52,25 @@ export interface OverviewData {
   topPerson: { id: string; name: string; heat: number; lastDays: number | null } | null;
 }
 
+/* 首页入口卡：每张卡带实时数字，点进去就是对应视图或弹窗。 */
+function entryGrid(data: OverviewData): string {
+  const pending = data.actions.length;
+  /* 用 entry-open 而不是 nav：导航条仍必须恰好 5 个 [data-act="nav"]（既有测试锁定）。 */
+  const entries: Array<{ label: string; value: string; view: string }> = [
+    { label: '今日行动', value: pending ? `${pending} 件待办` : '今天清完了', view: 'overview' },
+    { label: '人脉', value: `${data.personCount} 位`, view: 'persons' },
+    { label: '账本与洞察', value: `关系指数 ${Math.round(data.index)}`, view: 'ledger' },
+    { label: '修炼', value: `智慧 ${data.wisdom}`, view: 'practice' },
+    { label: 'AI 助手', value: '按需生成', view: 'ai' }
+  ];
+  return `<div class="entry-grid">${entries.map((e) =>
+    `<button type="button" class="entry-card" data-act="entry-open" data-view="${e.view}">` +
+      `<span class="entry-title">${e.label}</span>` +
+      `<span class="entry-badge">${e.value}</span>` +
+      `<span class="entry-go" aria-hidden="true">›</span>` +
+    `</button>`).join('')}</div>`;
+}
+
 export function renderOverview(data: OverviewData): string {
   const metrics = [
     metricCard('人情规模', data.scale, '人脉数量折算的关系盘面大小'),
@@ -106,6 +125,9 @@ export function renderOverview(data: OverviewData): string {
     `<p class="muted">${data.personCount} 位人脉 · ${data.eventCount} 条往来记录</p>`,
     '</div>',
     '</header>',
+    /* 入口卡：把「想做什么」摆在最前面，而不是先给一堆指标。
+       只新增、不改动下面的既有区块，避免影响现有测试断言。 */
+    entryGrid(data),
     `<div class="metric-grid">${metrics}</div>`,
     '<div class="overview-mid">',
     chartBlock({ svg: data.radarSvg, label: data.radarLabel }, 'radar'),

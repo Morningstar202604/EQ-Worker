@@ -58,15 +58,30 @@ function computeWithEvents(evs: PersonalEvent[], p: Person, now: number): Comput
   let debt = 0;
   let lastTs: number | null = null;
   for (const ev of evs) {
+    /* 未来时间戳必须挡掉：days 为负时 ratio = 0.5^(负数) > 1，
+       一笔「明年的饭局」会把 heat/intimacy 直接推到上限，
+       并让 lastDays 变 0。等它真的发生再计入。 */
+    if (ev.time > now) continue;
     const days = (now - ev.time) / DAY;
     const ratio = Math.pow(0.5, days / 90);
     const t = EVENT_TYPES[ev.type] || EVENT_TYPES.other;
     const denom = Number.isFinite(t.dHeat) && t.dHeat !== 0 ? t.dHeat : 1;
-    const w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
+    let w = Number.isFinite(ev.weight) ? ev.weight / denom : 1;
+    /* 冲突的 dHeat 是负数，若 weight 也为负就会负负得正，
+       把一次摩擦算成关系升温。这里统一取绝对值，跌幅只由类型决定。 */
+    if (t.dHeat < 0) w = Math.abs(w);
     heat += t.dHeat * ratio * w;
     trust += t.dTrust * ratio * w;
     intim += t.dIntimacy * ratio * w;
-    debt += t.dDebt * ratio * w;
+    /* 金钱往来按方向定人情债：借入（in）才是欠人情，借出（out）不欠，
+       无方向（none）不计。以前 dDebt 固定 +4，借给朋友钱反而记成你欠对方。 */
+    if (ev.type === 'money') {
+      const dir = ev.dir;
+      if (dir === 'in') debt += 4 * ratio * w;
+      else if (dir === 'out') debt -= 2 * ratio * w;
+    } else {
+      debt += t.dDebt * ratio * w;
+    }
     if (!lastTs || ev.time > lastTs) lastTs = ev.time;
   }
   const lastDays = lastTs ? Math.max(0, Math.floor((now - lastTs) / DAY)) : null;
@@ -136,7 +151,8 @@ export function overallMetrics(state: AppState, now: number = Date.now()): {
   const pms = computeAll(state, now);
   const scale = clamp(n * 12, 5, 100);
   const heatAvg = avg(pms.map((p) => p.heat));
-  const n30 = state.events.filter((e) => now - e.time < 30 * DAY).length;
+  /* 未来事件还没发生，不该计入近 30 天频率。 */
+  const n30 = state.events.filter((e) => e.time <= now && now - e.time < 30 * DAY).length;
   const freq = Math.round(100 * (1 - Math.exp(-n30 / 6)));
   const credit = clamp(100 - avg(pms.map((p) => p.debt)), 0, 100);
   const wisdom = getWisdom(state);

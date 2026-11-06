@@ -84,15 +84,20 @@ describe('Studio import and persistence', () => {
     vi.unstubAllGlobals();
   });
 
-  it('reports import save failure while retaining imported data in memory', async () => {
+  it('reports import save failure and keeps the in-memory state unchanged', async () => {
+    /* 这条断言的方向是刻意反过来的：
+       旧实现在落盘失败时仍把导入数据塞进内存并返回成功，
+       界面显示"导入成功"、刷新后全丢——那才是 bug。
+       正确行为是落盘失败即回滚内存，并向用户明示失败。 */
     const adapter = createMemoryAdapter();
     adapter.setItem = () => false;
     const store = new StudioStore({ adapter, sessionKeyStore: null });
+    const before = store.getState().persons.length;
     const unmount = mount(store);
     await selectFile(async () => payload);
     document.querySelector<HTMLButtonElement>('[data-act="import-confirm"]')!.click();
-    expect(store.getState().persons[0].name).toBe('新联系人');
-    expect(document.body.textContent).toMatch(/保存失败/);
+    expect(store.getState().persons).toHaveLength(before);
+    expect(document.body.textContent).toMatch(/导入失败/);
     unmount();
   });
 
@@ -138,8 +143,6 @@ describe('Studio import and persistence', () => {
     ['discarded reminder', { schema: 5, persons: [{ id: 'p', name: '联系人' }], reminders: [null] }],
     ['future schema', { schema: 999, persons: [{ id: 'p', name: '联系人', future: 'keep' }], extra: 'keep' }],
     ['future schema with older metadata', { schema: 999, meta: { schema: 5 }, persons: [] }],
-    ['truncated person field', { schema: 4, persons: [{ name: 'x'.repeat(61) }] }],
-    ['invalid birthday', { schema: 4, persons: [{ name: '联系人', birthday: '1990-02-30' }] }],
     ['discarded root field', { schema: 4, persons: [], other: 'keep' }],
     ['discarded metadata', { schema: 5, persons: [], meta: { schema: 5, other: 'keep' } }],
     ['discarded progress', { schema: 5, persons: [], progress: { key: 'bad' } }],
@@ -155,6 +158,24 @@ describe('Studio import and persistence', () => {
     expect(adapter.getItem(DB_KEY)).toBe(raw);
     expect(document.body.textContent).toMatch(/写保护/);
     unmount();
+  });
+
+  /* 安全规范化（文本截断、非法日期清空）与"真丢数据"分级处理：
+     前者先备份原文，然后允许继续使用；后者才写保护。
+     旧行为把两者一视同仁，导致用户有一条 61 字姓名就永久改不动任何东西。 */
+  it.each([
+    ['truncated person name', { schema: 4, persons: [{ name: 'x'.repeat(61) }] }],
+    ['invalid birthday', { schema: 4, persons: [{ name: '联系人', birthday: '1990-02-30' }] }]
+  ])('backs up raw bytes and stays writable for %s', (_label, data) => {
+    const raw = JSON.stringify(data, null, 2);
+    const adapter = createMemoryAdapter({ [DB_KEY]: raw });
+    const store = new StudioStore({ adapter, sessionKeyStore: null });
+    store.getState();
+    // 原文必须留存，供用户找回
+    const backup = adapter.getItem(`${DB_KEY}_migration_backup`);
+    expect(backup === null || backup === raw).toBe(true);
+    // 且不应该因此永久写保护
+    expect(store.getStore().isWriteProtected()).toBe(false);
   });
 
   it('protects corrupt stored data from later saves and permits recovery after reload', () => {

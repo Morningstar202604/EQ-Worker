@@ -77,7 +77,7 @@ const storage = (page) => page.evaluate(() => localStorage.getItem('eqworker_db_
 
 // ============ 旧版客户端 ============
 
-test('旧版：首启欢迎页 → 载入演示 → 六 Tab 全部可用，全程零控制台错误', async () => {
+test('旧版：首启欢迎页 → 载入演示 → 四 Tab 与首页六卡全部可用，全程零控制台错误', async () => {
   const { ctx, page, errors } = await newPage();
   try {
     await page.goto(baseUrl + 'index.html', { waitUntil: 'networkidle' });
@@ -96,7 +96,8 @@ test('旧版：首启欢迎页 → 载入演示 → 六 Tab 全部可用，全�
     const data = JSON.parse(raw);
     assert.ok(data.persons.length >= 6, `应有 ≥6 位人脉，实际 ${data.persons.length}`);
 
-    for (const [id, label] of [['assistant', '助手'], ['radar', '雷达'], ['persons', '人脉'], ['record', '记录'], ['train', '修炼'], ['me', '我的']]) {
+    // 四个 Tab：首页 / 人脉 / 玩法 / 我的
+    for (const [id, label] of [['home', '首页'], ['persons', '人脉'], ['play', '玩法'], ['me', '我的']]) {
       await page.evaluate(() => document.querySelectorAll('.mask').forEach((m) => m.remove()));
       const tab = page.locator(`[data-act="go"][data-arg="${id}"]`).first();
       assert.ok(await tab.count(), `应有 ${label} 入口`);
@@ -105,6 +106,42 @@ test('旧版：首启欢迎页 → 载入演示 → 六 Tab 全部可用，全�
       const text = await page.locator('#view').innerText();
       assert.ok(text.length > 20, `${label} 页应有内容，实际 ${text.length} 字`);
     }
+
+    // 首页卡片宫格：六张卡都能进入，且二级页能返回
+    await page.evaluate(() => document.querySelectorAll('.mask').forEach((m) => m.remove()));
+    await page.locator('[data-act="go"][data-arg="home"]').first().click({ force: true });
+    await page.waitForTimeout(350);
+    const cards = page.locator('.entry-card');
+    assert.equal(await cards.count(), 6, `首页应有 6 张入口卡，实际 ${await cards.count()}`);
+    for (const [arg, expect] of [['actions', '今日行动'], ['ledger', '人情账本'], ['health', '关系体检']]) {
+      await page.locator(`[data-act="homePage"][data-arg="${arg}"]`).first().click({ force: true });
+      await page.waitForTimeout(350);
+      const t = await page.locator('#view').innerText();
+      assert.ok(t.includes(expect), `二级页「${expect}」应能打开`);
+      const back = page.locator('[data-act="homeBack"]').first();
+      assert.ok(await back.count(), '二级页应有返回首页按钮');
+      await back.click({ force: true });
+      await page.waitForTimeout(300);
+      assert.ok((await page.locator('#view').innerText()).includes('今日人情简报'), '应能返回首页');
+    }
+
+    // 引导流：三步走完，结果页有金额与话术
+    await page.locator('[data-act="wizard"]').first().click({ force: true });
+    await page.waitForTimeout(400);
+    assert.ok((await page.locator('#modal-root').innerText()).includes('最近要办什么事'), '第 1 步应问场合');
+    await page.locator('[data-act="wizardScene"][data-arg="白事"]').first().click({ force: true });
+    await page.waitForTimeout(400);
+    assert.ok((await page.locator('#modal-root').innerText()).includes('这份心意给谁'), '第 2 步应问对象');
+    await page.locator('[data-act="wizardPerson"]').first().click({ force: true });
+    await page.waitForTimeout(500);
+    const wizText = await page.locator('#modal-root').innerText();
+    assert.ok(wizText.includes('为什么是这个数'), '结果页应说明依据');
+    assert.ok(wizText.includes('别踩这些坑'), '结果页应给忌讳');
+    assert.ok(wizText.includes('这么说就对了'), '结果页应给话术');
+    const rangeText = await page.locator('.wiz-result-range').innerText();
+    assert.ok(/¥[\d,]+\s*—\s*¥[\d,]+/.test(rangeText), `结果页应有金额区间，实际「${rangeText}」`);
+    await page.evaluate(() => document.querySelectorAll('.mask').forEach((m) => m.remove()));
+
     assert.deepEqual(errors, [], '不应有控制台错误');
   } finally { await ctx.close(); }
 });
@@ -119,13 +156,18 @@ test('旧版：随礼参谋给出三档金额且可改档重算', async () => {
     await page.locator('[data-act="welcomeDemo"]').click();
     await page.waitForTimeout(1200);
 
-    const giftEntry = page.locator('[data-act="giftModal"]').first();
-    assert.ok(await giftEntry.count(), '应有随礼参谋入口');
+    // 首页「随礼参谋」卡现在打开三步引导；走到结果页同样会给出三档金额。
+    const giftEntry = page.locator('.entry-card[aria-label^="随礼参谋"]').first();
+    assert.ok(await giftEntry.count(), '首页应有随礼参谋入口');
     await giftEntry.click({ force: true });
+    await page.waitForTimeout(500);
+    await page.locator('[data-act="wizardScene"][data-arg="婚礼"]').first().click({ force: true });
+    await page.waitForTimeout(400);
+    await page.locator('[data-act="wizardPerson"]').first().click({ force: true });
     await page.waitForTimeout(600);
     const modal = await page.locator('#modal-root').innerText();
-    assert.match(modal, /从简|建议|重视/, '应显示三档');
-    assert.match(modal, /¥\s?\d/, '应显示金额');
+    assert.match(modal, /¥\s?[\d,]+\s*—\s*¥\s?[\d,]+/, '应显示金额区间');
+    assert.match(modal, /建议中位/, '应显示建议中位');
     assert.deepEqual(errors, []);
   } finally { await ctx.close(); }
 });
@@ -179,7 +221,7 @@ test('旧版：移动端 390×844 布局可用', async () => {
     await page.locator('[data-act="welcomeDemo"]').click();
     await page.waitForTimeout(1200);
     // 底部导航应在视口内
-    const nav = page.locator('[data-act="go"][data-arg="assistant"]').first();
+    const nav = page.locator('[data-act="go"][data-arg="home"]').first();
     const box = await nav.boundingBox();
     assert.ok(box && box.y >= 0 && box.y + box.height <= 844, '底部导航不应溢出视口');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
