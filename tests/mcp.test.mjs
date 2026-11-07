@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -284,5 +284,42 @@ test('reminders 资源可读且为合法 JSON', async () => {
     const parsed = JSON.parse(res.contents[0].text);
     assert.ok(Array.isArray(parsed));
     assert.equal(parsed.length, 1);
+  });
+});
+
+/* 回归：MCP 进程常驻，落盘失败时写工具必须回滚内存。
+   手法：让数据文件位置上放一个同名目录 → load 进入写保护、save 必败。
+   修复前：add_person 报"保存失败"但内存已污染，list_persons 照样能看到人。 */
+test('落盘失败时写工具回滚内存，不会出现"报错却添加成功"', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'eqw-mcp-ro-'));
+  mkdirSync(join(dir, 'eq-worker.json')); // 数据文件位置 = 目录 → 写必失败
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [join(process.cwd(), 'dist-mcp/eq-worker-mcp.mjs')],
+    env: { ...process.env, EQWORKER_DATA_DIR: dir },
+    stderr: 'pipe'
+  });
+  const client = new Client({ name: 'eqw-test-ro', version: '1.0.0' });
+  await client.connect(transport);
+  try {
+    const add = parse(await client.callTool({ name: 'add_person', arguments: { name: '污染测试' } }));
+    assert.match(add, /保存失败/, '落盘失败应明确报错');
+    const list = parse(await client.callTool({ name: 'list_persons', arguments: {} }));
+    assert.ok(!list.includes('污染测试'), '内存必须回滚：报错后不应对外可见');
+  } finally {
+    await client.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+/* 回归：add_person 的标签上限必须与核心规范一致（10 个）。
+   修复前 MCP 裁剪到 12，11 个标签的合法输入会让 save 校验必拒，
+   用户得到一条"存储不可写"的误导性报错。 */
+test('add_person 标签超过 10 个时按核心规范裁剪且添加成功', async () => {
+  await withMcp(async ({ client }) => {
+    const tags = Array.from({ length: 12 }, (_, i) => '标签' + (i + 1));
+    const add = parseJson(await client.callTool({ name: 'add_person', arguments: { name: '标签上限', tags } }));
+    assert.ok(add.ok, '12 个标签经裁剪后应能正常保存');
+    assert.equal(add.已添加.tags.length, 10, '应裁剪到核心规范的 10 个');
   });
 });

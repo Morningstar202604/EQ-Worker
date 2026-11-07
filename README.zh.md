@@ -9,7 +9,7 @@
 <a href="README.md">English</a> · <b>简体中文</b>
 
 [![Version](https://img.shields.io/badge/version-v3.9.0-orange)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-623%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-624%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 [**在线打开 →**](https://x33834.github.io/EQ-Worker/) · [Windows](https://github.com/badhope/EQ-Worker/releases) · [安卓](https://github.com/badhope/EQ-Worker/releases)
@@ -26,7 +26,7 @@
 | **红白事分轨** | 帛金走单数档、喜事走吉数档；红白事不可对冲 |
 | **送礼避雷** | 钟/伞/梨/鞋/白菊/刀具等忌讳，按场合适配（探病、寿宴另有一套） |
 | **人情账本** | 送礼、收礼、借款分账；谁欠谁、欠多少，一眼看清 |
-| **话术参谋** | 20 个真实场景 × 3 种语气，拒绝借钱、催还、吊唁、敬酒都能直接用 |
+| **话术参谋** | 18 个真实场景 × 3 种语气，拒绝借钱、催还、吊唁、敬酒都能直接用 |
 | **关系体检** | 找出最该经营的那一段，告诉你下一步做什么 |
 
 ---
@@ -58,6 +58,8 @@
 | 联网搜索的免费方案 | ✅ **有**，内置免费抓取（必应结果页 + 搜狗备选），**不需要任何 Key** |
 | 本地礼俗知识库 | ✅ 内置「全国通行」包，可导入地区包与本地行情覆盖 |
 | 向量检索 / RAG | ❌ 没有 |
+
+**适用范围**：以上 AI 能力只在 **Studio**（`apps/studio`，Vite 构建）、CLI / MCP 与 SDK 中提供。单文件网页版、安卓 APK、Windows 安装包和微信小程序**完全本地运行，不含 AI、不发网络请求**，所有建议都由本机规则生成。Studio 是第二套 UI，不属于旧版发布产物（见 [ARCHITECTURE.md](ARCHITECTURE.md)）。
 
 关键约束：
 
@@ -96,7 +98,7 @@ cd EQ-Worker && pnpm install && pnpm run verify
 | 平台 | 方式 |
 | --- | --- |
 | 网页 | 直接打开 `EQ-Worker.html`，或访问 [在线版](https://x33834.github.io/EQ-Worker/) |
-| Windows | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 `EQ-Worker-3.6.0-x64.exe` |
+| Windows | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 `EQ-Worker-3.9.0-x64.exe` |
 | 安卓 | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 APK |
 | 微信小程序 | 开发者工具导入 `EQ-Worker-小程序/` |
 | CLI / MCP | `node dist-cli/eqw.mjs` · `node dist-mcp/eq-worker-mcp.mjs` |

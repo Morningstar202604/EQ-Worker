@@ -176,7 +176,7 @@ jobs:
           TAG="v$(node -p "require('./package.json').version")"
           EXE=$(ls desktop/dist/*.exe | head -1)
           echo "附加 $EXE 到 Release $TAG"
-          gh release view "$TAG" || gh release create "$TAG" --title "EQ-Worker $TAG" --notes-file release/RELEASE-3.5.0.md
+          gh release view "$TAG" || gh release create "$TAG" --title "EQ-Worker $TAG" --notes "见 CHANGELOG.md"
           gh release upload "$TAG" "$EXE" --clobber
 
   android:

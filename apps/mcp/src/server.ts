@@ -238,7 +238,7 @@ server.registerTool(
   'write_script',
   {
     title: '话术参谋',
-    description: '生成稳妥/亲近/简短三种语气的话术，覆盖 16 个常见场景（破冰、道谢、道歉、请托、婉拒、拒绝借钱、催还、随礼、敬酒、探病、节日祝福等）。',
+    description: `生成稳妥/亲近/简短三种语气的话术，覆盖 ${SCRIPT_SCENES.length} 个常见场景（破冰、道谢、道歉、请托、婉拒、拒绝借钱、催还、随礼、敬酒、探病、节日祝福等）。`,
     inputSchema: {
       scene: z.string().describe(`场景 id 或名称。可用：${SCRIPT_SCENES.map((s) => s.id).join(', ')}`),
       personName: z.string().optional().describe('对谁说（姓名），会带入称呼'),
@@ -335,10 +335,17 @@ server.registerTool(
       dir: dirValue,
       occasion: occasion ?? '日常'
     };
-    s.events.unshift(event);
+    /* 先构造新数组、落盘失败则回滚引用：MCP 进程常驻，
+       直接 push 后保存失败会把内存污染成「磁盘没有但接口看得到」的状态。 */
+    const beforeEvents = s.events;
+    s.events = [event, ...beforeEvents];
     s.lastEventId = event.id;
     store.setState(s);
-    if (!store.save()) return text('保存失败：数据文件不可写。用户的记录没有被修改。');
+    if (!store.save()) {
+      s.events = beforeEvents;
+      store.setState(s);
+      return text('保存失败：数据文件不可写。用户的记录没有被修改。');
+    }
     return json({ ok: true, 已记录: { 对象: p.name, 类型: meta.label, 标题: event.title, 金额: event.amount || null, 日期: new Date(event.time).toISOString().slice(0, 10) } });
   }
 );
@@ -365,14 +372,21 @@ server.registerTool(
     const person = {
       id: uid(), name,
       identity: identity ?? '朋友',
-      tags: (tags ?? []).slice(0, 12),
+      // 与核心规范（sanitize 的 10 个上限）一致：12 会让 save 的校验必拒，
+      // 用户得到一条「存储不可写」的误导性报错。
+      tags: (tags ?? []).slice(0, 10),
       birthday: birthday ?? '', anniversary: '',
       likes: likes ?? '', taboos: taboos ?? '', note: note ?? '',
       adjust: 0, createdAt: Date.now()
     };
-    s.persons.push(person);
+    const beforePersons = s.persons;
+    s.persons = [...beforePersons, person];
     store.setState(s);
-    if (!store.save()) return text('保存失败：数据文件不可写。');
+    if (!store.save()) {
+      s.persons = beforePersons;
+      store.setState(s);
+      return text('保存失败：数据文件不可写，未添加。');
+    }
     return json({ ok: true, 已添加: person });
   }
 );
@@ -487,9 +501,14 @@ server.registerTool(
     const p = s.persons.find((x) => x.name === personName || x.id === personName);
     if (!p) return text(`找不到「${personName}」。`);
     const reminder = { id: uid(), personId: p.id, content: content.slice(0, 200), date: date ?? '', status: 'pending' as const };
-    s.reminders.push(reminder);
+    const beforeReminders = s.reminders;
+    s.reminders = [...beforeReminders, reminder];
     store.setState(s);
-    if (!store.save()) return text('保存失败：数据文件不可写。');
+    if (!store.save()) {
+      s.reminders = beforeReminders;
+      store.setState(s);
+      return text('保存失败：数据文件不可写，未添加。');
+    }
     return json({ ok: true, 已添加: reminder });
   }
 );

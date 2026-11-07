@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased（将随 v3.9.1 发布）
+
+### Fixed
+
+- **server（Web 后台）**：`DELETE /api/events` 落盘失败时回滚内存状态。此前进程常驻下删除报 500 后内存已删、磁盘还在，重启后该记录"复活"，账本数字来回跳。
+- **MCP**：`add_person` / `record_event` / `add_reminder` 落盘失败时回滚内存。此前报"保存失败：用户的记录没有被修改"，但内存已被污染，后续读取照样能看到这条未落盘的数据。
+- **MCP / CLI**：`add_person` 标签上限从 12（CLI 无上限）统一为核心规范的 10 个。此前 11 个标签的合法输入会被 save 校验拒绝，报出误导性的"存储不可写"。
+- **CI**：Windows 打包回退创建 Release 时引用了不存在的 `release/RELEASE-3.5.0.md`，改为与 Android 任务一致的 `--notes`。
+
+### Added
+
+- `.github/dependabot.yml`：npm 与 GitHub Actions 每周自动依赖更新。
+- 回归测试 ×3：服务端删除回滚、MCP 写失败回滚、MCP/CLI 标签裁剪（强制落盘失败采用"数据文件替换为同名目录"的跨平台手法）。
+- ROADMAP 勾选框与仓库实际状态同步（3.3 文档五件套、ADR、E2E 入 CI 等早已完成）。
+
+### Verified
+
+- `pnpm run verify`：全绿（624+ 测试）。
+- 服务端 18/18、MCP 20/20、CLI 17/17 含新增回归测试。
+
 ## v3.9.0 — 2026-11-07
 
 实现了**真正可用的免费联网搜索**（无需任何 API Key），并把工具调用与搜索真正接进 AI 流水线。

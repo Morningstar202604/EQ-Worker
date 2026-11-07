@@ -1,0 +1,22 @@
+# 依赖自动更新。PR 由 Dependabot 开出，必须过 CI 全部门禁后才合并。
+# 安全补丁类更新优先处理；主版本升级一律人工评估（会进 pnpm audit 门禁）。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # 类型与工具类小版本合并处理，减少 PR 噪音
+      dev-minor:
+        applies-to: version-updates
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

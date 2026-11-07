@@ -318,7 +318,7 @@ function cmdAddPerson(flags: Flags): number {
     id: uid(),
     name,
     identity: flags.opts.get('identity') ?? '朋友',
-    tags: (flags.opts.get('tags') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    tags: (flags.opts.get('tags') ?? '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10),
     birthday: flags.opts.get('birthday') ?? '',
     anniversary: flags.opts.get('anniversary') ?? '',
     likes: flags.opts.get('likes') ?? '',

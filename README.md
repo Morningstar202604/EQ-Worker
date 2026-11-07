@@ -4,12 +4,12 @@
 
 # EQ-Worker
 
-**记住你欠谁的人情。**
+**Remember what you owe people.**
 
 <b>English</b> · <a href="README.zh.md">简体中文</a>
 
 [![Version](https://img.shields.io/badge/version-v3.9.0-orange)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-623%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-624%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 [**Open in browser →**](https://x33834.github.io/EQ-Worker/) · [Windows](https://github.com/badhope/EQ-Worker/releases) · [Android](https://github.com/badhope/EQ-Worker/releases)
@@ -22,12 +22,12 @@
 
 | | |
 | --- | --- |
-| **随礼参谋** | 关系 × 场合 × 档位 × 城市，给出三档金额并写明每一档怎么算出来的 |
-| **白事/红事分轨** | 帛金走单数档、喜事走吉数档；红白事不可对冲 |
-| **送礼避雷** | 钟/伞/梨/鞋/白菊/刀具等忌讳，按场合适配（探病、寿宴另有一套） |
-| **人情账本** | 送礼、收礼、借款分账；谁欠谁、欠多少，一眼看清 |
-| **话术参谋** | 20 个真实场景 × 3 种语气，拒绝借钱、催还、吊唁、敬酒都能直接用 |
-| **关系体检** | 找出最该经营的那一段，告诉你下一步做什么 |
+| **Gift advisor** | Relationship × occasion × tier × city → three amounts, each with the arithmetic shown |
+| **Separate tracks for joyous and funeral occasions** | Condolence money uses odd-number tiers, celebrations use auspicious numbers; the two never offset each other |
+| **Gift taboos** | Clocks, umbrellas, pears, shoes, white chrysanthemums, knives — matched to the occasion, with exemption words so "pineapple cake" is not flagged |
+| **Relationship ledger** | Gifts given, gifts received and loans kept apart; see who owes whom and how much |
+| **Script advisor** | 18 real scenarios × 3 tones — declining a loan, chasing a repayment, condolences, toasts — ready to copy |
+| **Health check** | Finds the relationship most worth tending and tells you the next step |
 
 ---
 
@@ -35,12 +35,12 @@
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/v3/03-gift.png" alt="随礼参谋" /><br /><sub><b>随礼参谋</b> — 三档金额 + 算式 + 礼俗提醒</sub></td>
-<td width="50%"><img src="docs/screenshots/v3/02-ledger.png" alt="人情账本" /><br /><sub><b>人情账本</b> — 收送分账，净额一眼可见</sub></td>
+<td width="50%"><img src="docs/screenshots/v3/03-gift.png" alt="Gift advisor" /><br /><sub><b>Gift advisor</b> — three tiers, the arithmetic and etiquette notes</sub></td>
+<td width="50%"><img src="docs/screenshots/v3/02-ledger.png" alt="Relationship ledger" /><br /><sub><b>Ledger</b> — incoming and outgoing separated, net balance at a glance</sub></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/v3/04-script.png" alt="话术参谋" /><br /><sub><b>话术参谋</b> — 20 场景 × 3 语气，可直接复制</sub></td>
-<td><img src="docs/screenshots/v3/10-health.png" alt="关系体检" /><br /><sub><b>关系体检</b> — 按健康度排序，先修最该修的</sub></td>
+<td><img src="docs/screenshots/v3/04-script.png" alt="Script advisor" /><br /><sub><b>Script advisor</b> — 18 scenarios × 3 tones, copy and send</sub></td>
+<td><img src="docs/screenshots/v3/10-health.png" alt="Health check" /><br /><sub><b>Health check</b> — sorted by score, the one to fix first on top</sub></td>
 </tr>
 </table>
 
@@ -52,10 +52,12 @@
 | --- | --- |
 | Generate scripts / gift reasoning / reviews | ✅ 4 pipelines, off by default, bring your own key |
 | Call local functions to look up data | ✅ 8 read-only tools (find person / gift advice / ledger / etiquette / scripts / today / health) |
-| Web search | ⚠️ **Optional, off by default**. Three backends: free scraping / model-side browsing / your own endpoint |
+| Web search | ⚠️ **Optional, off by default**. Three selectable backends: free scraping / model-side browsing / your own endpoint |
 | Free web search out of the box | ✅ **Yes.** Built-in free scraping (Bing results + Sogou fallback), **no API key required** |
 | Local etiquette knowledge base | ✅ Ships with a national baseline; import regional packs and local market rates to override |
 | Vector search / RAG | ❌ None |
+
+**Scope.** The AI capabilities above live in **Studio** (`apps/studio`, built by Vite), the CLI / MCP surfaces and the SDK. The single-file web app, the Android APK, the Windows installer and the WeChat Mini Program are **fully local and contain no AI and no network calls** — every suggestion there comes from on-device rules. Studio is a second UI, not part of the legacy release artifacts (see [ARCHITECTURE.md](ARCHITECTURE.md)).
 
 Hard constraints:
 
@@ -91,12 +93,12 @@ git clone https://github.com/badhope/EQ-Worker.git
 cd EQ-Worker && pnpm install && pnpm run verify
 ```
 
-| 平台 | 方式 |
+| Platform | How |
 | --- | --- |
-| 网页 | 直接打开 `EQ-Worker.html`，或访问 [在线版](https://x33834.github.io/EQ-Worker/) |
-| Windows | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 `EQ-Worker-3.6.0-x64.exe` |
-| Android | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 APK |
-| 微信小程序 | 开发者工具导入 `EQ-Worker-小程序/` |
+| Web | Open `EQ-Worker.html` directly, or use the [online build](https://x33834.github.io/EQ-Worker/) |
+| Windows | Download `EQ-Worker-3.9.0-x64.exe` from [Releases](https://github.com/badhope/EQ-Worker/releases) |
+| Android | Download the APK from [Releases](https://github.com/badhope/EQ-Worker/releases) |
+| WeChat Mini Program | Import `EQ-Worker-小程序/` in WeChat DevTools |
 | CLI / MCP | `node dist-cli/eqw.mjs` · `node dist-mcp/eq-worker-mcp.mjs` |
 
 ---
@@ -107,6 +109,6 @@ cd EQ-Worker && pnpm install && pnpm run verify
 
 <div align="center">
 
-**人情不是算计，是把别人放在心上。**
+**Relationships are not arithmetic. They are remembering people.**
 
 </div>

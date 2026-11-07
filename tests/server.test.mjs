@@ -237,3 +237,39 @@ test('doctor 接口报告数据健康状况', async () => {
     assert.equal(typeof after.dataFile, 'string');
   });
 });
+
+/* 回归：删除往来时若落盘失败，必须回滚内存。
+   服务进程常驻，不回滚的话这条往来会"接口里消失、磁盘上还在"，
+   重启后又冒出来，账本数字来回跳。
+   强制落盘失败的跨平台手法：把数据文件替换成同名目录——
+   rename(临时文件 → 目录) 在 Windows 与 Linux 上都必然失败。 */
+test('落盘失败时删除往来会回滚，内存与磁盘保持一致', async () => {
+  const { mkdtempSync: mk, rmSync: rm, mkdirSync: mkd } = await import('node:fs');
+  const s = sandbox();
+  const app = createAppServer({ port: 0, dataFile: s.dataFile, token: 't' });
+  const { url } = await app.listen();
+  try {
+    const person = await (await api(url, '/persons', 't', { method: 'POST', body: JSON.stringify({ name: '回滚甲' }) })).json();
+    const event = await (await api(url, '/events', 't', {
+      method: 'POST',
+      body: JSON.stringify({ personId: person.id, type: 'gift_give', amount: 800, occasion: '婚礼' })
+    })).json();
+    assert.ok(event.id, '前置：往来应创建成功');
+
+    // 破坏落盘：数据文件 → 同名目录（读走内存缓存仍正常，写必失败）
+    rm(s.dataFile);
+    mkd(s.dataFile);
+
+    const del = await api(url, '/events/' + event.id, 't', { method: 'DELETE' });
+    assert.equal(del.status, 500, '落盘失败应返回 500');
+
+    const detail = await (await api(url, '/persons/' + person.id, 't')).json();
+    assert.ok(
+      detail.events.some((e) => e.id === event.id),
+      '保存失败后内存必须回滚：这条往来仍应可见，不能"消失"在磁盘之外'
+    );
+  } finally {
+    await app.close();
+    s.cleanup();
+  }
+});

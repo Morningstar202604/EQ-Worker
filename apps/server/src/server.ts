@@ -329,11 +329,18 @@ export function createAppServer(options: ServerOptions = {}) {
     if (req.method === 'DELETE' && /^\/events\/[^/]+$/.test(path)) {
       const id = decodeURIComponent(path.split('/').pop() as string);
       const state = s.getState();
-      const before = state.events.length;
+      const before = state.events;
       state.events = state.events.filter((e) => e.id !== id);
-      if (state.events.length === before) { json(res, 404, { error: '记录不存在' }); return; }
+      if (state.events.length === before.length) { json(res, 404, { error: '记录不存在' }); return; }
       s.setState(state);
-      if (!s.save()) { json(res, 500, { error: '保存失败' }); return; }
+      if (!s.save()) {
+        /* 进程常驻，落盘失败必须回滚内存：否则这条往来从接口里"消失"
+           （内存里已删）但磁盘上还在，重启后又回来，账本数字来回跳。 */
+        state.events = before;
+        s.setState(state);
+        json(res, 500, { error: '保存失败：存储不可写，未删除' });
+        return;
+      }
       json(res, 200, { ok: true });
       return;
     }

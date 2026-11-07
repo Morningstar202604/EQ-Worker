@@ -36,20 +36,21 @@ Legend: `[x]` shipped · `[ ]` planned · `[~]` partially shipped
       in-memory fallback with explicit user warning, rollback on failed saves
 - [x] Version single-sourced from `package.json` and enforced by `scripts/sync-version.mjs`
 
-## 3.3 — Open-source project maturity (next)
+## 3.3 — Open-source project maturity
 
-- [ ] Repository management documents: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY policy, SUPPORT
-- [ ] Issue forms and PR template
-- [ ] Documented release process with signed tags and checksums
-- [ ] Bilingual documentation with English as the primary language
-- [ ] Architecture decision records (ADR) under `docs/adr/`
+- [x] Repository management documents: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY policy, SUPPORT
+- [x] Issue forms and PR template
+- [~] Documented release process with checksums (docs/RELEASE.md); formal tag signing still pending (needs a maintainer GPG key)
+- [x] Bilingual documentation with English as the primary language
+- [x] Architecture decision records (ADR) under `docs/adr/`
+- [x] Automated dependency updates (Dependabot, weekly)
 
 ## 3.4 — Verified delivery
 
-- [ ] Rebuild and re-verify desktop and Android artifacts against the hardened storage layer
+- [x] Rebuild and re-verify desktop and Android artifacts against the hardened storage layer
 - [ ] Formal release signing (user-provided keystore; never committed)
 - [ ] WeChat Mini Program device testing on a real handset
-- [ ] End-to-end browser test suite committed to CI (Playwright)
+- [x] End-to-end browser test suite committed to CI (Playwright, ubuntu + windows)
 
 ## 4.0 — Candidate directions
 

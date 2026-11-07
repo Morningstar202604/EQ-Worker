@@ -237,3 +237,17 @@ test('doctor 对健康数据通过，对孤立记录报警', () => {
     assert.ok(JSON.parse(bad.out).issues.some((i) => i.includes('孤立')), '应报告孤立记录');
   } finally { s.cleanup(); }
 });
+
+/* 回归：add-person 的标签上限必须与核心规范一致（10 个）。
+   修复前 CLI 不做裁剪，11 个标签的合法输入会让 save 校验必拒，
+   用户得到一条"存储不可写"的误导性报错。 */
+test('add-person 标签超过 10 个时按核心规范裁剪且添加成功', () => {
+  const s = sandbox();
+  try {
+    const tags = Array.from({ length: 12 }, (_, i) => '标签' + (i + 1)).join(',');
+    const add = run(['add-person', '--name', '标签上限', '--tags', tags], { EQWORKER_DATA_DIR: s.dir });
+    assert.equal(add.code, 0, '12 个标签经裁剪后应能正常保存');
+    const list = JSON.parse(run(['persons', '--json'], { EQWORKER_DATA_DIR: s.dir }).out);
+    assert.equal(list[0].tags.length, 10, '应裁剪到核心规范的 10 个');
+  } finally { s.cleanup(); }
+});
