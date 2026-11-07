@@ -158,7 +158,7 @@ jobs:
           npm ci --registry=https://registry.npmjs.org
           npx --yes electron-builder@26.18.0 --win nsis --x64
       - name: 上传产物
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: EQ-Worker-windows-x64
           path: desktop/dist/*.exe
@@ -214,7 +214,7 @@ jobs:
           mkdir -p apk-out
           cp android/app/build/outputs/apk/release/*.apk apk-out/EQ-Worker-$(node -p "require('./package.json').version")-android.apk
       - name: 上传产物
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: EQ-Worker-android
           path: apk-out/*.apk
