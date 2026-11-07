@@ -14,7 +14,7 @@
  */
 import type { FetchLike } from './types';
 
-export type SearchBackend = 'none' | 'builtin' | 'endpoint';
+export type SearchBackend = 'none' | 'free' | 'builtin' | 'endpoint';
 
 export interface SearchSettings {
   backend: SearchBackend;
@@ -87,6 +87,8 @@ export function willUseNetwork(settings: SearchSettings | null | undefined): boo
 export function validateSearchSettings(settings: SearchSettings): string[] {
   const errors: string[] = [];
   if (settings.backend === 'none') return errors;
+  /* free 后端走 Bing/搜狗公开结果页，无需 Key。 */
+  if (settings.backend === 'free') return errors;
   if (settings.backend === 'endpoint') {
     if (!settings.endpoint || !/^https?:\/\//.test(settings.endpoint)) {
       errors.push('搜索地址必须是 http(s) 开头的完整 URL');
@@ -167,6 +169,10 @@ export async function searchWeb(
   if (settings.backend === 'builtin') {
     // 由模型侧执行，这里不重复请求，避免「一次查询扣两次费」。
     return { ok: false, error: '内置搜索由模型执行，无需本地请求' };
+  }
+  /* free 后端由 free-search.ts 实现，这里不重复；调用方应直接调 freeSearch。 */
+  if (settings.backend === 'free') {
+    return { ok: false, error: '免费搜索请调用 freeSearch（无需 Key）' };
   }
   const errors = validateSearchSettings(settings);
   if (errors.length) return { ok: false, error: errors.join('；') };

@@ -396,7 +396,7 @@ export function mountStudio(studio: StudioStore, doc: Document): () => void {
     /* 联网搜索：切换后端、填地址/Key、调条数。
        任何一项变化都会立即重渲染，让用户始终看到「是否联网」的真实状态。 */
     if (act === 'search-backend') {
-      const backend = target.value === 'builtin' || target.value === 'endpoint' ? target.value : 'none';
+      const backend = target.value === 'free' || target.value === 'builtin' || target.value === 'endpoint' ? target.value : 'none';
       studio.updateSearchSettings({ backend });
       return;
     }

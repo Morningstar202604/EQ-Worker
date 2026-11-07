@@ -16,8 +16,8 @@ android {
         applicationId 'com.renqing.radar'
         minSdk 23
         targetSdk 34
-        versionCode 380
-        versionName '3.8.0'
+        versionCode 390
+        versionName '3.9.0'
         resValue 'string', 'app_version', versionName
     }
 

@@ -5,10 +5,14 @@ import {
   createFallbackHandler,
   createMockProvider,
   createProvider,
+  freeSearch,
+  hitsToContext,
   ruleText,
   runPipeline,
+  runTool,
   toAIError
 } from '../../packages/ai/src/index';
+import type { SearchSettings } from '../../packages/ai/src/index';
 import type {
   AIProvider,
   AISettings,
@@ -75,6 +79,10 @@ export interface AssistantRunOptions {
   signal?: AbortSignal;
   fetchImpl?: FetchLike;
   now?: number;
+  /** 联网配置。默认不传 = 不联网。 */
+  search?: SearchSettings;
+  /** 是否允许把真实姓名发给模型（工具调用脱敏开关）。 */
+  allowNames?: boolean;
 }
 
 function providerConfig(form: AssistantForm): ProviderConfig {
@@ -308,6 +316,45 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
     };
   }
 
+  /* 联网：只有显式传 search 且 backend !== 'none' 时才发请求。
+     这里刻意放在 approved 校验之后——用户没确认预览就不该联网。 */
+  let searchContext = '';
+  let searchNote = '';
+  if (approved && options.search && options.search.backend === 'free') {
+    const sceneText = String(context.input?.scene ?? '人情往来');
+    const q = `${sceneText} ${context.person?.identity ?? ''} 随礼 多少 合适`.trim();
+    const r = await freeSearch(q, {
+      fetchImpl: options.fetchImpl ?? (globalThis.fetch as never),
+      occasion: /白事|丧/.test(q) ? '白事' : /婚礼|结婚/.test(q) ? '婚礼' : undefined,
+      limit: 4,
+      maxAttempts: 2
+    });
+    if (r.ok) {
+      searchContext = hitsToContext(r.result.hits);
+      searchNote = `已联网检索 ${r.result.hits.length} 条（${r.result.source}）`;
+    } else {
+      searchNote = `联网检索未成功：${r.error}`;
+    }
+  }
+
+  /* 工具调用：把本地事实整理成一段背景，注入到用户消息里。
+     这是「AI 能查数据」的落地方式——模型看到的是查好的结论，不需要自己调函数。 */
+  const toolFacts: string[] = [];
+  if (context.person) {
+    for (const name of ['person_ledger', 'gift_advice', 'today_actions'] as const) {
+      const args =
+        name === 'person_ledger' ? { personId: context.person.id }
+        : name === 'gift_advice' ? { personId: context.person.id, occasion: /白事|丧/.test(String(context.input?.scene ?? '')) ? '白事' : '婚礼' }
+        : { limit: 3 };
+      const out = runTool(name, args as Record<string, unknown>, {
+        state: app,
+        now,
+        allowNames: options.allowNames === true
+      });
+      if (out.ok && out.content) toolFacts.push(`[${name}] ${out.content}`);
+    }
+  }
+
   const config = providerConfig(form);
   const chain = new FallbackChain();
 
@@ -343,7 +390,15 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
     }
   }
 
-  const pipeline = await runPipeline(builtinPipeline, { ...context, approved: true }, {
+  /* 把联网结果与本地事实并入 input，让模型看到的是「查过的数据」而不是凭空生成。
+     两者都只在 approved 之后才可能存在，未确认预览时一定为空。 */
+  const enrichedInput = {
+    ...context.input,
+    ...(searchContext ? { webContext: searchContext } : {}),
+    ...(toolFacts.length ? { localFacts: toolFacts.join(String.fromCharCode(10)) } : {})
+  };
+
+  const pipeline = await runPipeline(builtinPipeline, { ...context, input: enrichedInput, approved: true }, {
     provider,
     approvedPreview: preview,
     ...(options.signal ? { signal: options.signal } : {}),
@@ -359,7 +414,8 @@ export async function runAssistant(options: AssistantRunOptions): Promise<Assist
       pipeline: { ...pipeline, preview },
       display: parseDisplay(pipeline.output),
       offline: false,
-      message: 'AI 生成完成'
+      /* 把「是否联网、检索到几条」如实告诉用户，不要静默。 */
+      message: searchNote ? `AI 生成完成 · ${searchNote}` : 'AI 生成完成'
     };
   }
 

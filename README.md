@@ -8,8 +8,8 @@
 
 <b>English</b> · <a href="README.zh.md">简体中文</a>
 
-[![Version](https://img.shields.io/badge/version-v3.8.0-orange)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-603%20passing-brightgreen)](tests/)
+[![Version](https://img.shields.io/badge/version-v3.9.0-orange)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-623%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 [**Open in browser →**](https://x33834.github.io/EQ-Worker/) · [Windows](https://github.com/badhope/EQ-Worker/releases) · [Android](https://github.com/badhope/EQ-Worker/releases)
@@ -52,8 +52,8 @@
 | --- | --- |
 | Generate scripts / gift reasoning / reviews | ✅ 4 pipelines, off by default, bring your own key |
 | Call local functions to look up data | ✅ 8 read-only tools (find person / gift advice / ledger / etiquette / scripts / today / health) |
-| Web search | ⚠️ **Optional, off by default**. Two backends: model-side browsing, or a search endpoint you configure |
-| Free web search out of the box | ❌ No built-in free quota. Search APIs bill per call; or self-host SearXNG |
+| Web search | ⚠️ **Optional, off by default**. Three backends: free scraping / model-side browsing / your own endpoint |
+| Free web search out of the box | ✅ **Yes.** Built-in free scraping (Bing results + Sogou fallback), **no API key required** |
 | Local etiquette knowledge base | ✅ Ships with a national baseline; import regional packs and local market rates to override |
 | Vector search / RAG | ❌ None |
 

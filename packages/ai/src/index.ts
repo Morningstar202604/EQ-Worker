@@ -75,6 +75,10 @@ export {
   willUseNetwork
 } from './search';
 export type { SearchBackend, SearchHit, SearchOutcome, SearchResult, SearchSettings } from './search';
+export { BING_NOTICE, freeSearch, hitsToContext, parseBingHtml, parseBingRss, parseSogouHtml } from './free-search';
+export type { FreeSearchHit, FreeSearchOptions, FreeSearchOutcome, FreeSearchResult } from './free-search';
+export { detectContext, looksIrrelevant, planQueries } from './query-plan';
+export type { QueryPlan } from './query-plan';
 export { MAX_TOOL_CALLS, TOOL_DEFINITIONS, runTool, toolCatalog } from './tools';
 export type { ToolCallResult, ToolContext, ToolDefinition } from './tools';
 

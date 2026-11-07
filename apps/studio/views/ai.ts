@@ -45,7 +45,7 @@ export interface AIViewData extends AIData {
   offline: boolean;
   /** 联网搜索配置。默认关闭，UI 必须显式展示当前状态。 */
   search: {
-    backend: 'none' | 'builtin' | 'endpoint';
+    backend: 'none' | 'free' | 'builtin' | 'endpoint';
     endpoint: string;
     hasKey: boolean;
     count: number;
@@ -65,9 +65,11 @@ function renderSearchPanel(data: AIViewData): string {
   const isOff = s.backend === 'none';
   const statusText = isOff
     ? '未开启（所有数据留在本机）'
-    : s.backend === 'builtin'
-      ? '已开启：由模型侧联网，查询会发往你配置的模型服务'
-      : '已开启：查询会发往你填写的搜索接口';
+    : s.backend === 'free'
+      ? '已开启：使用 Bing/搜狗公开结果页，无需 Key'
+      : s.backend === 'builtin'
+        ? '已开启：由模型侧联网，查询会发往你配置的模型服务'
+        : '已开启：查询会发往你填写的搜索接口';
   const errors = s.errors.length
     ? `<p class="error">${s.errors.map((e) => escapeHtml(e)).join('；')}</p>`
     : '';
@@ -77,9 +79,9 @@ function renderSearchPanel(data: AIViewData): string {
     `<p class="muted">${escapeHtml(statusText)}</p>`,
     '<label class="field"><span>后端</span>',
     '<select data-act="search-backend" aria-label="联网搜索后端">',
-    ['none', 'builtin', 'endpoint']
+    ['none', 'free', 'builtin', 'endpoint']
       .map((k) => `<option value="${k}"${k === s.backend ? ' selected' : ''}>${
-        k === 'none' ? '不联网' : k === 'builtin' ? '模型自带联网' : '独立搜索接口'
+        k === 'none' ? '不联网' : k === 'free' ? '免费搜索（Bing/搜狗，无需 Key）' : k === 'builtin' ? '模型自带联网' : '独立搜索接口'
       }</option>`)
       .join(''),
     '</select></label>',

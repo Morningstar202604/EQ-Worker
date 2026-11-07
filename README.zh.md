@@ -8,8 +8,8 @@
 
 <a href="README.md">English</a> · <b>简体中文</b>
 
-[![Version](https://img.shields.io/badge/version-v3.8.0-orange)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-603%20passing-brightgreen)](tests/)
+[![Version](https://img.shields.io/badge/version-v3.9.0-orange)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-623%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
 [**在线打开 →**](https://x33834.github.io/EQ-Worker/) · [Windows](https://github.com/badhope/EQ-Worker/releases) · [安卓](https://github.com/badhope/EQ-Worker/releases)
@@ -54,8 +54,8 @@
 |---|---|
 | AI 生成话术 / 随礼说明 / 复盘 | ✅ 有，4 条流水线，默认关闭、用户自备 Key |
 | AI 调用本地函数查数据 | ✅ 8 个只读工具（找人 / 算随礼 / 查账本 / 查礼俗 / 生成话术 / 今日行动 / 健康排行） |
-| 联网搜索 | ⚠️ **可选，默认关闭**。支持「模型自带联网」与「独立搜索接口」两种后端，需自行填 Key |
-| 联网搜索的免费方案 | ❌ 内置的免费额度**没有**。搜索接口按次计费，或自建 SearXNG |
+| 联网搜索 | ⚠️ **可选，默认关闭**。三种后端：免费抓取 / 模型自带联网 / 独立搜索接口 |
+| 联网搜索的免费方案 | ✅ **有**，内置免费抓取（必应结果页 + 搜狗备选），**不需要任何 Key** |
 | 本地礼俗知识库 | ✅ 内置「全国通行」包，可导入地区包与本地行情覆盖 |
 | 向量检索 / RAG | ❌ 没有 |
 
