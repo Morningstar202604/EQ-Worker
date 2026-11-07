@@ -3,16 +3,30 @@ import base64, json, subprocess, urllib.error, urllib.request
 ROOT=r"C:\Users\Admin\Desktop\workspace\001\eq-worker"
 ACC=r"C:\Users\Admin\.agent-secrets\accounts.json"
 API="https://api.github.com"
+import time
 def git(*a):
     return subprocess.run(["git","-c","core.quotepath=false",*a],cwd=ROOT,capture_output=True,check=True).stdout
-def api(tok,m,p,payload=None):
+def api(tok,m,p,payload=None,retries=5):
+    """GitHub Data API 对连续 blob 写入会偶发 401/400/429（令牌本身有效）。
+    实测不加退避重试时，一次 25 文件的镜像会有约 1/3 概率中途失败。"""
+    import time
     d=json.dumps(payload).encode() if payload is not None else None
-    r=urllib.request.Request(API+p,data=d,method=m,headers={"Authorization":f"token {tok}","User-Agent":"x","Accept":"application/vnd.github+json","Content-Type":"application/json"})
-    try:
-        with urllib.request.urlopen(r,timeout=120) as x:
-            b=x.read(); return json.loads(b) if b else {}
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"{m} {p} -> {e.code}: {e.read().decode('utf-8','replace')[:300]}") from None
+    last=None
+    for attempt in range(retries):
+        r=urllib.request.Request(API+p,data=d,method=m,headers={"Authorization":f"token {tok}","User-Agent":"x","Accept":"application/vnd.github+json","Content-Type":"application/json"})
+        try:
+            with urllib.request.urlopen(r,timeout=120) as x:
+                b=x.read(); return json.loads(b) if b else {}
+        except urllib.error.HTTPError as e:
+            body=e.read().decode('utf-8','replace')[:300]
+            if e.code in (400,401,403,429,502,503) and attempt<retries-1:
+                time.sleep(3*(attempt+1)); last=f"{e.code}: {body}"; continue
+            raise RuntimeError(f"{m} {p} -> {e.code}: {body}") from None
+        except Exception as ex:
+            if attempt<retries-1:
+                time.sleep(3*(attempt+1)); last=str(ex); continue
+            raise
+    raise RuntimeError(f"{m} {p} -> retries exhausted: {last}")
 def tree(tok,repo,sha):
     d=api(tok,"GET",f"/repos/{repo}/git/trees/{sha}?recursive=1")
     if d.get("truncated"): raise RuntimeError("truncated")
@@ -36,6 +50,7 @@ def mirror(acct,repo):
         blob=git("cat-file","-p",f"{head}:{path}")
         ns=api(tok,"POST",f"/repos/{repo}/git/blobs",{"content":base64.b64encode(blob).decode(),"encoding":"base64"})["sha"]
         entries.append({"path":path,"mode":mode,"type":"blob","sha":ns})
+        time.sleep(0.12)
     ts=api(tok,"POST",f"/repos/{repo}/git/trees",{"base_tree":bt,"tree":entries})["sha"] if entries else bt
     msg=git("log","-1","--pretty=%B").decode().strip()
     c=api(tok,"POST",f"/repos/{repo}/git/commits",{"message":msg,"tree":ts,"parents":[base]})["sha"]
