@@ -74,6 +74,7 @@ __export(index_exports, {
   findScenario: () => findScenario,
   fmtDate: () => fmtDate,
   fmtMoney: () => fmtMoney,
+  fmtMoneyCN: () => fmtMoneyCN,
   getLevel: () => getLevel,
   getSuggestion: () => getSuggestion,
   getWisdom: () => getWisdom,
@@ -82,6 +83,7 @@ __export(index_exports, {
   healthRanking: () => healthRanking,
   importKnowledge: () => importKnowledge,
   invalidateEventIndex: () => invalidateEventIndex,
+  ledgerCsv: () => ledgerCsv,
   ledgerInsights: () => ledgerInsights,
   ledgerNetLabel: () => ledgerNetLabel,
   ledgerNetShort: () => ledgerNetShort,
@@ -1219,6 +1221,54 @@ function relationRead(state, p, now = Date.now()) {
 function fmtMoney(n) {
   return "\xA5" + Math.round(Number(n) || 0).toLocaleString("zh-CN");
 }
+var CN_DIGITS = "\u96F6\u58F9\u8D30\u53C1\u8086\u4F0D\u9646\u67D2\u634C\u7396";
+var CN_UNITS = ["", "\u62FE", "\u4F70", "\u4EDF"];
+var CN_BIG = ["", "\u4E07", "\u4EBF"];
+function cnSection(x) {
+  let s = "";
+  let needZero = false;
+  for (let u = 3; u >= 0; u--) {
+    const d = Math.floor(x / 10 ** u) % 10;
+    if (d === 0) {
+      needZero = s !== "";
+    } else {
+      s += (needZero ? "\u96F6" : "") + CN_DIGITS[d] + CN_UNITS[u];
+      needZero = false;
+    }
+  }
+  return s;
+}
+function fmtMoneyCN(n) {
+  const raw = Number(n);
+  if (!Number.isFinite(raw)) return "\u96F6\u5143\u6574";
+  const cents = Math.round(Math.abs(raw) * 100);
+  if (cents === 0) return "\u96F6\u5143\u6574";
+  const intPart = Math.floor(cents / 100);
+  const jiao = Math.floor(cents % 100 / 10);
+  const fen = cents % 10;
+  let intText = "";
+  if (intPart > 0) {
+    const groups = [];
+    for (let v = intPart; v > 0; v = Math.floor(v / 1e4)) groups.push(v % 1e4);
+    const parts = [];
+    for (let i = groups.length - 1; i >= 0; i--) {
+      const g = groups[i];
+      if (g === 0) {
+        parts.push("");
+        continue;
+      }
+      const prefixZero = g < 1e3 && i < groups.length - 1 ? "\u96F6" : "";
+      parts.push(prefixZero + cnSection(g) + CN_BIG[i]);
+    }
+    intText = parts.join("");
+  }
+  let out = intPart > 0 ? intText + "\u5143" : "";
+  if (jiao > 0) out += CN_DIGITS[jiao] + "\u89D2";
+  else if (fen > 0 && intPart > 0) out += "\u96F6";
+  if (fen > 0) out += CN_DIGITS[fen] + "\u5206";
+  if (jiao === 0 && fen === 0) out += "\u6574";
+  return (raw < 0 ? "\u8D1F" : "") + out;
+}
 function ledgerNetShort(net) {
   const n = Number(net) || 0;
   return n === 0 ? "\u4E24\u6E05" : (n > 0 ? "\u6B20 " : "\u5E94\u6536 ") + fmtMoney(Math.abs(n));
@@ -1493,6 +1543,37 @@ function giftAvoidTips(occasion) {
     return ["\u5FCC\u9001\u949F\u8868\u3001\u978B\u3001\u4F1E\uFF1B\u53EF\u9009\u5BFF\u6843\u3001\u5BFF\u9762\u3001\u8336\u53F6\u6216\u5B9E\u7528\u4FDD\u5065\u54C1"];
   }
   return ["\u901A\u7528\u5FCC\u8BB3\uFF1A\u4E0D\u9001\u949F\u3001\u4F1E\u3001\u68A8\u3001\u978B\u3001\u767D\u83CA\u3001\u5200\u5177\uFF1B\u559C\u4E8B\u4E0D\u9001\u5355\u6570\uFF08\u767D\u4E8B\u9664\u5916\uFF09"];
+}
+
+// packages/core/src/csv.ts
+function csvField(v) {
+  const s = String(v != null ? v : "");
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function ledgerCsv(state, now = Date.now()) {
+  var _a, _b;
+  const header = ["\u65E5\u671F", "\u59D3\u540D", "\u8EAB\u4EFD", "\u7C7B\u578B", "\u573A\u5408", "\u65B9\u5411", "\u91D1\u989D(\u5143)", "\u91D1\u989D\u5927\u5199", "\u5907\u6CE8"];
+  const persons = new Map(state.persons.map((p) => [p.id, p]));
+  const rows = [header.join(",")];
+  const events = state.events.filter((e) => e.time <= now).slice().sort((a, b) => a.time - b.time);
+  for (const e of events) {
+    const p = persons.get(e.personId);
+    const dir = eventDir(e);
+    const dirLabel = dir === "out" ? "\u9001\u51FA" : dir === "in" ? "\u6536\u5230" : "\u2014";
+    const amt = Number(e.amount) || 0;
+    rows.push([
+      fmtDate(e.time),
+      p ? p.name : "\uFF08\u5DF2\u5220\u9664\uFF09",
+      p ? p.identity : "",
+      (_b = (_a = EVENT_TYPES[e.type]) == null ? void 0 : _a.label) != null ? _b : e.type,
+      e.occasion || "",
+      dirLabel,
+      amt > 0 ? String(amt) : "",
+      amt > 0 ? fmtMoneyCN(amt) : "",
+      e.note || ""
+    ].map(csvField).join(","));
+  }
+  return rows.join("\r\n");
 }
 
 // packages/core/src/health.ts

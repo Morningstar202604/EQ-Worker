@@ -273,3 +273,36 @@ test('落盘失败时删除往来会回滚，内存与磁盘保持一致', async
     s.cleanup();
   }
 });
+
+/* 回归：礼簿明细 CSV 导出（对应竞品调研中 gift-book / RenqingLedger 的标配能力）。
+   BOM 必须在正文最前，Excel 直接打开才不乱码；金额大写随行输出。 */
+test('礼簿 CSV 导出带 BOM、表头与大写金额', async () => {
+  await withServer(async ({ url, token }) => {
+    const person = await (await api(url, '/persons', token, { method: 'POST', body: JSON.stringify({ name: '礼簿甲' }) })).json();
+    await api(url, '/events', token, {
+      method: 'POST',
+      body: JSON.stringify({ personId: person.id, type: 'gift_give', amount: 800, occasion: '婚礼' })
+    });
+    const res = await api(url, '/export/ledger.csv', token);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/csv/);
+    // fetch 的 text() 会按 WHATWG 规范剥掉 BOM，必须用字节级断言验证 BOM 真的在
+    const buf = await res.arrayBuffer();
+    assert.deepEqual([...new Uint8Array(buf.slice(0, 3))], [0xEF, 0xBB, 0xBF], '必须以 UTF-8 BOM 开头');
+    const text = new TextDecoder('utf-8').decode(buf);
+    const lines = text.split(/\r?\n/);
+    assert.equal(lines[0], '日期,姓名,身份,类型,场合,方向,金额(元),金额大写,备注');
+    assert.match(lines[1], /礼簿甲/);
+    assert.match(lines[1], /捌佰元整/);
+  });
+});
+
+/* /gift 响应必须带大写金额（cn 字段），供界面与单据直接使用 */
+test('随礼建议接口返回大写金额', async () => {
+  await withServer(async ({ url, token }) => {
+    await api(url, '/persons', token, { method: 'POST', body: JSON.stringify({ name: '大写乙' }) });
+    const advice = await (await api(url, '/gift?personId=&occasion=婚礼', token)).json();
+    assert.equal(typeof advice.cn.mid, 'string');
+    assert.match(advice.cn.mid, /元整|角|分/);
+  });
+});

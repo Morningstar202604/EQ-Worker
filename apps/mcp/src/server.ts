@@ -38,6 +38,7 @@ import {
   getLevel,
   upcomingDates,
   fmtMoney,
+  fmtMoneyCN,
   uid,
   type AppState,
   type EventType
@@ -227,7 +228,7 @@ server.registerTool(
       场合: a.occasion,
       档位: a.tier,
       城市: a.city,
-      金额: { 从简: a.low, 建议: a.mid, 重视: a.high, 显示: { 从简: fmtMoney(a.low), 建议: fmtMoney(a.mid), 重视: fmtMoney(a.high) } },
+      金额: { 从简: a.low, 建议: a.mid, 重视: a.high, 显示: { 从简: fmtMoney(a.low), 建议: fmtMoney(a.mid), 重视: fmtMoney(a.high) }, 大写: { 建议: fmtMoneyCN(a.mid), 重视: fmtMoneyCN(a.high) } },
       计算依据: a.reasons,
       提示: a.note
     });

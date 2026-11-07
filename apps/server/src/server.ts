@@ -30,6 +30,8 @@ import {
   annualReport,
   monthInsights,
   giftAdvice,
+  fmtMoneyCN,
+  ledgerCsv,
   buildScripts,
   SCRIPT_SCENES,
   EVENT_TYPES,
@@ -236,6 +238,18 @@ export function createAppServer(options: ServerOptions = {}) {
       res.end(s.exportJSON());
       return;
     }
+    if (req.method === 'GET' && path === '/export/ledger.csv') {
+      // 往来明细礼簿：BOM 让 Excel 直接打开不乱码
+      const body = '\uFEFF' + ledgerCsv(s.getState());
+      res.writeHead(200, {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-length': Buffer.byteLength(body),
+        'content-disposition': 'attachment; filename="eq-worker-ledger.csv"',
+        'cache-control': 'no-store'
+      });
+      res.end(body);
+      return;
+    }
 
     // ---------- 写 ----------
     if (req.method === 'POST' && (path === '/persons' || path === '/events')) {
@@ -401,7 +415,11 @@ export function createAppServer(options: ServerOptions = {}) {
       const occasion = url.searchParams.get('occasion') ?? '婚礼';
       const tier = (url.searchParams.get('tier') ?? 'standard') as 'simple' | 'standard' | 'generous';
       const city = (url.searchParams.get('city') ?? '二线') as '三线' | '二线' | '一线';
-      json(res, 200, giftAdvice(state, personId, occasion, { tier, city }));
+      const advice = giftAdvice(state, personId, occasion, { tier, city });
+      json(res, 200, {
+        ...advice,
+        cn: { low: fmtMoneyCN(advice.low), mid: fmtMoneyCN(advice.mid), high: fmtMoneyCN(advice.high) }
+      });
       return;
     }
 

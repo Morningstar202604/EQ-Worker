@@ -18,6 +18,61 @@ export function fmtMoney(n: unknown): string {
   return '¥' + Math.round(Number(n) || 0).toLocaleString('zh-CN');
 }
 
+const CN_DIGITS = '零壹贰叁肆伍陆柒捌玖';
+const CN_UNITS = ['', '拾', '佰', '仟'];
+const CN_BIG = ['', '万', '亿'];
+
+/** 把 0..9999 的一节转成中文，组内零处理由调用方补。 */
+function cnSection(x: number): string {
+  let s = '';
+  let needZero = false;
+  for (let u = 3; u >= 0; u--) {
+    const d = Math.floor(x / 10 ** u) % 10;
+    if (d === 0) {
+      needZero = s !== '';
+    } else {
+      s += (needZero ? '零' : '') + CN_DIGITS[d] + CN_UNITS[u];
+      needZero = false;
+    }
+  }
+  return s;
+}
+
+/**
+ * 金额转人民币中文大写：1200 → 壹仟贰佰元整，0.5 → 伍角。
+ * 礼簿/帛金单据在现实中要用大写防篡改，这是收礼台和随礼回执的硬需求。
+ * 非有限数与 0 统一返回「零元整」，与 fmtMoney 的容错口径一致。
+ */
+export function fmtMoneyCN(n: unknown): string {
+  const raw = Number(n);
+  if (!Number.isFinite(raw)) return '零元整';
+  const cents = Math.round(Math.abs(raw) * 100);
+  if (cents === 0) return '零元整';
+  const intPart = Math.floor(cents / 100);
+  const jiao = Math.floor((cents % 100) / 10);
+  const fen = cents % 10;
+  let intText = '';
+  if (intPart > 0) {
+    // 从低位按 4 位一组切分（个万、亿），高位组不足 4 位且后面还有数字时补零
+    const groups: number[] = [];
+    for (let v = intPart; v > 0; v = Math.floor(v / 10000)) groups.push(v % 10000);
+    const parts: string[] = [];
+    for (let i = groups.length - 1; i >= 0; i--) {
+      const g = groups[i];
+      if (g === 0) { parts.push(''); continue; }
+      const prefixZero = g < 1000 && i < groups.length - 1 ? '零' : '';
+      parts.push(prefixZero + cnSection(g) + CN_BIG[i]);
+    }
+    intText = parts.join('');
+  }
+  let out = intPart > 0 ? intText + '元' : '';
+  if (jiao > 0) out += CN_DIGITS[jiao] + '角';
+  else if (fen > 0 && intPart > 0) out += '零';
+  if (fen > 0) out += CN_DIGITS[fen] + '分';
+  if (jiao === 0 && fen === 0) out += '整';
+  return (raw < 0 ? '负' : '') + out;
+}
+
 export function ledgerNetShort(net: unknown): string {
   const n = Number(net) || 0;
   return n === 0 ? '两清' : (n > 0 ? '欠 ' : '应收 ') + fmtMoney(Math.abs(n));

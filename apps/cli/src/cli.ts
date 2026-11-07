@@ -36,6 +36,8 @@ import {
   uid,
   sanitizeImport,
   buildICS,
+  ledgerCsv,
+  fmtMoneyCN,
   type EventType,
   type GiftTier,
   type CityTier
@@ -272,6 +274,7 @@ function cmdGift(flags: Flags): number {
   console.log(c('随礼参谋', 'bold') + c(` ${p ? p.name : '通用'} · ${occasion}`, 'dim'));
   console.log('');
   console.log(`  从简 ${c(fmtMoney(advice.low), 'dim')}      建议 ${c(fmtMoney(advice.mid), 'teal')}      重视 ${c(fmtMoney(advice.high), 'dim')}`);
+  console.log(c(`  建议 ${fmtMoneyCN(advice.mid)}`, 'dim'));
   console.log('');
   if (advice.note) console.log(c(advice.note, 'gold'));
   console.log(c('计算依据', 'bold'));
@@ -465,6 +468,11 @@ function cmdExport(flags: Flags): number {
       lines.push([p.name, p.identity, p.tags.join('|'), l.given, l.received, l.net].map((x) => esc(String(x))).join(','));
     }
     console.log(lines.join('\n'));
+    return 0;
+  }
+  if (format === 'ledger') {
+    // 往来明细礼簿：收礼台流水、年底对账、纸质归档用，每行一笔
+    console.log(ledgerCsv(store.getState()));
     return 0;
   }
   if (format === 'ics') {

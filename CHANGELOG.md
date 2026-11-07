@@ -11,14 +11,17 @@
 
 ### Added
 
+- **礼簿明细导出（事件级 CSV）**：core 新增 `ledgerCsv()`；CLI `eqw export --format=ledger`、Web 后台 `GET /api/export/ledger.csv`（带 UTF-8 BOM，Excel 直接打开不乱码）。每行一笔往来，含日期/姓名/身份/类型/场合/方向/金额/大写/备注。（竞品调研：gift-book、随礼记、人情账的标配能力，见 docs/competitive-analysis.md）
+- **人民币大写金额**：core 新增 `fmtMoneyCN()`（壹仟贰佰元整，含组间零/角分/负数/非有限数口径）。CLI `gift`、Web 后台 `/gift`（`cn` 字段）、MCP `advise_gift`（大写）同步输出——礼簿与帛金单据防篡改的硬需求。
 - `.github/dependabot.yml`：npm 与 GitHub Actions 每周自动依赖更新。
-- 回归测试 ×3：服务端删除回滚、MCP 写失败回滚、MCP/CLI 标签裁剪（强制落盘失败采用"数据文件替换为同名目录"的跨平台手法）。
+- 回归测试 ×9：服务端删除回滚、MCP 写失败回滚、MCP/CLI 标签裁剪、大写金额与礼簿 CSV（6 例）、礼簿接口（2 例）。强制落盘失败采用"数据文件替换为同名目录"的跨平台手法。
 - ROADMAP 勾选框与仓库实际状态同步（3.3 文档五件套、ADR、E2E 入 CI 等早已完成）。
+- `docs/competitive-analysis.md`：13 个同类项目深度调研与采纳/拒绝决策。
 
 ### Verified
 
-- `pnpm run verify`：全绿（624+ 测试）。
-- 服务端 18/18、MCP 20/20、CLI 17/17 含新增回归测试。
+- `pnpm run verify`：全绿（600+ 测试）。
+- 服务端 20/20、MCP 20/20、CLI 17/17 含新增回归测试。
 
 ## v3.9.0 — 2026-11-07
 
