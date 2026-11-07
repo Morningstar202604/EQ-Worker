@@ -32,6 +32,10 @@ export function createFileAdapter(options: FileAdapterOptions): FileAdapter {
   const file = resolve(options.file);
   const prefix = options.keyPrefix ?? '';
   let cache: Record<string, string> | null = null;
+  /* 读取失败必须能被上层看见：否则「文件损坏」与「文件不存在」都表现为
+     「还没有任何数据」，用户可能以为数据丢了、或者直接重新录入覆盖掉可修复的原文件。 */
+  let degraded = false;
+  let loadError = '';
 
   const load = (): Record<string, string> => {
     if (cache) return cache;
@@ -49,13 +53,35 @@ export function createFileAdapter(options: FileAdapterOptions): FileAdapter {
       parsed = JSON.parse(raw);
     } catch (e) {
       // 不静默吞掉：损坏的数据文件必须让人知道，否则下一次写入就覆盖了唯一副本。
-      throw new Error(`数据文件无法解析，已拒绝读取以保护原数据：${file}\n${(e as Error).message}`);
+      degraded = true;
+      loadError = `数据文件无法解析，已拒绝读取以保护原数据：${file}`;
+      throw new Error(`${loadError}\n${(e as Error).message}`);
     }
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error(`数据文件格式异常（应为对象）：${file}`);
+      degraded = true;
+      loadError = `数据文件格式异常（应为对象）：${file}`;
+      throw new Error(loadError);
     }
+    /* 跨端兼容：网页版「导出备份」写出的是裸状态
+       { schema, persons, events, ... }，而 CLI/桌面用的是键值包装
+       { eqworker_db_v1: "<json>" }。以前这里只收字符串值，
+       裸格式的全部字段都是对象/数组，会被静默过滤成空数据，
+       用户把网页备份放进数据目录后只会看到「还没有任何数据」。
+       检测到裸格式就整体包装成 DB_KEY。 */
+    const obj = parsed as Record<string, unknown>;
+    const looksLikeBareState =
+      Array.isArray(obj.persons) &&
+      (Array.isArray(obj.events) || obj.events === undefined) &&
+      !('eqworker_db_v1' in obj);
+
     cache = {};
-    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+    if (looksLikeBareState) {
+      const { app, version, exportedAt, ...state } = obj as Record<string, unknown>;
+      void app; void version; void exportedAt;
+      cache['eqworker_db_v1'] = JSON.stringify(state);
+      return cache;
+    }
+    for (const [k, v] of Object.entries(obj)) {
       if (typeof v === 'string') cache[k] = v;
     }
     return cache;
@@ -81,6 +107,8 @@ export function createFileAdapter(options: FileAdapterOptions): FileAdapter {
   return {
     kind: 'file',
     file,
+    get degraded() { return degraded; },
+    get loadError() { return loadError; },
     getItem(k: string): string | null {
       const data = load();
       const key = prefix + k;

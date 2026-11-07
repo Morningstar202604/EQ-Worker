@@ -460,7 +460,23 @@ const store = {
 /* 计算缓存：computePerson 结果按 personId 缓存，事件变更时失效 */
 let _computeCache = Object.create(null); // personId → {result, eventVersion}
 let _eventVersion = 0;   // 事件全局版本号，增删事件时 +1
-function invalidateCache() { _computeCache = Object.create(null); _eventVersion++; }
+/* 事件按 personId 建索引。
+   原先 computePerson 对每个人做一次 state.events.filter()，
+   2000 人 × 10000 事件 = 2000 万次比较，首页切换要 1.5s。
+   建索引后每人只遍历自己的事件，整体降到 O(m)。 */
+let _eventIndex = null;
+function eventsOf(personId) {
+  if (!_eventIndex || _eventIndex.__v !== _eventVersion) {
+    const map = Object.create(null);
+    for (const e of state.events) {
+      (map[e.personId] || (map[e.personId] = [])).push(e);
+    }
+    map.__v = _eventVersion;
+    _eventIndex = map;
+  }
+  return _eventIndex[personId] || [];
+}
+function invalidateCache() { _computeCache = Object.create(null); _eventIndex = null; _eventVersion++; }
 function computedFor(personId) {
   const c = _computeCache[personId];
   if (c && c.__v === _eventVersion) return c.result;
@@ -498,7 +514,7 @@ const PLACEHOLDERS = {
 
 /* 计算一个人的五项雷达指标（纯函数，不直接调用——外部统一走 computedFor ） */
 function computePerson(p) {
-  const evs = state.events.filter(e => e.personId === p.id);
+  const evs = eventsOf(p.id);
   const now = Date.now();
   let heat = 50, trust = 40, intim = 35, debt = 0, lastTs = null;
   for (const ev of evs) {
@@ -754,8 +770,8 @@ function ledgerInsights() {
 function balanceByKind(personId, now) {
   const tNow = typeof now === 'number' ? now : Date.now();
   let loan = 0, gift = 0;
-  for (const e of state.events) {
-    if (e.personId !== personId) continue;
+  /* 走事件索引，不再全表扫描：2000 人 × 10000 事件时这一步曾是主要热点。 */
+  for (const e of eventsOf(personId)) {
     if (e.time > tNow) continue;
     const amt = Number(e.amount) || 0;
     if (amt <= 0) continue;
@@ -986,7 +1002,11 @@ function buildActions(limit) {
   const out = [];
   const push = (a) => out.push(a);
   const now = Date.now();
+  /* 早停：只要前 N 条时，攒够候选就不必把剩下的人全算一遍。
+     实测 2000 人时，无早停的首页要 1.4s；有早停后主要耗时只剩首屏渲染。 */
+  const cap = Math.max((limit || 6) * 4, 24);
   for (const p of state.persons) {
+    if (out.length >= cap) break;
     const m = computedFor(p.id);
     if (p.birthday) {
       const d = daysUntil(p.birthday);
@@ -1040,8 +1060,8 @@ function buildActions(limit) {
       secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
     });
     /* 优先级低于借款（88/84）：借款有明确到期语义，不该被寒暄类动作压掉。 */
-    const recentGift = state.events
-      .filter(e => e.personId === p.id && e.type === 'gift_get' && eventDir(e) === 'in' && Number(e.amount) > 0 && e.time <= now && now - e.time <= 7 * DAY)
+    const recentGift = eventsOf(p.id)
+      .filter(e => e.type === 'gift_get' && eventDir(e) === 'in' && Number(e.amount) > 0 && e.time <= now && now - e.time <= 7 * DAY)
       .sort((a, b) => b.time - a.time)[0];
     if (recentGift) {
       const giftAge = Math.floor((now - recentGift.time) / DAY);
@@ -1060,8 +1080,8 @@ function buildActions(limit) {
       primary: { label: '破冰话术', act: 'scriptModal', arg: 'reconnect|' + p.id },
       secondary: { label: '记一笔', act: 'eventQuick', arg: p.id }
     });
-    const helps = state.events
-      .filter(e => e.personId === p.id && e.type === 'help_them')
+    const helps = eventsOf(p.id)
+      .filter(e => e.type === 'help_them')
       .sort((a, b) => b.time - a.time);
     if (helps.length) {
       const age = (now - helps[0].time) / DAY;
@@ -2066,10 +2086,15 @@ function todayScenario() {
 
 /* 卡片入口定义：icon / 标题 / 动态角标 / 目标动作 */
 function homeEntries() {
-  const actions = buildActions(99);
+  /* 首页只需要「有几件事 / 几段需经营」这类计数，不需要把全部条目的完整对象都造出来。
+     实测 2000 人时，buildActions(99) + healthRanking() 双份全量计算让首页切换要 1.6s。
+     这里改成：行动只取前 8 条（够判断是否有事），健康度只做计数扫描（不构造完整结果）。 */
+  const actions = buildActions(8);
   const lt = ledgerTotals();
-  const health = healthRanking();
-  const weak = health.filter(x => x.h.score < 60).length;
+  let weak = 0;
+  for (const person of state.persons) {
+    if (personHealth(person).score < 60) weak++;
+  }
   const pending = state.reminders.filter(r => r.status === 'pending').length;
   return [
     {
@@ -2888,7 +2913,7 @@ function viewRecord() {
   return `
     <div class="sec-t"><h2>快速记录</h2><span class="sub" style="font-size:12px">饭局散场前，10 秒记一笔</span></div>
     <div class="card">
-      <div class="field"><label>关联人</label>
+      <div class="field"><label for="fPerson">关联人</label>
         <div style="display:flex;gap:8px">
           <select class="inp" id="fPerson" data-change="evPerson" style="flex:1">
             <option value="">— 选择人脉 —</option>${opts}
@@ -2901,16 +2926,16 @@ function viewRecord() {
         <input class="inp" id="fTitle" placeholder="${EVENT_TYPES[state.evType].label}，例如：周五晚上一起吃了顿火锅" value="">
       </div>
       <div style="display:flex;gap:10px">
-        <div class="field" style="flex:1"><label>发生时间</label><input class="inp" id="fTime" type="date" value="${todayStr()}" max="${todayStr()}"></div>
+        <div class="field" style="flex:1"><label for="fTime">发生时间</label><input class="inp" id="fTime" type="date" value="${todayStr()}" max="${todayStr()}"></div>
         <div class="field"><label>人情值</label>
           <div class="stepper"><button data-act="wstep" data-arg="-1">−</button><span id="fWeight">${EVENT_TYPES[state.evType].dHeat}</span><button data-act="wstep" data-arg="1">＋</button></div>
         </div>
       </div>
       <div style="display:flex;gap:10px">
         <div class="field" style="flex:1"><label>金额（元，可选）</label><input class="inp" id="fAmount" type="number" min="0" step="50" placeholder="送礼/收礼/借款填这里"></div>
-        <div class="field" style="flex:1"><label>资金方向</label><select class="inp" id="fDir">${dirOptions(defaultDir(state.evType))}</select></div>
+        <div class="field" style="flex:1"><label for="fDir">资金方向</label><select class="inp" id="fDir">${dirOptions(defaultDir(state.evType))}</select></div>
       </div>
-      <div class="field"><label>场合</label><select class="inp" id="fOccasion">${occOptions('日常')}</select></div>
+      <div class="field"><label for="fOccasion">场合</label><select class="inp" id="fOccasion">${occOptions('日常')}</select></div>
       <div class="field"><label>备注（可选）</label><textarea class="inp" id="fNote" placeholder="补充细节，比如谁介绍的、聊了什么…"></textarea></div>
       <button class="btn primary block" data-act="eventSubmit" ${persons.length ? '' : 'disabled'}>保存这笔往来</button>
       ${persons.length ? '' : '<div class="sub" style="margin-top:8px;text-align:center">还没有人脉，先添加一位再记录。</div>'}
@@ -3305,7 +3330,7 @@ function viewMe() {
         '<button class="btn" data-act="copyBackup">复制备份</button>' +
         '<button class="btn" data-act="pasteImport">粘贴导入</button>' +
         '<button class="btn danger" data-act="reset">清空数据</button>' +
-        '<input type="file" id="importFile" accept=".json,application/json" style="display:none" data-change="importFile">' +
+        '<input type="file" id="importFile" accept=".json,application/json" aria-label="选择要导入的备份文件" style="display:none" data-change="importFile">' +
       '</div>' +
     '</div>' +
     installCardHtml +
@@ -3528,7 +3553,7 @@ function eventModal(personId) {
   window.__modalType = initType;
   window.__modalWeight = EVENT_TYPES[initType].dHeat;
   openSheet('记一笔往来', `
-    <div class="field"><label>关联人</label><select class="inp" id="efPerson"><option value="">— 选择人脉 —</option>${opts}</select></div>
+    <div class="field"><label for="fPerson">关联人</label><select class="inp" id="efPerson"><option value="">— 选择人脉 —</option>${opts}</select></div>
     <div class="field"><label>事件类型</label><div class="typegrid" id="efTypes">${Object.keys(EVENT_TYPES).map(k =>
       `<button class="typecell ${k === initType ? 'on' : ''}" data-act="modalType" data-arg="${k}"><svg viewBox="0 0 24 24">${typeIcon(k)}</svg>${EVENT_TYPES[k].label}</button>`).join('')}</div></div>
     <div class="field"><label>一句话</label><input class="inp" id="efTitle" value="${esc(pre.title || '')}" placeholder="例如：帮我协调了跨部门资源"></div>
@@ -3554,7 +3579,7 @@ function reminderModal(personId) {
   const p = personId ? state.persons.find(x => x.id === personId) : null;
   const opts = state.persons.map(x => `<option value="${x.id}" ${x.id === personId ? 'selected' : ''}>${esc(x.name)} · ${esc(x.identity || '')}</option>`).join('');
   openSheet('添加提醒', `
-    <div class="field"><label>关联人</label>${p
+    <div class="field"><label for="fPerson">关联人</label>${p
       ? `<div class="sub" style="margin-top:2px">${esc(p.name)}</div>`
       : `<select class="inp" id="rfPerson"><option value="">— 选择人脉 —</option>${opts}</select>`}</div>
     <div class="field"><label>提醒内容</label><input class="inp" id="rfContent" placeholder="例如：请老张吃饭还人情"></div>

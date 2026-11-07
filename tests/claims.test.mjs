@@ -62,7 +62,43 @@ test('对外声称与源码实现一致（场景数、版本、AI 边界、英�
   assert.match(zh, /不含 AI、不发网络请求/, '中文 README 必须声明主应用不含 AI');
   assert.doesNotMatch(legacy, /freeSearch|runTool|runAssistant/, '主应用若接入 AI，需同步更新 README 的边界说明');
 
-  // 5. 英文版 README 的叙述部分不得混入中文（语言切换标签与中文目录名除外）
+  /* 5. 穷举式数字扫描：任何「N 场景 / N 个场景 / N scenarios」都必须等于真实值。
+     上一条只匹配了两种固定句式，导致「20 场景 × 3 语气」这种写法漏网——
+     所以这里改成扫描全部出现处，不再依赖句式假设。 */
+  for (const [name, doc] of [['README.md', en], ['README.zh.md', zh], ['官网', site], ['MCP', mcp]]) {
+    const claims = [
+      ...doc.matchAll(/(\d+)\s*(?:个)?(?:真实)?场景/g),
+      ...doc.matchAll(/(\d+)\s*scenarios?/gi)
+    ];
+    for (const m of claims) {
+      assert.equal(
+        Number(m[1]),
+        scenes,
+        `${name} 里出现「${m[0]}」，但源码只有 ${scenes} 个场景`
+      );
+    }
+  }
+
+  /* 6. 官网不得暗示主应用有 AI。
+     实测官网原写「AI 默认关闭，只发送你确认过的内容」——对下载 APK 的用户不成立，
+     因为单文件版没有任何 AI 代码。这里断言官网必须说明「单文件版不含 AI」。 */
+  /* 逐条检查：官网里每一条提到 AI 的文案，都必须同时说明单文件版的边界。
+     只做整体 contains 会被「另一条里刚好有这个词」蒙混过关——上一版就是这么漏的。 */
+  /* 只检查「关于 AI 能力的叙述性承诺」——即这些 key：
+     why.*（为什么可信）、priv.*（隐私）是面向用户的承诺，必须写清边界。
+     apps.*（能力清单）里提到「MCP 可被 AI 客户端调用」属于技术事实，不在此列。 */
+  const PROMISE_KEYS = /'(?:why|priv)\.\d+[td]':'([^']*AI[^']*)'/g;
+  const aiClaims = [...site.matchAll(PROMISE_KEYS)].map((m) => m[1]);
+  assert.ok(aiClaims.length > 0, '官网应有 AI 相关承诺文案');
+  for (const claim of aiClaims) {
+    const mentionsScope = /单文件版|single-file build/.test(claim);
+    assert.ok(
+      mentionsScope,
+      `官网这条 AI 文案没有说明单文件版边界：「${claim.slice(0, 60)}…」`
+    );
+  }
+
+  // 7. 英文版 README 的叙述部分不得混入中文（语言切换标签与中文目录名除外）
   const ALLOWED_ZH = ['简体中文', '小程序']; // 「简体中文」是切换链接，「小程序」出现在目录名 EQ-Worker-小程序/
   const cleaned = ALLOWED_ZH.reduce((s, w) => s.split(w).join(''), prose(en));
   const cjk = cleaned.match(/[\u4e00-\u9fff]/g);

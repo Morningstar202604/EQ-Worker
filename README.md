@@ -8,7 +8,7 @@
 
 <b>English</b> · <a href="README.zh.md">简体中文</a>
 
-[![Version](https://img.shields.io/badge/version-v3.9.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.9.1-orange)](CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/tests-624%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
@@ -96,7 +96,7 @@ cd EQ-Worker && pnpm install && pnpm run verify
 | Platform | How |
 | --- | --- |
 | Web | Open `EQ-Worker.html` directly, or use the [online build](https://x33834.github.io/EQ-Worker/) |
-| Windows | Download `EQ-Worker-3.9.0-x64.exe` from [Releases](https://github.com/badhope/EQ-Worker/releases) |
+| Windows | Download `EQ-Worker-3.9.1-x64.exe` from [Releases](https://github.com/badhope/EQ-Worker/releases) |
 | Android | Download the APK from [Releases](https://github.com/badhope/EQ-Worker/releases) |
 | WeChat Mini Program | Import `EQ-Worker-小程序/` in WeChat DevTools |
 | CLI / MCP | `node dist-cli/eqw.mjs` · `node dist-mcp/eq-worker-mcp.mjs` |

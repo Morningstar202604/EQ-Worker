@@ -1,6 +1,6 @@
 {
   "name": "eq-worker",
-  "version": "3.9.0",
+  "version": "3.9.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.15.0",

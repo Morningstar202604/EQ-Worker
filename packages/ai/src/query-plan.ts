@@ -126,14 +126,18 @@ export function looksIrrelevant(query: string, titles: string[]): boolean {
      整条标题就是查询里的前几个字 + 百科/词典后缀。 */
   const ENCYCLOPEDIA = /_百度百科|_百度汉语|_汉典|汉语词语|_维基百科|新华字典|汉语国学|拼音|怎么读|组词|部首|笔画/;
   const wordEntry = titles.filter((t) => ENCYCLOPEDIA.test(String(t))).length;
-  if (wordEntry / titles.length >= 0.5) return true;
+  /* 之前是 50%：只要一半是百科就判死。但真实好结果里常夹着 1-2 条百科，
+     实测「探病」的 10 条里有 2 条百科、其余都相关，被误杀。改成 70%。 */
+  if (wordEntry / titles.length >= 0.7) return true;
 
-  /* 判据二：意图词覆盖。
-     查询里的「意图词」（给多少 / 送什么 / 讲究 / 忌讳…）必须至少命中一个，
-     否则说明搜索引擎只是在匹配实体名，没理解问题。 */
+  /* 判据二：意图词覆盖（放宽版）。
+     之前要求标题里出现与查询相同的意图词——但「探病送什么好」的真实好结果
+     标题是「探病也有讲究」「探病礼仪」，用的是一个更大的同义集合，
+     导致 3/3 相关内容被误杀。现在改成：标题里出现任一「礼俗类词」即可。 */
   const INTENT = /多少|几多|送什么|买什么|讲究|忌讳|禁忌|规矩|合适|行情|标准|怎么|如何|要不要|能不能/;
+  const RITUAL = /讲究|忌讳|禁忌|礼仪|规矩|注意|红包|礼金|份子|随礼|送礼|探望|慰问|怎么|如何|多少|合适|攻略|指南|大全/;
   if (INTENT.test(query)) {
-    const hasIntent = titles.some((t) => INTENT.test(String(t)));
+    const hasIntent = titles.some((t) => RITUAL.test(String(t)));
     if (!hasIntent) return true;
   }
 

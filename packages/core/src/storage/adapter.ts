@@ -2,6 +2,10 @@ export interface StorageAdapter {
   getItem(k: string): string | null;
   setItem(k: string, v: string): boolean;
   removeItem(k: string): void;
+  /** 读取阶段发生不可恢复错误时置 true，让调用方区分「空数据」与「读不出来」。 */
+  readonly degraded?: boolean;
+  /** 最近一次读取失败的原因，用于向用户如实报告。 */
+  readonly loadError?: string;
 }
 
 export interface MemoryAdapter extends StorageAdapter {

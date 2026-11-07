@@ -44,7 +44,7 @@ import {
   type EventType
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.9.0';
+const VERSION = '3.9.1';
 const file = resolveDataFile();
 const store = createFileStore(file);
 const state = (): AppState => store.getState();

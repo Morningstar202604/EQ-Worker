@@ -8,7 +8,7 @@
 
 <a href="README.md">English</a> · <b>简体中文</b>
 
-[![Version](https://img.shields.io/badge/version-v3.9.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.9.1-orange)](CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/tests-624%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-red)](LICENSE)
 
@@ -39,7 +39,7 @@
 <td width="50%"><img src="docs/screenshots/v3/02-ledger.png" alt="人情账本" /><br /><sub><b>人情账本</b> — 收送分账，净额一眼可见</sub></td>
 </tr>
 <tr>
-<td><img src="docs/screenshots/v3/04-script.png" alt="话术参谋" /><br /><sub><b>话术参谋</b> — 20 场景 × 3 语气，可直接复制</sub></td>
+<td><img src="docs/screenshots/v3/04-script.png" alt="话术参谋" /><br /><sub><b>话术参谋</b> — 18 场景 × 3 语气，可直接复制</sub></td>
 <td><img src="docs/screenshots/v3/10-health.png" alt="关系体检" /><br /><sub><b>关系体检</b> — 按健康度排序，先修最该修的</sub></td>
 </tr>
 </table>
@@ -98,7 +98,7 @@ cd EQ-Worker && pnpm install && pnpm run verify
 | 平台 | 方式 |
 | --- | --- |
 | 网页 | 直接打开 `EQ-Worker.html`，或访问 [在线版](https://x33834.github.io/EQ-Worker/) |
-| Windows | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 `EQ-Worker-3.9.0-x64.exe` |
+| Windows | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 `EQ-Worker-3.9.1-x64.exe` |
 | 安卓 | [Releases](https://github.com/badhope/EQ-Worker/releases) 下载 APK |
 | 微信小程序 | 开发者工具导入 `EQ-Worker-小程序/` |
 | CLI / MCP | `node dist-cli/eqw.mjs` · `node dist-mcp/eq-worker-mcp.mjs` |

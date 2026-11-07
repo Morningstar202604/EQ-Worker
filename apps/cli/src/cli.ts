@@ -43,7 +43,7 @@ import {
   type CityTier
 } from '../../../packages/core/src/index';
 
-const VERSION = '3.9.0';
+const VERSION = '3.9.1';
 
 type Flags = {
   data?: string;
@@ -106,11 +106,22 @@ function openStore(flags: Flags) {
   return { store: createFileStore(file), file };
 }
 
-function requireData(store: ReturnType<typeof createFileStore>): boolean {
+function requireData(store: ReturnType<typeof createFileStore>, explicitDir?: string): boolean {
   const state = store.getState();
   if (!state.persons.length) {
+    /* 「读不出来」和「还没有数据」必须分开说。
+       以前两种情况都提示「还没有任何数据」，用户会以为数据丢了，
+       甚至直接重新录入，把可修复的原文件覆盖掉。 */
+    if (store.isWriteProtected()) {
+      console.error(c('数据文件无法读取或已损坏，已启用写保护。', 'red'));
+      console.error(c(`数据文件：${resolveDataFile(explicitDir)}`, 'dim'));
+      console.error('请先备份该文件，再检查其 JSON 格式，或用 eqw import 恢复一份有效备份。');
+      return false;
+    }
     console.error(c('还没有任何数据。', 'gold'));
-    console.error(c(`数据文件：${resolveDataFile()}`, 'dim'));
+    /* 必须传 explicitDir：以前漏传，用户用 --data 指定目录时提示的是默认路径，
+       会让人以为数据放错了地方。 */
+    console.error(c(`数据文件：${resolveDataFile(explicitDir)}`, 'dim'));
     console.error('先添加人脉：' + c('eqw add-person --name 张三 --identity 朋友', 'teal'));
     return false;
   }
@@ -164,7 +175,7 @@ function cmdOverview(flags: Flags): number {
 function cmdPersons(flags: Flags): number {
   const { store } = openStore(flags);
   const state = store.getState();
-  if (!requireData(store)) return 1;
+  if (!requireData(store, flags.data)) return 1;
   const rows = state.persons.map((p) => {
     const l = personLedger(state, p.id);
     const cp = computePerson(state, p);
@@ -387,7 +398,7 @@ function cmdAddEvent(flags: Flags): number {
 function cmdHealth(flags: Flags): number {
   const { store } = openStore(flags);
   const state = store.getState();
-  if (!requireData(store)) return 1;
+  if (!requireData(store, flags.data)) return 1;
   const ranking = healthRanking(state);
   if (flags.json) { console.log(JSON.stringify(ranking.map((r) => ({ name: r.p.name, ...r.h })), null, 2)); return 0; }
   console.log(c('关系体检（按健康度从低到高）', 'bold'));
